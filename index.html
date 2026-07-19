@@ -9,6 +9,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <style>
   :root{
     --navy:#1f3864;
@@ -272,6 +274,46 @@
   table.mini td.mv{ text-align:center; }
 
   footer{ text-align:center; font-size:11.5px; color:#9aa0aa; padding:20px; }
+
+  /* 저장 자료 라이브러리 */
+  .lib-toolbar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px;
+  }
+  .lib-toolbar input[type="search"],
+  .lib-toolbar select{
+    font-family:inherit; font-size:13px; padding:8px 12px;
+    border:1px solid var(--border); border-radius:7px; background:#fff;
+  }
+  .lib-toolbar input[type="search"]{ flex:1; min-width:180px; }
+  .lib-status{ font-size:12px; color:#666; margin-bottom:10px; min-height:1.2em; }
+  .lib-status.err{ color:#b00; }
+  .lib-status.ok{ color:#2a7a3a; }
+  .lib-table-wrap{ overflow:auto; border:1px solid var(--border); border-radius:8px; }
+  table.lib{
+    width:100%; border-collapse:collapse; font-size:12.5px; min-width:640px;
+  }
+  table.lib th, table.lib td{
+    border-bottom:1px solid #e5e7eb; padding:10px 12px; text-align:left; vertical-align:middle;
+  }
+  table.lib th{ background:var(--gray-bg); font-weight:700; color:var(--navy); white-space:nowrap; }
+  table.lib tr:hover td{ background:#f8fafc; }
+  table.lib .center-name{ font-weight:700; color:var(--navy); }
+  table.lib .muted{ color:#888; font-size:11.5px; }
+  table.lib .actions-cell{ white-space:nowrap; display:flex; gap:6px; flex-wrap:wrap; }
+  table.lib .actions-cell button{ padding:5px 10px; font-size:11.5px; }
+  .lib-empty{ padding:28px; text-align:center; color:#888; font-size:13px; }
+  .save-badge{
+    display:inline-block; margin-top:8px; padding:6px 10px; border-radius:6px;
+    background:#eef6ee; color:#1f6b2e; font-size:12px;
+  }
+  .save-badge.warn{ background:#fff7e6; color:#8a5a00; }
+  .save-badge.err{ background:#fdecea; color:#a11; }
+  .center-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .center-chip{
+    border:1px solid var(--border); background:#fafbfc; border-radius:999px;
+    padding:5px 12px; font-size:12px; cursor:pointer; font-family:inherit;
+  }
+  .center-chip.on{ background:var(--navy); color:#fff; border-color:var(--navy); }
 </style>
 </head>
 <body>
@@ -285,14 +327,48 @@
 
 <div class="wrap">
 
+  <div class="panel" id="libraryPanel">
+    <h2>📁 저장된 자료 (센터별 · 검색)</h2>
+    <p class="hint" style="margin:0 0 12px;">
+      업로드한 엑셀과 생성한 조견표 ZIP이 Supabase에 저장됩니다.
+      센터명으로 모아서 보거나, 전체 검색 후 다시 다운로드할 수 있습니다.
+      <span id="libConfigHint" style="color:#b00;"></span>
+    </p>
+    <div class="lib-toolbar">
+      <input type="search" id="libSearch" placeholder="전체 검색: 센터명, 파일명, 직무…">
+      <select id="libCenterFilter">
+        <option value="">전체 센터</option>
+      </select>
+      <button type="button" class="btn-ghost" id="libRefreshBtn">새로고침</button>
+    </div>
+    <div class="center-chips" id="libCenterChips"></div>
+    <div class="lib-status" id="libStatus">목록을 불러오는 중…</div>
+    <div class="lib-table-wrap">
+      <table class="lib" id="libTable">
+        <thead>
+          <tr>
+            <th>저장일시</th>
+            <th>센터명</th>
+            <th>원본 파일</th>
+            <th>직무</th>
+            <th>다운로드</th>
+          </tr>
+        </thead>
+        <tbody id="libBody"></tbody>
+      </table>
+      <div class="lib-empty" id="libEmpty" style="display:none;">저장된 자료가 없습니다. 엑셀을 업로드하면 자동으로 저장됩니다.</div>
+    </div>
+  </div>
+
   <div class="panel">
     <h2>① 급여테이블 업로드</h2>
     <div id="dropzone">
       <div>엑셀 파일(.xlsx)을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
-      <div class="hint">시트 이름이 <strong>급여테이블(변경후)</strong> 인 시트를 자동으로 읽습니다</div>
+      <div class="hint">시트 이름이 <strong>급여테이블(변경후)</strong> 인 시트를 자동으로 읽습니다 · 업로드 시 서버(Supabase)에 자동 저장됩니다</div>
       <input type="file" id="fileInput" accept=".xlsx">
     </div>
     <div id="fileMeta"></div>
+    <div id="saveStatus"></div>
   </div>
 
   <div class="panel" id="jobPanel" style="display:none;">
@@ -800,7 +876,281 @@ function exportCardAsPng(el, filename){
 }
 
 /* ============================================================
-   3. UI 배선
+   3. Supabase 아카이브 (센터별 저장 · 검색 · 재다운로드)
+   ============================================================ */
+const ARCHIVE_BUCKET = 'pay-archives';
+let supabaseClient = null;
+let currentArchiveId = null;
+let currentUploadFile = null;
+let archiveCache = [];
+let activeCenterFilter = '';
+
+function initSupabase(){
+  const url = (window.SUPABASE_URL || '').trim();
+  const key = (window.SUPABASE_ANON_KEY || '').trim();
+  const hint = document.getElementById('libConfigHint');
+  if(!url || !key){
+    if(hint) hint.textContent = ' ⚠ config.js 에 SUPABASE_URL / SUPABASE_ANON_KEY 를 넣어 주세요.';
+    return null;
+  }
+  if(typeof supabase === 'undefined' || !supabase.createClient){
+    if(hint) hint.textContent = ' ⚠ Supabase SDK 로드 실패 (네트워크/CDN 확인).';
+    return null;
+  }
+  if(hint) hint.textContent = '';
+  return supabase.createClient(url, key);
+}
+
+function slugify(str){
+  return String(str || 'unknown')
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 80) || 'unknown';
+}
+
+function setSaveStatus(msg, type){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  if(!msg){ el.innerHTML = ''; return; }
+  el.innerHTML = `<span class="save-badge ${type||''}">${escapeHtml(msg)}</span>`;
+}
+
+function setLibStatus(msg, type){
+  const el = document.getElementById('libStatus');
+  if(!el) return;
+  el.className = 'lib-status' + (type ? ' '+type : '');
+  el.textContent = msg || '';
+}
+
+function formatKst(iso){
+  if(!iso) return '-';
+  try{
+    return new Date(iso).toLocaleString('ko-KR', { hour12:false });
+  }catch(_){ return iso; }
+}
+
+function publicUrl(path){
+  if(!supabaseClient || !path) return null;
+  const { data } = supabaseClient.storage.from(ARCHIVE_BUCKET).getPublicUrl(path);
+  return data && data.publicUrl ? data.publicUrl : null;
+}
+
+async function uploadArchiveExcel(file, parsed){
+  if(!supabaseClient) return null;
+  const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+  const center = parsed.centerName || '미상센터';
+  const centerSlug = slugify(center);
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  const excelPath = `${centerSlug}/${stamp}_${id.slice(0,8)}/original.xlsx`;
+
+  const { error: upErr } = await supabaseClient.storage
+    .from(ARCHIVE_BUCKET)
+    .upload(excelPath, file, {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      upsert: false
+    });
+  if(upErr) throw upErr;
+
+  const jobNames = (parsed.jobs || []).map(j => j.displayName || j.jobName || '').filter(Boolean).join(' ');
+  const searchText = [center, file.name, parsed.sheetName || '', jobNames, String(parsed.jobs?.length||'')].join(' ');
+
+  const row = {
+    id,
+    center_name: center,
+    original_filename: file.name,
+    excel_path: excelPath,
+    zip_path: null,
+    job_count: (parsed.jobs || []).length,
+    png_count: 0,
+    sheet_name: parsed.sheetName || '',
+    search_text: searchText
+  };
+
+  const { data, error } = await supabaseClient
+    .from('pay_archives')
+    .insert(row)
+    .select()
+    .single();
+  if(error) throw error;
+  return data;
+}
+
+async function uploadArchiveZip(archiveId, zipBlob, pngCount, centerName){
+  if(!supabaseClient || !archiveId) return null;
+  const centerSlug = slugify(centerName || '미상센터');
+  const zipPath = `${centerSlug}/${archiveId}/pay_tables.zip`;
+
+  const { error: upErr } = await supabaseClient.storage
+    .from(ARCHIVE_BUCKET)
+    .upload(zipPath, zipBlob, {
+      contentType: 'application/zip',
+      upsert: true
+    });
+  if(upErr) throw upErr;
+
+  const { data, error } = await supabaseClient
+    .from('pay_archives')
+    .update({ zip_path: zipPath, png_count: pngCount || 0 })
+    .eq('id', archiveId)
+    .select()
+    .single();
+  if(error) throw error;
+  return data;
+}
+
+async function loadArchives(){
+  if(!supabaseClient){
+    setLibStatus('Supabase 미설정 — config.js 확인', 'err');
+    return;
+  }
+  setLibStatus('목록 불러오는 중…');
+  const { data, error } = await supabaseClient
+    .from('pay_archives')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if(error){
+    setLibStatus('불러오기 실패: ' + error.message, 'err');
+    console.error(error);
+    return;
+  }
+  archiveCache = data || [];
+  renderCenterFilters();
+  renderArchiveList();
+  setLibStatus(`총 ${archiveCache.length}건`, 'ok');
+}
+
+function renderCenterFilters(){
+  const centers = [...new Set(archiveCache.map(r => r.center_name).filter(Boolean))].sort((a,b)=> a.localeCompare(b,'ko'));
+  const sel = document.getElementById('libCenterFilter');
+  const chips = document.getElementById('libCenterChips');
+  if(sel){
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">전체 센터</option>' +
+      centers.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if(centers.includes(cur)) sel.value = cur;
+    else if(activeCenterFilter && centers.includes(activeCenterFilter)) sel.value = activeCenterFilter;
+  }
+  if(chips){
+    chips.innerHTML = '';
+    const all = document.createElement('button');
+    all.type = 'button';
+    all.className = 'center-chip' + (!activeCenterFilter ? ' on' : '');
+    all.textContent = '전체';
+    all.addEventListener('click', ()=>{
+      activeCenterFilter = '';
+      if(sel) sel.value = '';
+      renderCenterFilters();
+      renderArchiveList();
+    });
+    chips.appendChild(all);
+    centers.forEach(c=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'center-chip' + (activeCenterFilter === c ? ' on' : '');
+      b.textContent = c;
+      b.addEventListener('click', ()=>{
+        activeCenterFilter = c;
+        if(sel) sel.value = c;
+        renderCenterFilters();
+        renderArchiveList();
+      });
+      chips.appendChild(b);
+    });
+  }
+}
+
+function filteredArchives(){
+  const q = (document.getElementById('libSearch')?.value || '').trim().toLowerCase();
+  const center = activeCenterFilter || (document.getElementById('libCenterFilter')?.value || '');
+  return archiveCache.filter(r=>{
+    if(center && r.center_name !== center) return false;
+    if(!q) return true;
+    const hay = [
+      r.center_name, r.original_filename, r.sheet_name, r.search_text,
+      r.job_count, r.png_count
+    ].map(x => String(x||'').toLowerCase()).join(' ');
+    return hay.includes(q);
+  });
+}
+
+function renderArchiveList(){
+  const tbody = document.getElementById('libBody');
+  const empty = document.getElementById('libEmpty');
+  const table = document.getElementById('libTable');
+  if(!tbody) return;
+  const rows = filteredArchives();
+  tbody.innerHTML = '';
+  if(!rows.length){
+    if(table) table.style.display = 'none';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  if(table) table.style.display = 'table';
+  if(empty) empty.style.display = 'none';
+
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    const excelUrl = r.excel_path ? publicUrl(r.excel_path) : null;
+    const zipUrl = r.zip_path ? publicUrl(r.zip_path) : null;
+    tr.innerHTML = `
+      <td><span class="muted">${escapeHtml(formatKst(r.created_at))}</span></td>
+      <td><span class="center-name">${escapeHtml(r.center_name || '-')}</span></td>
+      <td>
+        <div>${escapeHtml(r.original_filename || '-')}</div>
+        <div class="muted">${escapeHtml(r.sheet_name || '')}</div>
+      </td>
+      <td>${r.job_count || 0}개${r.png_count ? ` · ZIP ${r.png_count}장` : ''}</td>
+      <td class="actions-cell"></td>`;
+    const actions = tr.querySelector('.actions-cell');
+    if(excelUrl){
+      const a = document.createElement('a');
+      a.href = excelUrl;
+      a.download = r.original_filename || 'original.xlsx';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-ghost';
+      btn.textContent = '엑셀';
+      btn.addEventListener('click', ()=> window.open(excelUrl, '_blank'));
+      actions.appendChild(btn);
+    } else {
+      const s = document.createElement('span');
+      s.className = 'muted';
+      s.textContent = '엑셀 없음';
+      actions.appendChild(s);
+    }
+    if(zipUrl){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-primary';
+      btn.textContent = '조견표 ZIP';
+      btn.addEventListener('click', ()=> window.open(zipUrl, '_blank'));
+      actions.appendChild(btn);
+    } else {
+      const s = document.createElement('span');
+      s.className = 'muted';
+      s.textContent = 'ZIP 미생성';
+      actions.appendChild(s);
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+function bindLibraryUi(){
+  document.getElementById('libRefreshBtn')?.addEventListener('click', ()=> loadArchives());
+  document.getElementById('libSearch')?.addEventListener('input', ()=> renderArchiveList());
+  document.getElementById('libCenterFilter')?.addEventListener('change', (e)=>{
+    activeCenterFilter = e.target.value || '';
+    renderCenterFilters();
+    renderArchiveList();
+  });
+}
+
+/* ============================================================
+   4. UI 배선
    ============================================================ */
 let parsedData = null;
 /** 선택된 직무 인덱스 (이름 중복 대비) */
@@ -846,8 +1196,11 @@ fileInput.addEventListener('change', e=>{
 
 function handleFile(file){
   fileMeta.textContent = `읽는 중... (${file.name})`;
+  setSaveStatus('');
+  currentArchiveId = null;
+  currentUploadFile = file;
   const reader = new FileReader();
-  reader.onload = (e)=>{
+  reader.onload = async (e)=>{
     try{
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, {type:'array', cellFormula:false});
@@ -857,6 +1210,22 @@ function handleFile(file){
       renderNotesEditor();
       showWorkspace(true);
       applyWidthsFromControls();
+
+      // Supabase 자동 저장 (원본 엑셀)
+      if(supabaseClient){
+        setSaveStatus('클라우드 저장 중… (엑셀)', 'warn');
+        try{
+          const row = await uploadArchiveExcel(file, parsedData);
+          currentArchiveId = row.id;
+          setSaveStatus(`클라우드 저장 완료 · 센터: ${row.center_name}`, 'ok');
+          loadArchives();
+        }catch(saveErr){
+          console.error(saveErr);
+          setSaveStatus('클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
+        }
+      } else {
+        setSaveStatus('로컬 전용 모드 (config.js 미설정 — 서버 저장 안 함)', 'warn');
+      }
     }catch(err){
       fileMeta.textContent = `⚠ 오류: ${err.message}`;
       jobPanel.style.display='none';
@@ -1308,6 +1677,23 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   a.download = safeName(`급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
   a.click();
   URL.revokeObjectURL(url);
+
+  // Supabase ZIP 저장 (같은 세션 아카이브에 연결)
+  if(supabaseClient && currentArchiveId){
+    zipBtn.textContent = '클라우드 ZIP 저장 중...';
+    try{
+      await uploadArchiveZip(currentArchiveId, content, ok, parsedData.centerName);
+      setSaveStatus(`클라우드 저장 완료 · 엑셀 + 조견표 ZIP (${ok}장)`, 'ok');
+      loadArchives();
+    }catch(saveErr){
+      console.error(saveErr);
+      setSaveStatus('ZIP 클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
+    }
+  } else if(supabaseClient && !currentArchiveId){
+    // 엑셀 저장이 안 된 경우 ZIP만이라도 새 레코드로 남기기 어려우므로 안내
+    setSaveStatus('ZIP 로컬 다운로드 완료 (엑셀 클라우드 저장이 없어 ZIP 서버 저장 생략)', 'warn');
+  }
+
   zipBtn.disabled = false;
   zipBtn.textContent = '전체 PNG 일괄 다운로드(ZIP)';
 
@@ -1318,9 +1704,16 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   if(failed.length){
     alert(`ZIP에 ${ok}개 포함, ${failed.length}개 실패:\n${failed.join('\n')}`);
   } else {
-    alert(`ZIP에 조견표 ${ok}개가 모두 포함되었습니다.`);
+    alert(`ZIP에 조견표 ${ok}개가 모두 포함되었습니다.` +
+      (supabaseClient && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
   }
 });
+
+// 초기화: Supabase + 라이브러리
+supabaseClient = initSupabase();
+bindLibraryUi();
+if(supabaseClient) loadArchives();
+else setLibStatus('config.js 설정 후 새로고침하면 저장 목록이 표시됩니다.', 'err');
 </script>
 </body>
 </html>
