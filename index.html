@@ -901,12 +901,18 @@ function initSupabase(){
   return supabase.createClient(url, key);
 }
 
-function slugify(str){
-  return String(str || 'unknown')
-    .replace(/[\\/:*?"<>|]+/g, '_')
-    .replace(/\s+/g, '_')
+/**
+ * Supabase Storage object key는 ASCII 위주만 허용.
+ * 한글 센터명 등이 들어가면 Invalid key 오류 → 경로에는 영문/숫자/._- 만 사용.
+ * 센터명은 DB(center_name)에 따로 저장하므로 검색·필터는 그대로 동작.
+ */
+function storageSafeSegment(str){
+  const s = String(str || '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
     .replace(/_+/g, '_')
-    .slice(0, 80) || 'unknown';
+    .replace(/^_|_$/g, '')
+    .slice(0, 64);
+  return s || 'item';
 }
 
 function setSaveStatus(msg, type){
@@ -938,11 +944,10 @@ function publicUrl(path){
 
 async function uploadArchiveExcel(file, parsed){
   if(!supabaseClient) return null;
-  const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+  const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(16).slice(2));
   const center = parsed.centerName || '미상센터';
-  const centerSlug = slugify(center);
-  const stamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  const excelPath = `${centerSlug}/${stamp}_${id.slice(0,8)}/original.xlsx`;
+  // 경로: archives/{uuid}/original.xlsx  (한글·특수문자 금지 → Invalid key 방지)
+  const excelPath = `archives/${storageSafeSegment(id)}/original.xlsx`;
 
   const { error: upErr } = await supabaseClient.storage
     .from(ARCHIVE_BUCKET)
@@ -978,8 +983,7 @@ async function uploadArchiveExcel(file, parsed){
 
 async function uploadArchiveZip(archiveId, zipBlob, pngCount, centerName){
   if(!supabaseClient || !archiveId) return null;
-  const centerSlug = slugify(centerName || '미상센터');
-  const zipPath = `${centerSlug}/${archiveId}/pay_tables.zip`;
+  const zipPath = `archives/${storageSafeSegment(archiveId)}/pay_tables.zip`;
 
   const { error: upErr } = await supabaseClient.storage
     .from(ARCHIVE_BUCKET)
