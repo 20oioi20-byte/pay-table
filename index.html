@@ -338,6 +338,11 @@
     padding:5px 12px; font-size:12px; cursor:pointer; font-family:inherit;
   }
   .center-chip.on{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .btn-danger{
+    background:#fdecea; color:#a11; border:1px solid #f0c4c0;
+  }
+  .btn-danger:hover{ background:#f9d2ce; }
+  .btn-danger:disabled{ opacity:.5; cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -504,7 +509,7 @@
               <th>센터명</th>
               <th>원본 파일</th>
               <th>직무</th>
-              <th>다운로드</th>
+              <th>다운로드 · 삭제</th>
             </tr>
           </thead>
           <tbody id="libBody"></tbody>
@@ -1044,6 +1049,24 @@ async function uploadArchiveZip(archiveId, zipBlob, pngCount, centerName){
   return data;
 }
 
+/** 저장 자료 삭제: Storage 파일 + DB 행 */
+async function deleteArchive(row){
+  if(!supabaseClient || !row || !row.id) throw new Error('삭제 대상 없음');
+  const paths = [row.excel_path, row.zip_path].filter(Boolean);
+  if(paths.length){
+    const { error: stErr } = await supabaseClient.storage
+      .from(ARCHIVE_BUCKET)
+      .remove(paths);
+    // 파일이 이미 없어도 DB는 지울 수 있게 — 치명 오류만 throw
+    if(stErr) console.warn('storage remove:', stErr);
+  }
+  const { error } = await supabaseClient
+    .from('pay_archives')
+    .delete()
+    .eq('id', row.id);
+  if(error) throw error;
+}
+
 async function loadArchives(){
   if(!supabaseClient){
     setLibStatus('Supabase 미설정 — config.js 확인', 'err');
@@ -1182,6 +1205,30 @@ function renderArchiveList(){
       s.textContent = 'ZIP 미생성';
       actions.appendChild(s);
     }
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-danger';
+    delBtn.textContent = '삭제';
+    delBtn.title = '이 저장 자료를 완전히 삭제합니다';
+    delBtn.addEventListener('click', async ()=>{
+      const label = `${r.center_name || ''} / ${r.original_filename || r.id}`;
+      if(!confirm(`삭제할까요?\n\n${label}\n\n원본 엑셀·조견표 ZIP·목록 기록이 모두 삭제되며 되돌릴 수 없습니다.`)){
+        return;
+      }
+      delBtn.disabled = true;
+      delBtn.textContent = '삭제 중…';
+      try{
+        await deleteArchive(r);
+        setLibStatus('삭제 완료', 'ok');
+        await loadArchives();
+      }catch(err){
+        console.error(err);
+        alert('삭제 실패: ' + (err.message || err));
+        delBtn.disabled = false;
+        delBtn.textContent = '삭제';
+      }
+    });
+    actions.appendChild(delBtn);
     tbody.appendChild(tr);
   });
 }
