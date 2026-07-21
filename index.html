@@ -1076,19 +1076,19 @@ function buildCapture(centerName, job, notes){
   job.items.forEach(([lbl,val])=> row(lbl, val, ''));
   row('통상임금소계', job.stdPaySum, '', true);
 
-  // 업적수당: 값 있는 등급만 표시하되, E등급(0원)은 항상 표시
-  const isEGrade = (g)=>/^\s*E\s*등급?\s*$/i.test(String(g||'').replace(/\./g,'').trim())
-    || /^E$/i.test(String(g||'').replace(/\s|\./g,''));
-  const gradesWithValue = (job.grades || []).filter(([g,val])=> hasPayValue(val) || isEGrade(g));
-  gradesWithValue.forEach(([g,val], idx)=>{
+  // 업적수당: S~E(엑셀 등급 전체) 칸이 비어 있거나 0이어도 항상 표기
+  const allGrades = (job.grades || []).slice();
+  allGrades.forEach(([g,val], idx)=>{
     const tr = document.createElement('tr');
     let cells = '';
     if(idx===0){
-      cells += `<td class="grade-label" rowspan="${gradesWithValue.length}">업적수당</td>`;
+      cells += `<td class="grade-label" rowspan="${allGrades.length}">업적수당</td>`;
     }
-    cells += `<td class="label indent">${nbsp(g)}</td><td class="value">${won(val)}</td>`;
+    // 빈 값도 등급 행은 유지 (표시는 0 또는 공란 대신 숫자 0 유지 원할 수 있어 null/undefined만 빈칸)
+    const displayVal = (val===null || val===undefined || val==='') ? '' : val;
+    cells += `<td class="label indent">${nbsp(g)}</td><td class="value">${won(displayVal === '' ? null : displayVal)}</td>`;
     if(idx===0){
-      cells += `<td class="note" rowspan="${gradesWithValue.length}">${nbsp(job.gradeNote)||''}</td>`;
+      cells += `<td class="note" rowspan="${allGrades.length}">${nbsp(job.gradeNote)||''}</td>`;
     }
     tr.innerHTML = cells;
     tbody.appendChild(tr);
