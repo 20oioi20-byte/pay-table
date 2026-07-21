@@ -921,6 +921,123 @@ function notesTextToHtml(str){
     .map(l => escapeHtml(nbsp(l)))
     .join('<br>');
 }
+
+/** 직무 매칭용 정규화 */
+function normJobKey(s){
+  return String(s || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[()\[\]·.,]/g, '')
+    .replace(/사$/, ''); // 상담사 → 상담
+}
+
+/**
+ * 두 문자열 유사도 0~100 (정확/포함/공통 토큰)
+ */
+function jobTextSimilarity(a, b){
+  const na = normJobKey(a), nb = normJobKey(b);
+  if(!na || !nb) return 0;
+  if(na === nb) return 100;
+  if(na.includes(nb) || nb.includes(na)) return 75;
+  // 상담1 ↔ 상담1~3, 상담1-3
+  const numA = na.match(/(\d+)/g) || [];
+  const numB = nb.match(/(?:\d+)/g) || [];
+  const baseA = na.replace(/\d+/g, '').replace(/~/g, '');
+  const baseB = nb.replace(/\d+/g, '').replace(/~/g, '');
+  if(baseA && baseA === baseB){
+    if(numA.some(n => nb.includes(n))) return 85;
+    return 55;
+  }
+  // 공통 연속 부분 문자열
+  let best = 0;
+  for(let i=0;i<na.length;i++){
+    for(let j=i+2;j<=na.length;j++){
+      const sub = na.slice(i,j);
+      if(nb.includes(sub)) best = Math.max(best, sub.length);
+    }
+  }
+  const ratio = (2 * best) / (na.length + nb.length);
+  return Math.round(ratio * 60);
+}
+
+/**
+ * 9.근무형태 표에서 현재 직무에 해당하는 행만 선택
+ * 정확 매칭 우선, 없으면 가장 유사 직무 행 사용
+ */
+function filterWorkTypeRowsForJob(job, headers, rows){
+  if(!rows || !rows.length) return rows || [];
+  const h = headers || [];
+  let jikmuIdx = h.findIndex(x => /직무/.test(String(x||'')));
+  let hobongIdx = h.findIndex(x => /호봉/.test(String(x||'')));
+  if(jikmuIdx < 0) jikmuIdx = 0;
+  if(hobongIdx < 0) hobongIdx = Math.min(1, (rows[0]||[]).length - 1);
+
+  const jobName = job.jobName || '';
+  const group = job.groupLabel || '';
+  const display = job.displayName || `${group} ${jobName}`.trim();
+  const block = job.block || '';
+
+  const scored = rows.map((row, idx)=>{
+    const cells = Array.isArray(row) ? row : [row];
+    const jikmu = cells[jikmuIdx] || '';
+    const hobong = cells[hobongIdx] || '';
+    const field = `${jikmu} ${hobong}`;
+    let score = 0;
+
+    // 정확 일치
+    if(jobName && (normJobKey(jikmu) === normJobKey(jobName) || normJobKey(hobong) === normJobKey(jobName))) score += 120;
+    if(group && (normJobKey(jikmu) === normJobKey(group) || normJobKey(hobong) === normJobKey(group))) score += 90;
+
+    // 유사도
+    score += jobTextSimilarity(jobName, jikmu);
+    score += jobTextSimilarity(jobName, hobong);
+    score += Math.round(jobTextSimilarity(group, jikmu) * 0.7);
+    score += Math.round(jobTextSimilarity(group, hobong) * 0.5);
+    score += Math.round(jobTextSimilarity(display, field) * 0.4);
+
+    // 역할 키워드 가산
+    const jn = jobName + group + display;
+    if(/센터장/.test(jn) && /센터장/.test(field)) score += 100;
+    if(/총괄매니저|총괄/.test(jn) && /총괄|매니저/.test(field)) score += 95;
+    if(/선임팀장/.test(jn) && /선임팀장|팀장/.test(field)) score += 90;
+    else if(/팀장/.test(jn) && /팀장/.test(field) && !/선임팀장/.test(field)) score += 90;
+    if(/강사|교육|QA|큐에이/.test(jn) && /강사|교육|QA|큐에이/.test(field)) score += 90;
+    if(/실장/.test(jn) && /실장|관리자|스탭|스텝|센터장/.test(field)) score += 70;
+    if(/상담/.test(jn) && /상담/.test(field)) score += 40;
+    // 상담1 / 상담2 → 호봉 상담1~3
+    const cm = (jobName || '').match(/상담\s*([0-9]+)/);
+    if(cm && hobong && hobong.replace(/\s/g,'').includes(cm[1])) score += 50;
+    if(cm && /상담\s*1\s*[~～\-]\s*3|상담1~3|상담1-3/.test(hobong.replace(/\s/g,''))) score += 45;
+    if(/단축/.test(jn) && /단축|상담/.test(field)) score += 40;
+
+    // 리더/상담 블록 힌트
+    if(block === '리더그룹' && /관리자|스탭|스텝|센터장|팀장|실장|강사|매니저/.test(field)) score += 15;
+    if(block !== '리더그룹' && /상담/.test(field) && !/센터장|팀장/.test(field)) score += 10;
+
+    return { row: cells, score, idx, jikmu, hobong };
+  });
+
+  scored.sort((a,b)=> b.score - a.score || a.idx - b.idx);
+  const best = scored[0];
+  if(!best) return rows;
+
+  // 동점 최고점 여러 행이면 모두 표시 (정확 매칭 복수)
+  const topScore = best.score;
+  if(topScore <= 0){
+    // 전부 0점이면 그래도 가장 덜 틀린 1행
+    return [best.row];
+  }
+  const tops = scored.filter(s => s.score === topScore);
+  // 너무 낮은 점수면 차선 1행만
+  if(topScore < 25) return [best.row];
+  return tops.map(s => s.row);
+}
+
+function isWorkTypeTable(headers, lastParaText){
+  const h = (headers || []).join(' ');
+  const p = String(lastParaText || '');
+  return (/직무/.test(h) && /호봉/.test(h)) || /근무형태/.test(p);
+}
 function escapeXml(str){
   return String(str)
     .replace(/&/g,'&amp;')
@@ -1199,6 +1316,11 @@ function buildCapture(centerName, job, notes){
         : ['구분','주요내용'];
       const isWide = headers.length > 2;
       const isAnnualLeave = /연차\s*평균\s*사용률/.test(lastParaText);
+      // 9.근무형태: 현재 직무에 해당하는 행만 (정확 매칭 → 유사 직무 차선)
+      let tableRows = item.rows || [];
+      if(isWorkTypeTable(headers, lastParaText)){
+        tableRows = filterWorkTypeRowsForJob(job, headers, tableRows);
+      }
       const t = document.createElement('table');
       t.className = isWide ? 'mini wide' : 'mini';
       let body = '';
@@ -1206,7 +1328,7 @@ function buildCapture(centerName, job, notes){
         body += '<colgroup><col class="mc-label"><col class="mc-value"></colgroup>';
       }
       body += '<thead><tr>' + headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
-      item.rows.forEach((row)=>{
+      tableRows.forEach((row)=>{
         const cells = Array.isArray(row) ? row.slice() : [row];
         // 2열 연차 표 100% 보정
         if(!isWide && isAnnualLeave && cells[1] != null && String(cells[1]).trim()==='1'){
