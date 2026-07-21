@@ -249,7 +249,7 @@
   #results{ display:flex; flex-direction:column; gap:26px; }
   .card{
     background:#fff; border:1px solid var(--border); border-radius:10px;
-    overflow:hidden;
+    overflow:visible;
   }
   .card-toolbar{
     display:flex; justify-content:space-between; align-items:center;
@@ -259,32 +259,54 @@
   .card-toolbar button{ padding:6px 12px; font-size:12px; }
 
   .capture{
-    padding:26px 26px 30px; background:#fff;
+    padding:28px 28px 32px; background:#fff;
     width:var(--capture-width); max-width:100%;
-    /* html2canvas와 화면 표시 일치 */
-    font-family:'Noto Sans KR',"맑은 고딕","Malgun Gothic",sans-serif;
+    /* html2canvas와 화면 표시 일치 — 시스템 한글 폰트 우선(웹폰트 글리프 깨짐 방지) */
+    font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
     -webkit-font-smoothing:antialiased;
-    text-rendering:geometricPrecision;
-    letter-spacing:0;
-    line-height:1.45;
+    text-rendering:auto;
+    letter-spacing:normal;
+    line-height:1.5;
+    overflow:visible;
   }
   .capture, .capture *{
     word-break:keep-all;
-    overflow-wrap:normal;
+    overflow-wrap:break-word;
     box-sizing:border-box;
   }
-  .capture .title{ font-size:19px; font-weight:800; margin:0 0 4px; white-space:nowrap; }
-  .capture .subtitle{ font-size:14px; font-weight:700; margin:0 0 12px; white-space:nowrap; }
+  .capture .title{
+    font-size:19px; font-weight:800; margin:0 0 6px; padding:0;
+    line-height:1.45; letter-spacing:normal;
+    white-space:normal;
+  }
+  .capture .subtitle{
+    font-size:14px; font-weight:700; margin:0 0 14px; padding:0;
+    line-height:1.45; letter-spacing:normal;
+    white-space:normal;
+  }
+  .capture .head-group,
+  .capture .head-job{
+    display:block; line-height:1.35; font-weight:700;
+  }
+  .capture .head-job{ margin-top:2px; }
 
-  table.pay{ width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
+  /* border-collapse:collapse 는 html2canvas에서 테두리 깨짐 → separate 사용 */
+  table.pay{
+    width:100%; border-collapse:separate; border-spacing:0;
+    font-size:13px; table-layout:fixed;
+  }
   table.pay col.c-glabel{ width:var(--pay-glabel); }
   table.pay col.c-label{ width:var(--pay-label); }
   table.pay col.c-value{ width:var(--pay-value); }
   table.pay col.c-note{ width:var(--pay-note); }
   table.pay th, table.pay td{
     border:1px solid #9aa4b5; padding:8px 12px; vertical-align:middle;
-    line-height:1.4; letter-spacing:0;
+    line-height:1.4; letter-spacing:normal;
+    background-clip:padding-box;
   }
+  /* separate 모드에서 이중 선 방지 */
+  table.pay th + th, table.pay td + td{ border-left-width:0; }
+  table.pay tr + tr th, table.pay tr + tr td{ border-top-width:0; }
   table.pay thead th{ background:var(--gray-bg); font-weight:700; text-align:center; }
   table.pay td.label{ text-align:center; }
   table.pay td.label.indent{ padding-left:12px; color:#333; text-align:center; }
@@ -295,7 +317,7 @@
   table.pay tr.hl td.note{ color:#dfe6f5; }
   table.pay td.grade-label{
     text-align:center; color:#333; font-weight:700; background:#fbfbfc;
-    white-space:nowrap; word-break:keep-all; letter-spacing:0;
+    white-space:nowrap; word-break:keep-all; letter-spacing:normal;
   }
 
   .notes{ margin-top:22px; }
@@ -308,10 +330,18 @@
     font-size:12.5px; font-weight:700; margin:12px 0 4px; color:var(--navy);
     white-space:pre-wrap; word-break:keep-all;
   }
-  table.mini{ width:100%; border-collapse:collapse; font-size:12px; margin:6px 0 12px; table-layout:fixed; }
+  table.mini{
+    width:100%; border-collapse:separate; border-spacing:0;
+    font-size:12px; margin:6px 0 12px; table-layout:fixed;
+  }
   table.mini col.mc-label{ width:var(--mini-label); }
   table.mini col.mc-value{ width:var(--mini-value); }
-  table.mini th, table.mini td{ border:1px solid #b7bcc4; padding:6px 10px; text-align:center; word-break:keep-all; }
+  table.mini th, table.mini td{
+    border:1px solid #b7bcc4; padding:6px 10px; text-align:center; word-break:keep-all;
+    background-clip:padding-box;
+  }
+  table.mini th + th, table.mini td + td{ border-left-width:0; }
+  table.mini tr + tr th, table.mini tr + tr td{ border-top-width:0; }
   table.mini th{ background:var(--gray-bg); }
   table.mini td.mv{ text-align:center; }
 
@@ -796,107 +826,111 @@ function won(v){
   return Math.round(v).toLocaleString('ko-KR');
 }
 
-// html2canvas가 일반 공백·얇은 공백을 누락시키는 문제 회피
+// 표시용: 연속 공백 정리 (과도한 NBSP 변환은 한글 제목을 깨뜨릴 수 있음)
+function cleanText(str){
+  if(str===null || str===undefined) return '';
+  return String(str).replace(/\s+/g, ' ').trim();
+}
+// 캡처 안정용: 단어 사이 공백만 NBSP (문자 사이는 건드리지 않음)
 function nbsp(str){
   if(str===null || str===undefined) return '';
-  return String(str)
-    .replace(/\u00A0/g, ' ')
-    .replace(/[\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
-    .replace(/ /g, '\u00A0');
+  return cleanText(str).replace(/ /g, '\u00A0');
 }
 function escapeHtml(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/** 클론 트리의 텍스트 공백을 NBSP로 통일 (캡처 시 줄바꿈·띄어쓰기 유지) */
-function hardenTextSpaces(root){
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-  const nodes = [];
-  while(walker.nextNode()) nodes.push(walker.currentNode);
-  nodes.forEach(n=>{
-    if(n.nodeValue && /[\s\u00A0]/.test(n.nodeValue)){
-      n.nodeValue = n.nodeValue
-        .replace(/[\t\f\v]+/g, ' ')
-        .replace(/ /g, '\u00A0');
-    }
-  });
-}
-
 /**
  * 미리보기와 동일하게 PNG 캡처
- * - transform:scale 제거 (미리보기 축소가 출력에 반영되지 않도록)
- * - 폰트 로드 대기
- * - 클론에서 공백/레이아웃 고정
+ * - transform:scale 제거
+ * - 카드 overflow 영향 없이 오프스크린 복제본 캡처 (상단 잘림/테두리 깨짐 방지)
  */
 async function captureElementAsCanvas(el){
   await document.fonts.ready;
-  const prev = {
-    transform: el.style.transform,
-    marginBottom: el.style.marginBottom,
-    maxWidth: el.style.maxWidth,
-    width: el.style.width
-  };
-  // 캡처 직전: 화면 축소 transform 해제 (미리보기 scale 제거)
-  el.style.transform = 'none';
-  el.style.marginBottom = '';
-  el.style.maxWidth = 'none';
-  const naturalW = el.offsetWidth || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--capture-width'), 10) || 920;
-  el.style.width = naturalW + 'px';
+  // 오프스크린 복제: 미리보기 scale·부모 overflow:hidden 영향 제거
+  const naturalW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--capture-width'), 10) || el.offsetWidth || 920;
+  const host = document.createElement('div');
+  host.setAttribute('aria-hidden', 'true');
+  host.style.cssText = [
+    'position:fixed',
+    'left:-10000px',
+    'top:0',
+    'z-index:-1',
+    'background:#fff',
+    'padding:0',
+    'margin:0',
+    `width:${naturalW}px`,
+    'overflow:visible',
+    'pointer-events:none'
+  ].join(';');
+  const clone = el.cloneNode(true);
+  clone.classList.add('capture');
+  clone.style.cssText = [
+    'transform:none',
+    'margin:0',
+    'max-width:none',
+    `width:${naturalW}px`,
+    'box-shadow:none',
+    'position:static',
+    'overflow:visible',
+    'background:#fff'
+  ].join(';');
+  host.appendChild(clone);
+  document.body.appendChild(host);
+  void clone.offsetHeight;
 
   try{
-    // 레이아웃 안정화
-    void el.offsetHeight;
-    const canvas = await html2canvas(el, {
+    const canvas = await html2canvas(clone, {
       scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
       logging: false,
       allowTaint: true,
-      imageTimeout: 15000,
+      imageTimeout: 20000,
       scrollX: 0,
-      scrollY: -window.scrollY,
-      windowWidth: Math.max(el.scrollWidth, naturalW),
-      windowHeight: Math.max(el.scrollHeight, el.offsetHeight),
+      scrollY: 0,
+      x: 0,
+      y: 0,
+      width: clone.scrollWidth || naturalW,
+      height: clone.scrollHeight || clone.offsetHeight,
+      windowWidth: Math.max(clone.scrollWidth, naturalW) + 40,
+      windowHeight: Math.max(clone.scrollHeight, clone.offsetHeight) + 40,
       onclone: (clonedDoc, clonedEl)=>{
-        clonedEl.style.transform = 'none';
-        clonedEl.style.marginBottom = '';
-        clonedEl.style.maxWidth = 'none';
-        clonedEl.style.width = naturalW + 'px';
-        clonedEl.style.position = 'static';
-        // 캡처 전용 스타일: 미리보기와 동일한 줄바꿈·띄어쓰기
         const style = clonedDoc.createElement('style');
         style.textContent = `
-          .capture, .capture * {
-            word-break: keep-all !important;
-            overflow-wrap: normal !important;
-            letter-spacing: 0 !important;
-            -webkit-font-smoothing: antialiased;
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .capture {
+            font-family: "Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",sans-serif !important;
+            letter-spacing: normal !important;
+            line-height: 1.5 !important;
+            overflow: visible !important;
+            transform: none !important;
           }
-          .capture .title, .capture .subtitle { white-space: nowrap !important; }
+          .capture .title, .capture .subtitle {
+            white-space: normal !important;
+            letter-spacing: normal !important;
+            word-break: keep-all !important;
+          }
+          .capture table.pay, .capture table.mini {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+          }
           .capture .para, .capture .subheading { white-space: pre-wrap !important; }
-          .capture table.pay td, .capture table.pay th,
-          .capture table.mini td, .capture table.mini th {
-            white-space: normal;
-            word-break: keep-all !important;
-          }
           .capture td.grade-label { white-space: nowrap !important; }
         `;
         clonedDoc.head.appendChild(style);
-        hardenTextSpaces(clonedEl);
       }
     });
     return canvas;
   } finally {
-    el.style.transform = prev.transform;
-    el.style.marginBottom = prev.marginBottom;
-    el.style.maxWidth = prev.maxWidth;
-    el.style.width = prev.width;
+    host.remove();
   }
 }
 
 function subtitleFor(job){
-  if(job.block === '리더그룹') return `○ 리더그룹`;
-  return `○ 상담그룹`;
+  // html2canvas에서 ○(U+25CB) 글리프가 빈 원/깨짐으로 나오는 경우 있어 텍스트 마커 사용
+  if(job.block === '리더그룹') return `● 리더그룹`;
+  return `● 상담그룹`;
 }
 
 /**
@@ -941,12 +975,14 @@ function buildCapture(centerName, job, notes){
 
   const title = document.createElement('div');
   title.className = 'title';
-  title.textContent = `[${nbsp(centerName)} - 보수테이블]`;
+  // 제목: 단어 사이 공백 유지 (html2canvas 한글 깨짐 방지 — 과도한 NBSP 지양)
+  const cName = cleanText(centerName);
+  title.textContent = `[${cName} - 보수테이블]`;
   capture.appendChild(title);
 
   const subtitle = document.createElement('div');
   subtitle.className = 'subtitle';
-  subtitle.textContent = nbsp(subtitleFor(job));
+  subtitle.textContent = subtitleFor(job);
   capture.appendChild(subtitle);
 
   const table = document.createElement('table');
@@ -954,12 +990,15 @@ function buildCapture(centerName, job, notes){
   table.innerHTML = `<colgroup><col class="c-glabel"><col class="c-label"><col class="c-value"><col class="c-note"></colgroup>`;
 
   const thead = document.createElement('thead');
-  // 엑셀과 동일: 위=그룹(제휴상담/팀장…), 아래=호칭(사원/선임…)
-  const headTop = job.groupLabel || '';
-  const headBot = job.jobName || '';
+  // 엑셀과 동일: 위=그룹, 아래=호칭 — br 대신 block div (캡처 시 줄바꿈 안정)
+  const headTop = cleanText(job.groupLabel || '');
+  const headBot = cleanText(job.jobName || '');
+  const headMid = headTop
+    ? `<span class="head-group">${escapeHtml(headTop)}</span><span class="head-job">${escapeHtml(headBot)}</span>`
+    : `<span class="head-job">${escapeHtml(headBot)}</span>`;
   thead.innerHTML = `<tr>
     <th colspan="2">구분</th>
-    <th>${headTop ? nbsp(headTop)+'<br>' : ''}${nbsp(headBot)}</th>
+    <th>${headMid}</th>
     <th>비고</th>
   </tr>`;
   table.appendChild(thead);
