@@ -734,34 +734,63 @@ function parseExceptions(ws, maxRow){
   let curPara = null;
   const flushPara = ()=>{ if(curPara){ items.push({type:'para', text: curPara.trim()}); curPara=null; } };
   const flushTable = ()=>{ if(curTable){ items.push(curTable); curTable=null; } };
+  // 표 헤더: 구분/주요내용 또는 근무형태용 직무/호봉
+  const isTableHeader = (a,b)=>{
+    if(a === '구분' && /주요\s*내용/.test(b||'')) return ['구분','주요내용'];
+    if(/^직무$/.test(a) && /호봉/.test(b||'')) return ['직무','호봉'];
+    return null;
+  };
   let guard = 0;
+  let emptyStreak = 0;
   while(r<=maxRow && guard < 400){
     guard++;
     const a = cellText(ws,'A'+r);
     const b = cellText(ws,'B'+r);
+
+    // 번호 항목: 1.~9.근무형태 포함, 10. 이상에서 종료
     if(/^\d+[.\uff0e]/.test(a)){
-      if(/^9\s*[.\uff0e]/.test(a)) break;
+      const num = parseInt(a, 10);
+      if(num >= 10) break;
       flushTable(); flushPara();
       curPara = a;
+      emptyStreak = 0;
       r++; continue;
     }
     if(/^[○ㅇ]\s*\S/.test(a)){
       flushTable(); flushPara();
       items.push({type:'subheading', text:a});
+      emptyStreak = 0;
       r++; continue;
     }
-    if(a === '구분' && /주요\s*내용/.test(b)){
+    const hdr = isTableHeader(a, b);
+    if(hdr){
       flushPara();
-      curTable = {type:'table', rows:[]};
+      curTable = {type:'table', headers: hdr, rows:[]};
+      emptyStreak = 0;
       r++; continue;
     }
     if(curTable){
-      if(!a && !b){ r++; continue; }
+      // 다음 번호 항목·소제목이 나오면 위에서 처리됨. 연속 빈 행 많으면 표 종료
+      if(!a && !b){
+        emptyStreak++;
+        if(emptyStreak >= 3){ flushTable(); }
+        r++; continue;
+      }
+      emptyStreak = 0;
+      // 표 도중 새 섹션 제목(예: Ⅶ.) 만나면 종료
+      if(/^[ⅣⅤⅥⅦⅧⅨⅩ\d]/.test(a) && /절|사항|기준|테이블/.test(a) && !/^\d+[.\uff0e]/.test(a)){
+        flushTable(); flushPara();
+        break;
+      }
       curTable.rows.push([a,b]);
       r++; continue;
     }
     if(a || b){
+      emptyStreak = 0;
       curPara = (curPara ? curPara+'\n' : '') + (a || b);
+    } else {
+      emptyStreak++;
+      if(emptyStreak >= 5 && items.length) break;
     }
     r++;
   }
@@ -1126,8 +1155,10 @@ function buildCapture(centerName, job, notes){
       const t = document.createElement('table');
       t.className='mini';
       const isAnnualLeave = /연차\s*평균\s*사용률/.test(lastParaText);
+      const h1 = (item.headers && item.headers[0]) || '구분';
+      const h2 = (item.headers && item.headers[1]) || '주요내용';
       let body = '<colgroup><col class="mc-label"><col class="mc-value"></colgroup>';
-      body += '<thead><tr><th>구분</th><th>주요내용</th></tr></thead><tbody>';
+      body += `<thead><tr><th>${escapeHtml(h1)}</th><th>${escapeHtml(h2)}</th></tr></thead><tbody>`;
       item.rows.forEach(([a,b])=>{
         let bv = b;
         if(isAnnualLeave && String(bv).trim()==='1'){ bv = '100%'; }
