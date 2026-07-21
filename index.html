@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -872,88 +871,76 @@ function makeTextSvgImg(text, opts){
   return img;
 }
 
-function waitImg(img){
-  if(img.complete && img.naturalWidth) return Promise.resolve();
+/** 폰트 ready 1회만 대기 */
+let _fontsReadyPromise = null;
+function ensureFontsReady(){
+  if(!_fontsReadyPromise){
+    _fontsReadyPromise = (document.fonts && document.fonts.ready)
+      ? document.fonts.ready.catch(()=>{})
+      : Promise.resolve();
+  }
+  return _fontsReadyPromise;
+}
+
+function waitImgFast(img){
+  if(img.complete) return Promise.resolve();
   return new Promise((res)=>{
-    img.onload = ()=> res();
-    img.onerror = ()=> res();
-    setTimeout(res, 800);
+    const done = ()=> res();
+    img.onload = done;
+    img.onerror = done;
+    setTimeout(done, 120); // data: URI는 거의 즉시 — 최대 120ms만 대기
   });
 }
 
 /**
- * 캡처 전용: 오프스크린 복제 + html-to-image 우선, 실패 시 html2canvas
+ * 빠른 PNG 캡처
+ * - html2canvas 단독 (html-to-image 이중 시도 제거 → 속도 개선)
+ * - 가능하면 요소 직접 캡처 (불필요한 깊은 복제 생략)
+ * - scale 옵션: 단일 2 / 일괄 ZIP 1.5
  */
-async function captureElementAsCanvas(el){
-  await document.fonts.ready;
-  const naturalW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--capture-width'), 10) || 920;
+async function captureElementAsCanvas(el, opts){
+  const scale = (opts && opts.scale) || 2;
+  await ensureFontsReady();
 
-  // 미리보기 scale 제거한 상태로 측정
-  const prevT = el.style.transform;
-  const prevM = el.style.marginBottom;
+  const naturalW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--capture-width'), 10) || 920;
+  const imgs = el.querySelectorAll('img');
+  if(imgs.length) await Promise.all([...imgs].map(waitImgFast));
+
+  const prev = {
+    transform: el.style.transform,
+    marginBottom: el.style.marginBottom,
+    maxWidth: el.style.maxWidth,
+    width: el.style.width
+  };
+  // 미리보기 축소 해제 후 원본 크기로 캡처
   el.style.transform = 'none';
   el.style.marginBottom = '';
-  const measureH = el.scrollHeight || el.offsetHeight;
-  el.style.transform = prevT;
-  el.style.marginBottom = prevM;
-
-  const host = document.createElement('div');
-  host.setAttribute('aria-hidden', 'true');
-  // opacity:0 이면 일부 캡처 엔진이 빈 이미지 생성 → 화면 밖으로 이동하되 불투명 유지
-  host.style.cssText = `position:fixed;left:-12000px;top:0;width:${naturalW}px;pointer-events:none;z-index:0;background:#fff;opacity:1;`;
-  const clone = el.cloneNode(true);
-  clone.style.cssText = `transform:none!important;margin:0;max-width:none;width:${naturalW}px;box-shadow:none;background:#fff;position:static;overflow:visible;`;
-  host.appendChild(clone);
-  document.body.appendChild(host);
-
-  // SVG img 로드 대기
-  const imgs = [...clone.querySelectorAll('img')];
-  await Promise.all(imgs.map(waitImg));
-  void clone.offsetHeight;
-  await new Promise(r => requestAnimationFrame(()=> requestAnimationFrame(r)));
+  el.style.maxWidth = 'none';
+  el.style.width = naturalW + 'px';
 
   try{
-    // 1) html-to-image (한글·공백 품질이 더 나은 경우가 많음)
-    if(typeof htmlToImage !== 'undefined' && htmlToImage.toCanvas){
-      try{
-        const canvas = await htmlToImage.toCanvas(clone, {
-          pixelRatio: 2,
-          backgroundColor: '#ffffff',
-          width: naturalW,
-          height: Math.max(clone.scrollHeight, measureH),
-          style: {
-            transform: 'none',
-            width: naturalW + 'px',
-            margin: '0',
-            maxWidth: 'none'
-          },
-          cacheBust: true,
-          skipFonts: false
-        });
-        if(canvas && canvas.width > 10) return canvas;
-      }catch(e1){
-        console.warn('html-to-image 실패, html2canvas 시도', e1);
-      }
-    }
-
-    // 2) html2canvas fallback
-    const canvas = await html2canvas(clone, {
-      scale: 2,
+    void el.offsetHeight;
+    return await html2canvas(el, {
+      scale,
       backgroundColor: '#ffffff',
       useCORS: true,
       allowTaint: true,
       logging: false,
-      imageTimeout: 20000,
+      imageTimeout: 0,
+      foreignObjectRendering: false,
+      removeContainer: true,
       scrollX: 0,
       scrollY: 0,
       width: naturalW,
-      height: Math.max(clone.scrollHeight, measureH),
-      windowWidth: naturalW + 20,
-      windowHeight: Math.max(clone.scrollHeight, measureH) + 20
+      height: el.scrollHeight || el.offsetHeight,
+      windowWidth: naturalW,
+      windowHeight: (el.scrollHeight || el.offsetHeight) + 8
     });
-    return canvas;
   } finally {
-    host.remove();
+    el.style.transform = prev.transform;
+    el.style.marginBottom = prev.marginBottom;
+    el.style.maxWidth = prev.maxWidth;
+    el.style.width = prev.width;
   }
 }
 
@@ -1041,32 +1028,47 @@ function buildCapture(centerName, job, notes){
 
   const tbody = document.createElement('tbody');
 
+  /** 금액이 없으면 행 숨김 (null/undefined/''/0) — 전 센터 공통 */
+  function hasPayValue(v){
+    if(v===null || v===undefined || v==='') return false;
+    if(typeof v === 'number') return v !== 0 && !Number.isNaN(v);
+    const s = String(v).replace(/,/g,'').trim();
+    if(s==='' || s==='-' || s==='0') return false;
+    const n = Number(s);
+    if(!Number.isNaN(n) && n === 0) return false;
+    return true;
+  }
+
   function row(label, value, note, hl){
+    // 소계·합계(hl)는 항상 표시, 그 외 항목은 값 있을 때만
+    if(!hl && !hasPayValue(value)) return;
     const tr = document.createElement('tr');
     if(hl) tr.className='hl';
     tr.innerHTML = `<td colspan="2" class="label">${nbsp(label)}</td><td class="value">${won(value)}</td><td class="note">${nbsp(note)||''}</td>`;
     tbody.appendChild(tr);
   }
 
+  // 기본급·직책수당·직무수당·근속수당·급식비·통근비 등 — 값 없는 항목 제외
   job.items.forEach(([lbl,val])=> row(lbl, val, ''));
   row('통상임금소계', job.stdPaySum, '', true);
 
-  // 업적수당 (병합 라벨) — 한 줄 유지
-  job.grades.forEach(([g,val], idx)=>{
+  // 업적수당: 값 있는 등급만, 전부 없으면 블록 자체 생략
+  const gradesWithValue = (job.grades || []).filter(([,val])=> hasPayValue(val));
+  gradesWithValue.forEach(([g,val], idx)=>{
     const tr = document.createElement('tr');
     let cells = '';
     if(idx===0){
-      cells += `<td class="grade-label" rowspan="${job.grades.length}">업적수당</td>`;
+      cells += `<td class="grade-label" rowspan="${gradesWithValue.length}">업적수당</td>`;
     }
     cells += `<td class="label indent">${nbsp(g)}</td><td class="value">${won(val)}</td>`;
     if(idx===0){
-      cells += `<td class="note" rowspan="${job.grades.length}">${nbsp(job.gradeNote)||''}</td>`;
+      cells += `<td class="note" rowspan="${gradesWithValue.length}">${nbsp(job.gradeNote)||''}</td>`;
     }
     tr.innerHTML = cells;
     tbody.appendChild(tr);
   });
 
-  // 초과근무수당: 직무별 해당 시간만 비고 노출
+  // 초과근무·야간·통신비 — 값 없으면 숨김
   row('초과근무수당', job.overtime, overtimeNoteForJob(job));
   row('야간근로수당', job.night, '');
   row('통신비', job.telecom, '');
@@ -1163,7 +1165,7 @@ function buildJobCard(centerName, job, notes, idx){
 }
 
 function exportCardAsPng(el, filename){
-  return captureElementAsCanvas(el).then(canvas=>{
+  return captureElementAsCanvas(el, { scale: 2 }).then(canvas=>{
     const url = canvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url; a.download = safeName(filename) + '.png';
@@ -2163,17 +2165,19 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   let ok = 0;
   const failed = [];
 
+  // 일괄: scale 1.5 (단일 다운로드 2.0 대비 약 40%+ 빠름, 인쇄 품질 충분)
+  const batchScale = total >= 5 ? 1.5 : 2;
+  await ensureFontsReady();
+
   for(let i = 0; i < cardRegistry.length; i++){
     const {capture, filename, jobName} = cardRegistry[i];
     zipBtn.textContent = `PNG 생성 중... ${i + 1}/${total}`;
     try{
-      try{ capture.scrollIntoView({block:'nearest', behavior:'auto'}); }catch(_){}
-      const canvas = await captureElementAsCanvas(capture);
+      const canvas = await captureElementAsCanvas(capture, { scale: batchScale });
       const blob = await new Promise((res, rej)=>{
         canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob 실패')), 'image/png');
       });
       let zipName = safeName(filename) + '.png';
-      // ZIP 내부 덮어쓰기 방지
       if(usedZipNames.has(zipName)){
         let n = 2;
         while(usedZipNames.has(safeName(filename) + '_' + n + '.png')) n++;
@@ -2196,7 +2200,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   }
 
   zipBtn.textContent = 'ZIP 묶는 중...';
-  const content = await zip.generateAsync({type:'blob'});
+  // STORE(무압축)에 가깝게 — PNG는 이미 압축되어 재압축 이득 거의 없음
+  const content = await zip.generateAsync({ type:'blob', compression: 'STORE' });
   const url = URL.createObjectURL(content);
   const a = document.createElement('a');
   a.href = url;
