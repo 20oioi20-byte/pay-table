@@ -1076,7 +1076,7 @@ function buildCapture(centerName, job, notes){
   job.items.forEach(([lbl,val])=> row(lbl, val, ''));
   row('통상임금소계', job.stdPaySum, '', true);
 
-  // 업적수당: S~E(엑셀 등급 전체) 칸이 비어 있거나 0이어도 항상 표기
+  // 업적수당: S~E 전체 항상 표기, 값 없으면 숫자 0으로 표시
   const allGrades = (job.grades || []).slice();
   allGrades.forEach(([g,val], idx)=>{
     const tr = document.createElement('tr');
@@ -1084,9 +1084,11 @@ function buildCapture(centerName, job, notes){
     if(idx===0){
       cells += `<td class="grade-label" rowspan="${allGrades.length}">업적수당</td>`;
     }
-    // 빈 값도 등급 행은 유지 (표시는 0 또는 공란 대신 숫자 0 유지 원할 수 있어 null/undefined만 빈칸)
-    const displayVal = (val===null || val===undefined || val==='') ? '' : val;
-    cells += `<td class="label indent">${nbsp(g)}</td><td class="value">${won(displayVal === '' ? null : displayVal)}</td>`;
+    // 빈칸/null → 0 일괄 반영
+    let displayVal = val;
+    if(val===null || val===undefined || val==='') displayVal = 0;
+    else if(typeof val === 'string' && String(val).replace(/,/g,'').trim()==='') displayVal = 0;
+    cells += `<td class="label indent">${nbsp(g)}</td><td class="value">${won(displayVal)}</td>`;
     if(idx===0){
       cells += `<td class="note" rowspan="${allGrades.length}">${nbsp(job.gradeNote)||''}</td>`;
     }
