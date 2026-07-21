@@ -1052,8 +1052,10 @@ function buildCapture(centerName, job, notes){
   job.items.forEach(([lbl,val])=> row(lbl, val, ''));
   row('통상임금소계', job.stdPaySum, '', true);
 
-  // 업적수당: 값 있는 등급만, 전부 없으면 블록 자체 생략
-  const gradesWithValue = (job.grades || []).filter(([,val])=> hasPayValue(val));
+  // 업적수당: 값 있는 등급만 표시하되, E등급(0원)은 항상 표시
+  const isEGrade = (g)=>/^\s*E\s*등급?\s*$/i.test(String(g||'').replace(/\./g,'').trim())
+    || /^E$/i.test(String(g||'').replace(/\s|\./g,''));
+  const gradesWithValue = (job.grades || []).filter(([g,val])=> hasPayValue(val) || isEGrade(g));
   gradesWithValue.forEach(([g,val], idx)=>{
     const tr = document.createElement('tr');
     let cells = '';
