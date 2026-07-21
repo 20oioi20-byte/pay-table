@@ -2085,7 +2085,8 @@ function renderNotesEditor(){
       addRowBtn.className = 'btn-icon';
       addRowBtn.textContent = '행 추가';
       addRowBtn.addEventListener('click', ()=>{
-        item.rows.push(['', '']);
+        const cols = (item.headers && item.headers.length) ? item.headers.length : 2;
+        item.rows.push(Array(cols).fill(''));
         renderNotesEditor();
         scheduleLivePreview();
       });
@@ -2131,20 +2132,36 @@ function renderNotesEditor(){
       ed.addEventListener('input', ()=>{ item.text = ed.innerText; scheduleLivePreview(); });
       wrap.appendChild(ed);
     } else if(item.type === 'table'){
+      const headers = (item.headers && item.headers.length)
+        ? item.headers.slice()
+        : ['구분','주요내용'];
+      // 기존 행 열 수 보정 (헤더보다 짧으면 빈 칸 채움)
+      item.rows = (item.rows || []).map(row=>{
+        const arr = Array.isArray(row) ? row.slice() : [row];
+        while(arr.length < headers.length) arr.push('');
+        return arr.slice(0, headers.length);
+      });
       const t = document.createElement('table');
       t.className = 'ed-table';
-      t.innerHTML = '<thead><tr><th>구분</th><th>주요내용</th><th style="width:48px"></th></tr></thead>';
+      t.dataset.cols = String(headers.length);
+      let headHtml = '<thead><tr>' + headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('') +
+        '<th style="width:48px"></th></tr></thead>';
+      t.innerHTML = headHtml;
       const tb = document.createElement('tbody');
       item.rows.forEach((row, ri)=>{
         const tr = document.createElement('tr');
-        const tdA = document.createElement('td');
-        tdA.contentEditable = 'true';
-        tdA.textContent = row[0] || '';
-        tdA.addEventListener('input', ()=>{ item.rows[ri][0] = tdA.innerText.trim(); scheduleLivePreview(); });
-        const tdB = document.createElement('td');
-        tdB.contentEditable = 'true';
-        tdB.textContent = row[1] || '';
-        tdB.addEventListener('input', ()=>{ item.rows[ri][1] = tdB.innerText.trim(); scheduleLivePreview(); });
+        headers.forEach((_, ci)=>{
+          const td = document.createElement('td');
+          td.contentEditable = 'true';
+          td.dataset.ci = String(ci);
+          td.textContent = row[ci] || '';
+          td.addEventListener('input', ()=>{
+            if(!Array.isArray(item.rows[ri])) item.rows[ri] = [];
+            item.rows[ri][ci] = td.innerText.trim();
+            scheduleLivePreview();
+          });
+          tr.appendChild(td);
+        });
         const tdX = document.createElement('td');
         const rm = document.createElement('button');
         rm.type = 'button'; rm.className = 'btn-icon danger'; rm.textContent = '×';
@@ -2154,7 +2171,7 @@ function renderNotesEditor(){
           scheduleLivePreview();
         });
         tdX.appendChild(rm);
-        tr.appendChild(tdA); tr.appendChild(tdB); tr.appendChild(tdX);
+        tr.appendChild(tdX);
         tb.appendChild(tr);
       });
       t.appendChild(tb);
@@ -2165,8 +2182,8 @@ function renderNotesEditor(){
 }
 
 function collectNotesFromEditor(){
-  // contentEditable 최신 값은 input 핸들러로 이미 item에 반영됨
-  // 혹시 누락된 필드 재동기화
+  // contentEditable 최신 값 재동기화 (다열 표 포함 — 2열로 축소하지 않음)
+  if(!parsedData || !notesEditor) return;
   notesEditor.querySelectorAll('.ed-item').forEach((wrap)=>{
     const idx = Number(wrap.dataset.idx);
     const item = parsedData.notes[idx];
@@ -2175,14 +2192,24 @@ function collectNotesFromEditor(){
       const ed = wrap.querySelector('[contenteditable]');
       if(ed) item.text = ed.innerText;
     } else if(item.type === 'table'){
-      const cells = wrap.querySelectorAll('tbody tr');
-      item.rows = [];
-      cells.forEach(tr=>{
-        const tds = tr.querySelectorAll('td[contenteditable]');
-        if(tds.length >= 2){
-          item.rows.push([tds[0].innerText.trim(), tds[1].innerText.trim()]);
-        }
+      const colCount = (item.headers && item.headers.length)
+        ? item.headers.length
+        : Math.max(2, Number(wrap.querySelector('table')?.dataset.cols) || 2);
+      const rows = [];
+      wrap.querySelectorAll('tbody tr').forEach(tr=>{
+        const tds = [...tr.querySelectorAll('td[contenteditable]')];
+        if(!tds.length) return;
+        const row = tds.map(td => td.innerText.trim());
+        // 헤더 열 수에 맞춤
+        while(row.length < colCount) row.push('');
+        rows.push(row.slice(0, colCount));
       });
+      item.rows = rows;
+      if(!item.headers || !item.headers.length){
+        item.headers = colCount <= 2
+          ? ['구분','주요내용']
+          : Array.from({ length: colCount }, (_, i) => '열' + (i + 1));
+      }
     }
   });
 }
