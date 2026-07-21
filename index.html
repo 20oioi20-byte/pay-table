@@ -332,7 +332,9 @@
     border:1px solid #b7bcc4; padding:6px 10px; text-align:center; word-break:keep-all;
   }
   table.mini th{ background:#f3f4f6; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  table.mini td.mv{ text-align:center; }
+  table.mini td.mv{
+    text-align:center; line-height:1.55; word-break:keep-all;
+  }
 
   footer{ text-align:center; font-size:11.5px; color:#9aa0aa; padding:20px; }
 
@@ -826,6 +828,28 @@ function nbsp(str){
 function escapeHtml(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+/**
+ * 예외/특례 주요내용 기본 줄바꿈
+ * 예: …80% 미만 … 적용, 80% 이상 … 적용)
+ *     → "80% 이상 … 적용)" 구간을 다음 줄로
+ */
+function formatNotesRichText(str){
+  let s = String(str ?? '');
+  // 최저 등급 적용, 80% 이상 … → 콤마 뒤 80% 이상부터 줄바꿈
+  s = s.replace(/(적용)\s*,\s*(80%\s*이상)/g, '$1,\n$2');
+  // 이미 줄바꿈 없는 ",80%" 변형
+  s = s.replace(/(적용,)\s*(80%\s*이상)/g, '$1\n$2');
+  return s;
+}
+
+/** 줄바꿈 포함 텍스트 → HTML (NBSP + <br>) */
+function notesTextToHtml(str){
+  return formatNotesRichText(str)
+    .split(/\n/)
+    .map(l => escapeHtml(nbsp(l)))
+    .join('<br>');
+}
 function escapeXml(str){
   return String(str)
     .replace(/&/g,'&amp;')
@@ -1088,8 +1112,7 @@ function buildCapture(centerName, job, notes){
     if(item.type==='para'){
       const p = document.createElement('p');
       p.className='para';
-      const lines = item.text.split('\n');
-      p.innerHTML = lines.map(l=> escapeHtml(nbsp(l))).join('<br>');
+      p.innerHTML = notesTextToHtml(item.text);
       notesWrap.appendChild(p);
       lastParaText = item.text;
     } else if(item.type==='subheading'){
@@ -1106,7 +1129,8 @@ function buildCapture(centerName, job, notes){
       item.rows.forEach(([a,b])=>{
         let bv = b;
         if(isAnnualLeave && String(bv).trim()==='1'){ bv = '100%'; }
-        body += `<tr><td>${nbsp(a)}</td><td class="mv">${nbsp(bv)}</td></tr>`;
+        // 주요내용: 80% 이상~적용) 구간 기본 줄바꿈
+        body += `<tr><td>${nbsp(a)}</td><td class="mv">${notesTextToHtml(bv)}</td></tr>`;
       });
       body += '</tbody>';
       t.innerHTML = body;
