@@ -326,10 +326,17 @@
   table.mini{
     width:100%; border-collapse:collapse; font-size:12px; margin:6px 0 12px; table-layout:fixed;
   }
+  table.mini.wide{
+    table-layout:auto; font-size:11px; min-width:100%;
+  }
+  .notes .mini-scroll{ overflow-x:auto; margin:6px 0 12px; }
   table.mini col.mc-label{ width:var(--mini-label); }
   table.mini col.mc-value{ width:var(--mini-value); }
   table.mini th, table.mini td{
     border:1px solid #b7bcc4; padding:6px 10px; text-align:center; word-break:keep-all;
+  }
+  table.mini.wide th, table.mini.wide td{
+    padding:6px 8px; white-space:normal; min-width:4.5em;
   }
   table.mini th{ background:#f3f4f6; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   table.mini td.mv{
@@ -725,6 +732,14 @@ function parseBlock(ws, titleRow, blockLabel){
   return jobs;
 }
 
+/** 예외 표: A~J열 셀 배열 (1-based col) */
+function exceptionRowCells(ws, r, maxCol){
+  const n = maxCol || 10;
+  const cells = [];
+  for(let c=1;c<=n;c++) cells.push(cellText(ws, colLetter(c)+r));
+  return cells;
+}
+
 function parseExceptions(ws, maxRow){
   const r0 = findRow(ws, '예외 및 특례사항', maxRow);
   if(r0===null) return [];
@@ -734,18 +749,38 @@ function parseExceptions(ws, maxRow){
   let curPara = null;
   const flushPara = ()=>{ if(curPara){ items.push({type:'para', text: curPara.trim()}); curPara=null; } };
   const flushTable = ()=>{ if(curTable){ items.push(curTable); curTable=null; } };
-  // 표 헤더: 구분/주요내용 또는 근무형태용 직무/호봉
-  const isTableHeader = (a,b)=>{
-    if(a === '구분' && /주요\s*내용/.test(b||'')) return ['구분','주요내용'];
-    if(/^직무$/.test(a) && /호봉/.test(b||'')) return ['직무','호봉'];
+
+  /**
+   * 표 헤더 인식
+   * - 2열: 구분 / 주요내용
+   * - 다열(근무형태): 직무 | 호봉 | 근무일 | 근무시간 | 휴게시간 | 비고
+   *   (엑셀에서 D열 비는 경우 있음 → 빈 열 건너뛰고 인덱스 유지)
+   */
+  const detectTableHeader = (cells)=>{
+    const a = cells[0]||'', b = cells[1]||'';
+    if(a === '구분' && /주요\s*내용/.test(b)){
+      return { headers:['구분','주요내용'], colIdxs:[0,1] };
+    }
+    if(/^직무$/.test(a) && /호봉/.test(b)){
+      const colIdxs = [];
+      const headers = [];
+      cells.forEach((v,i)=>{
+        if(v){ colIdxs.push(i); headers.push(v); }
+      });
+      // 최소 직무·호봉
+      if(headers.length >= 2) return { headers, colIdxs };
+    }
     return null;
   };
+
   let guard = 0;
   let emptyStreak = 0;
   while(r<=maxRow && guard < 400){
     guard++;
-    const a = cellText(ws,'A'+r);
-    const b = cellText(ws,'B'+r);
+    const cells = exceptionRowCells(ws, r, 10);
+    const a = cells[0]||'';
+    const b = cells[1]||'';
+    const any = cells.some(Boolean);
 
     // 번호 항목: 1.~9.근무형태 포함, 10. 이상에서 종료
     if(/^\d+[.\uff0e]/.test(a)){
@@ -762,30 +797,37 @@ function parseExceptions(ws, maxRow){
       emptyStreak = 0;
       r++; continue;
     }
-    const hdr = isTableHeader(a, b);
-    if(hdr){
+    const detected = detectTableHeader(cells);
+    if(detected){
       flushPara();
-      curTable = {type:'table', headers: hdr, rows:[]};
+      curTable = {
+        type:'table',
+        headers: detected.headers,
+        colIdxs: detected.colIdxs,
+        rows:[]
+      };
       emptyStreak = 0;
       r++; continue;
     }
     if(curTable){
-      // 다음 번호 항목·소제목이 나오면 위에서 처리됨. 연속 빈 행 많으면 표 종료
-      if(!a && !b){
+      if(!any){
         emptyStreak++;
         if(emptyStreak >= 3){ flushTable(); }
         r++; continue;
       }
       emptyStreak = 0;
-      // 표 도중 새 섹션 제목(예: Ⅶ.) 만나면 종료
       if(/^[ⅣⅤⅥⅦⅧⅨⅩ\d]/.test(a) && /절|사항|기준|테이블/.test(a) && !/^\d+[.\uff0e]/.test(a)){
         flushTable(); flushPara();
         break;
       }
-      curTable.rows.push([a,b]);
+      const idxs = curTable.colIdxs || [0,1];
+      const row = idxs.map(i => cells[i] || '');
+      // 완전 빈 행 스킵
+      if(row.every(x => !x)){ r++; continue; }
+      curTable.rows.push(row);
       r++; continue;
     }
-    if(a || b){
+    if(any){
       emptyStreak = 0;
       curPara = (curPara ? curPara+'\n' : '') + (a || b);
     } else {
@@ -1152,22 +1194,42 @@ function buildCapture(centerName, job, notes){
       h.textContent = nbsp(item.text);
       notesWrap.appendChild(h);
     } else if(item.type==='table'){
-      const t = document.createElement('table');
-      t.className='mini';
+      const headers = (item.headers && item.headers.length)
+        ? item.headers
+        : ['구분','주요내용'];
+      const isWide = headers.length > 2;
       const isAnnualLeave = /연차\s*평균\s*사용률/.test(lastParaText);
-      const h1 = (item.headers && item.headers[0]) || '구분';
-      const h2 = (item.headers && item.headers[1]) || '주요내용';
-      let body = '<colgroup><col class="mc-label"><col class="mc-value"></colgroup>';
-      body += `<thead><tr><th>${escapeHtml(h1)}</th><th>${escapeHtml(h2)}</th></tr></thead><tbody>`;
-      item.rows.forEach(([a,b])=>{
-        let bv = b;
-        if(isAnnualLeave && String(bv).trim()==='1'){ bv = '100%'; }
-        // 주요내용: 80% 이상~적용) 구간 기본 줄바꿈
-        body += `<tr><td>${nbsp(a)}</td><td class="mv">${notesTextToHtml(bv)}</td></tr>`;
+      const t = document.createElement('table');
+      t.className = isWide ? 'mini wide' : 'mini';
+      let body = '';
+      if(!isWide){
+        body += '<colgroup><col class="mc-label"><col class="mc-value"></colgroup>';
+      }
+      body += '<thead><tr>' + headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+      item.rows.forEach((row)=>{
+        const cells = Array.isArray(row) ? row.slice() : [row];
+        // 2열 연차 표 100% 보정
+        if(!isWide && isAnnualLeave && cells[1] != null && String(cells[1]).trim()==='1'){
+          cells[1] = '100%';
+        }
+        while(cells.length < headers.length) cells.push('');
+        body += '<tr>' + cells.slice(0, headers.length).map((c, ci)=>{
+          const html = (ci === cells.length - 1 || headers[ci] === '주요내용' || headers[ci] === '근무일')
+            ? notesTextToHtml(c)
+            : escapeHtml(nbsp(c));
+          return `<td class="mv">${html}</td>`;
+        }).join('') + '</tr>';
       });
       body += '</tbody>';
       t.innerHTML = body;
-      notesWrap.appendChild(t);
+      if(isWide){
+        const wrap = document.createElement('div');
+        wrap.className = 'mini-scroll';
+        wrap.appendChild(t);
+        notesWrap.appendChild(wrap);
+      } else {
+        notesWrap.appendChild(t);
+      }
     }
   });
   capture.appendChild(notesWrap);
