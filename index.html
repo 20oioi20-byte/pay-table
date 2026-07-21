@@ -261,9 +261,20 @@
   .capture{
     padding:26px 26px 30px; background:#fff;
     width:var(--capture-width); max-width:100%;
+    /* html2canvas와 화면 표시 일치 */
+    font-family:'Noto Sans KR',"맑은 고딕","Malgun Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:geometricPrecision;
+    letter-spacing:0;
+    line-height:1.45;
   }
-  .capture .title{ font-size:19px; font-weight:800; margin:0 0 4px; }
-  .capture .subtitle{ font-size:14px; font-weight:700; margin:0 0 12px; }
+  .capture, .capture *{
+    word-break:keep-all;
+    overflow-wrap:normal;
+    box-sizing:border-box;
+  }
+  .capture .title{ font-size:19px; font-weight:800; margin:0 0 4px; white-space:nowrap; }
+  .capture .subtitle{ font-size:14px; font-weight:700; margin:0 0 12px; white-space:nowrap; }
 
   table.pay{ width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
   table.pay col.c-glabel{ width:var(--pay-glabel); }
@@ -272,6 +283,7 @@
   table.pay col.c-note{ width:var(--pay-note); }
   table.pay th, table.pay td{
     border:1px solid #9aa4b5; padding:8px 12px; vertical-align:middle;
+    line-height:1.4; letter-spacing:0;
   }
   table.pay thead th{ background:var(--gray-bg); font-weight:700; text-align:center; }
   table.pay td.label{ text-align:center; }
@@ -283,13 +295,19 @@
   table.pay tr.hl td.note{ color:#dfe6f5; }
   table.pay td.grade-label{
     text-align:center; color:#333; font-weight:700; background:#fbfbfc;
-    white-space:nowrap; word-break:keep-all; letter-spacing:-0.02em;
+    white-space:nowrap; word-break:keep-all; letter-spacing:0;
   }
 
   .notes{ margin-top:22px; }
   .notes h3{ font-size:14px; margin:0 0 10px; border-bottom:2px solid var(--navy); padding-bottom:6px; color:var(--navy); }
-  .notes p.para{ font-size:12.5px; line-height:1.65; margin:6px 0; }
-  .notes div.subheading{ font-size:12.5px; font-weight:700; margin:12px 0 4px; color:var(--navy); }
+  .notes p.para{
+    font-size:12.5px; line-height:1.65; margin:6px 0;
+    white-space:pre-wrap; word-break:keep-all;
+  }
+  .notes div.subheading{
+    font-size:12.5px; font-weight:700; margin:12px 0 4px; color:var(--navy);
+    white-space:pre-wrap; word-break:keep-all;
+  }
   table.mini{ width:100%; border-collapse:collapse; font-size:12px; margin:6px 0 12px; table-layout:fixed; }
   table.mini col.mc-label{ width:var(--mini-label); }
   table.mini col.mc-value{ width:var(--mini-value); }
@@ -343,6 +361,42 @@
   }
   .btn-danger:hover{ background:#f9d2ce; }
   .btn-danger:disabled{ opacity:.5; cursor:not-allowed; }
+
+  /* 자료 탭 잠금 */
+  .lib-lock{
+    max-width:420px; margin:40px auto; text-align:center;
+    padding:28px 24px;
+  }
+  .lib-lock h3{ margin:0 0 8px; color:var(--navy); font-size:16px; }
+  .lib-lock p{ margin:0 0 16px; font-size:12.5px; color:#666; line-height:1.5; }
+  .lib-lock input[type="password"]{
+    width:100%; padding:12px 14px; border:1px solid var(--border);
+    border-radius:8px; font-size:15px; font-family:inherit; letter-spacing:.15em;
+    text-align:center; margin-bottom:12px;
+  }
+  .lib-lock .lock-err{ color:#b00; font-size:12.5px; min-height:1.3em; margin-bottom:8px; }
+  .lib-lock .lock-actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .lib-admin{
+    margin-top:18px; padding-top:16px; border-top:1px dashed var(--border);
+  }
+  .lib-admin summary{
+    cursor:pointer; font-size:12.5px; font-weight:700; color:var(--navy);
+  }
+  .lib-admin .admin-form{
+    margin-top:12px; display:flex; flex-direction:column; gap:8px; text-align:left;
+  }
+  .lib-admin label{ font-size:12px; font-weight:600; color:#444; }
+  .lib-admin input{
+    width:100%; padding:8px 10px; border:1px solid var(--border);
+    border-radius:7px; font-family:inherit; font-size:13px;
+  }
+  .lib-admin .admin-msg{ font-size:12px; min-height:1.2em; }
+  .lib-admin .admin-msg.ok{ color:#2a7a3a; }
+  .lib-admin .admin-msg.err{ color:#b00; }
+  #libraryContent{ display:none; }
+  #libraryContent.unlocked{ display:block; }
+  #libraryLock{ display:none; }
+  #libraryLock.show{ display:block; }
 </style>
 </head>
 <body>
@@ -485,36 +539,69 @@
 
   <!-- ===== 탭2: 저장된 자료 관리 ===== -->
   <div class="tab-pane" id="tabLibrary" role="tabpanel">
-    <div class="panel" id="libraryPanel">
-      <h2>📁 저장된 자료 관리</h2>
-      <p class="hint" style="margin:0 0 12px;">
-        업로드한 엑셀과 생성한 조견표 ZIP이 Supabase에 저장됩니다.
-        센터명으로 모아서 보거나, 전체 검색 후 다시 다운로드할 수 있습니다.
-        <span id="libConfigHint" style="color:#b00;"></span>
-      </p>
-      <div class="lib-toolbar">
-        <input type="search" id="libSearch" placeholder="전체 검색: 센터명, 파일명, 직무…">
-        <select id="libCenterFilter">
-          <option value="">전체 센터</option>
-        </select>
-        <button type="button" class="btn-ghost" id="libRefreshBtn">새로고침</button>
+    <div class="panel" id="libraryLock">
+      <div class="lib-lock">
+        <h3>🔒 저장된 자료 조회</h3>
+        <p>자료 열람을 위해 비밀번호를 입력하세요.<br>기본 비밀번호: <strong>000000</strong></p>
+        <input type="password" id="libPwInput" placeholder="비밀번호" autocomplete="current-password" maxlength="64">
+        <div class="lock-err" id="libPwErr"></div>
+        <div class="lock-actions">
+          <button type="button" class="btn-primary" id="libPwUnlockBtn">확인</button>
+        </div>
       </div>
-      <div class="center-chips" id="libCenterChips"></div>
-      <div class="lib-status" id="libStatus">목록을 불러오는 중…</div>
-      <div class="lib-table-wrap">
-        <table class="lib" id="libTable">
-          <thead>
-            <tr>
-              <th>저장일시</th>
-              <th>센터명</th>
-              <th>원본 파일</th>
-              <th>직무</th>
-              <th>다운로드 · 삭제</th>
-            </tr>
-          </thead>
-          <tbody id="libBody"></tbody>
-        </table>
-        <div class="lib-empty" id="libEmpty" style="display:none;">저장된 자료가 없습니다. 「조견표 생성」탭에서 엑셀을 업로드하면 자동으로 저장됩니다.</div>
+    </div>
+
+    <div id="libraryContent">
+      <div class="panel" id="libraryPanel">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:4px;">
+          <h2 style="margin:0;">📁 저장된 자료 관리</h2>
+          <button type="button" class="btn-ghost btn-sm" id="libLockAgainBtn">다시 잠금</button>
+        </div>
+        <p class="hint" style="margin:0 0 12px;">
+          업로드한 엑셀과 생성한 조견표 ZIP이 Supabase에 저장됩니다.
+          센터명으로 모아서 보거나, 전체 검색 후 다시 다운로드할 수 있습니다.
+          <span id="libConfigHint" style="color:#b00;"></span>
+        </p>
+        <div class="lib-toolbar">
+          <input type="search" id="libSearch" placeholder="전체 검색: 센터명, 파일명, 직무…">
+          <select id="libCenterFilter">
+            <option value="">전체 센터</option>
+          </select>
+          <button type="button" class="btn-ghost" id="libRefreshBtn">새로고침</button>
+        </div>
+        <div class="center-chips" id="libCenterChips"></div>
+        <div class="lib-status" id="libStatus">목록을 불러오는 중…</div>
+        <div class="lib-table-wrap">
+          <table class="lib" id="libTable">
+            <thead>
+              <tr>
+                <th>저장일시</th>
+                <th>센터명</th>
+                <th>원본 파일</th>
+                <th>직무</th>
+                <th>다운로드 · 삭제</th>
+              </tr>
+            </thead>
+            <tbody id="libBody"></tbody>
+          </table>
+          <div class="lib-empty" id="libEmpty" style="display:none;">저장된 자료가 없습니다. 「조견표 생성」탭에서 엑셀을 업로드하면 자동으로 저장됩니다.</div>
+        </div>
+
+        <details class="lib-admin">
+          <summary>관리자 · 비밀번호 변경</summary>
+          <div class="admin-form">
+            <label for="libPwCur">현재 비밀번호</label>
+            <input type="password" id="libPwCur" autocomplete="current-password">
+            <label for="libPwNew">새 비밀번호</label>
+            <input type="password" id="libPwNew" autocomplete="new-password" placeholder="4자 이상">
+            <label for="libPwNew2">새 비밀번호 확인</label>
+            <input type="password" id="libPwNew2" autocomplete="new-password">
+            <div>
+              <button type="button" class="btn-primary btn-sm" id="libPwChangeBtn">비밀번호 변경</button>
+            </div>
+            <div class="admin-msg" id="libPwChangeMsg"></div>
+          </div>
+        </details>
       </div>
     </div>
   </div><!-- /#tabLibrary -->
@@ -709,13 +796,102 @@ function won(v){
   return Math.round(v).toLocaleString('ko-KR');
 }
 
-// html2canvas가 특정 폰트 조합에서 일반 공백을 누락시키는 문제 회피용
+// html2canvas가 일반 공백·얇은 공백을 누락시키는 문제 회피
 function nbsp(str){
   if(str===null || str===undefined) return '';
-  return String(str).replace(/ /g, '\u00A0');
+  return String(str)
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+    .replace(/ /g, '\u00A0');
 }
 function escapeHtml(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/** 클론 트리의 텍스트 공백을 NBSP로 통일 (캡처 시 줄바꿈·띄어쓰기 유지) */
+function hardenTextSpaces(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const nodes = [];
+  while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n=>{
+    if(n.nodeValue && /[\s\u00A0]/.test(n.nodeValue)){
+      n.nodeValue = n.nodeValue
+        .replace(/[\t\f\v]+/g, ' ')
+        .replace(/ /g, '\u00A0');
+    }
+  });
+}
+
+/**
+ * 미리보기와 동일하게 PNG 캡처
+ * - transform:scale 제거 (미리보기 축소가 출력에 반영되지 않도록)
+ * - 폰트 로드 대기
+ * - 클론에서 공백/레이아웃 고정
+ */
+async function captureElementAsCanvas(el){
+  await document.fonts.ready;
+  const prev = {
+    transform: el.style.transform,
+    marginBottom: el.style.marginBottom,
+    maxWidth: el.style.maxWidth,
+    width: el.style.width
+  };
+  // 캡처 직전: 화면 축소 transform 해제 (미리보기 scale 제거)
+  el.style.transform = 'none';
+  el.style.marginBottom = '';
+  el.style.maxWidth = 'none';
+  const naturalW = el.offsetWidth || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--capture-width'), 10) || 920;
+  el.style.width = naturalW + 'px';
+
+  try{
+    // 레이아웃 안정화
+    void el.offsetHeight;
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      imageTimeout: 15000,
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      windowWidth: Math.max(el.scrollWidth, naturalW),
+      windowHeight: Math.max(el.scrollHeight, el.offsetHeight),
+      onclone: (clonedDoc, clonedEl)=>{
+        clonedEl.style.transform = 'none';
+        clonedEl.style.marginBottom = '';
+        clonedEl.style.maxWidth = 'none';
+        clonedEl.style.width = naturalW + 'px';
+        clonedEl.style.position = 'static';
+        // 캡처 전용 스타일: 미리보기와 동일한 줄바꿈·띄어쓰기
+        const style = clonedDoc.createElement('style');
+        style.textContent = `
+          .capture, .capture * {
+            word-break: keep-all !important;
+            overflow-wrap: normal !important;
+            letter-spacing: 0 !important;
+            -webkit-font-smoothing: antialiased;
+          }
+          .capture .title, .capture .subtitle { white-space: nowrap !important; }
+          .capture .para, .capture .subheading { white-space: pre-wrap !important; }
+          .capture table.pay td, .capture table.pay th,
+          .capture table.mini td, .capture table.mini th {
+            white-space: normal;
+            word-break: keep-all !important;
+          }
+          .capture td.grade-label { white-space: nowrap !important; }
+        `;
+        clonedDoc.head.appendChild(style);
+        hardenTextSpaces(clonedEl);
+      }
+    });
+    return canvas;
+  } finally {
+    el.style.transform = prev.transform;
+    el.style.marginBottom = prev.marginBottom;
+    el.style.maxWidth = prev.maxWidth;
+    el.style.width = prev.width;
+  }
 }
 
 function subtitleFor(job){
@@ -912,7 +1088,7 @@ function buildJobCard(centerName, job, notes, idx){
 }
 
 function exportCardAsPng(el, filename){
-  return document.fonts.ready.then(()=> html2canvas(el, {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false})).then(canvas=>{
+  return captureElementAsCanvas(el).then(canvas=>{
     const url = canvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url; a.download = safeName(filename) + '.png';
@@ -925,8 +1101,13 @@ function exportCardAsPng(el, filename){
    3. Supabase 아카이브 (센터별 저장 · 검색 · 재다운로드)
    ============================================================ */
 const ARCHIVE_BUCKET = 'pay-archives';
+const DEFAULT_LIB_PASSWORD = '000000';
+const LIB_PW_SETTING_KEY = 'library_password';
+const LIB_UNLOCK_SESSION_KEY = 'pay_table_lib_unlocked';
 let supabaseClient = null;
 let currentArchiveId = null;
+let libraryUnlocked = false;
+let cachedLibPassword = null;
 let currentUploadFile = null;
 let archiveCache = [];
 let activeCenterFilter = '';
@@ -1070,6 +1251,20 @@ async function deleteArchive(row){
 async function loadArchives(){
   if(!supabaseClient){
     setLibStatus('Supabase 미설정 — config.js 확인', 'err');
+    return;
+  }
+  // 잠금 상태: 건수만 조회 (상세 목록·파일 URL 미노출)
+  if(!libraryUnlocked){
+    try{
+      const { count, error } = await supabaseClient
+        .from('pay_archives')
+        .select('id', { count: 'exact', head: true });
+      if(!error){
+        const n = count || 0;
+        const cnt = document.getElementById('libTabCount');
+        if(cnt) cnt.textContent = String(n);
+      }
+    }catch(_){}
     return;
   }
   setLibStatus('목록 불러오는 중…');
@@ -1241,6 +1436,147 @@ function bindLibraryUi(){
     renderCenterFilters();
     renderArchiveList();
   });
+  document.getElementById('libPwUnlockBtn')?.addEventListener('click', ()=> tryUnlockLibrary());
+  document.getElementById('libPwInput')?.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') tryUnlockLibrary();
+  });
+  document.getElementById('libLockAgainBtn')?.addEventListener('click', ()=>{
+    libraryUnlocked = false;
+    try{ sessionStorage.removeItem(LIB_UNLOCK_SESSION_KEY); }catch(_){}
+    updateLibraryLockUi();
+  });
+  document.getElementById('libPwChangeBtn')?.addEventListener('click', ()=> changeLibraryPassword());
+}
+
+/** 저장된 자료 비밀번호 (기본 000000, Supabase pay_settings 우선) */
+async function getLibraryPassword(){
+  if(cachedLibPassword !== null) return cachedLibPassword;
+  // 로컬 백업
+  try{
+    const local = localStorage.getItem('pay_table_lib_password');
+    if(local) cachedLibPassword = local;
+  }catch(_){}
+  if(supabaseClient){
+    try{
+      const { data, error } = await supabaseClient
+        .from('pay_settings')
+        .select('value')
+        .eq('key', LIB_PW_SETTING_KEY)
+        .maybeSingle();
+      if(!error && data && data.value){
+        cachedLibPassword = String(data.value);
+        try{ localStorage.setItem('pay_table_lib_password', cachedLibPassword); }catch(_){}
+        return cachedLibPassword;
+      }
+      // 테이블은 있으나 행 없음 → 기본값 시드 시도
+      if(!error && !data){
+        await supabaseClient.from('pay_settings').upsert({
+          key: LIB_PW_SETTING_KEY,
+          value: DEFAULT_LIB_PASSWORD,
+          updated_at: new Date().toISOString()
+        });
+      }
+    }catch(e){
+      console.warn('pay_settings 조회 실패, 기본/로컬 비밀번호 사용', e);
+    }
+  }
+  if(cachedLibPassword === null) cachedLibPassword = DEFAULT_LIB_PASSWORD;
+  return cachedLibPassword;
+}
+
+async function setLibraryPassword(newPw){
+  cachedLibPassword = newPw;
+  try{ localStorage.setItem('pay_table_lib_password', newPw); }catch(_){}
+  if(supabaseClient){
+    const { error } = await supabaseClient.from('pay_settings').upsert({
+      key: LIB_PW_SETTING_KEY,
+      value: newPw,
+      updated_at: new Date().toISOString()
+    });
+    if(error) throw error;
+  }
+}
+
+function updateLibraryLockUi(){
+  const lock = document.getElementById('libraryLock');
+  const content = document.getElementById('libraryContent');
+  if(libraryUnlocked){
+    lock?.classList.remove('show');
+    content?.classList.add('unlocked');
+  } else {
+    lock?.classList.add('show');
+    content?.classList.remove('unlocked');
+    const inp = document.getElementById('libPwInput');
+    if(inp){ inp.value = ''; }
+    const err = document.getElementById('libPwErr');
+    if(err) err.textContent = '';
+  }
+}
+
+async function tryUnlockLibrary(){
+  const inp = document.getElementById('libPwInput');
+  const err = document.getElementById('libPwErr');
+  const typed = (inp?.value || '').trim();
+  if(!typed){
+    if(err) err.textContent = '비밀번호를 입력하세요.';
+    return;
+  }
+  const real = await getLibraryPassword();
+  if(typed !== real){
+    if(err) err.textContent = '비밀번호가 올바르지 않습니다.';
+    return;
+  }
+  libraryUnlocked = true;
+  try{ sessionStorage.setItem(LIB_UNLOCK_SESSION_KEY, '1'); }catch(_){}
+  if(err) err.textContent = '';
+  updateLibraryLockUi();
+  loadArchives();
+}
+
+async function changeLibraryPassword(){
+  const msg = document.getElementById('libPwChangeMsg');
+  const cur = (document.getElementById('libPwCur')?.value || '').trim();
+  const n1 = (document.getElementById('libPwNew')?.value || '').trim();
+  const n2 = (document.getElementById('libPwNew2')?.value || '').trim();
+  const setMsg = (t, ok)=>{
+    if(!msg) return;
+    msg.textContent = t;
+    msg.className = 'admin-msg ' + (ok ? 'ok' : 'err');
+  };
+  if(!cur || !n1 || !n2){
+    setMsg('모든 항목을 입력하세요.', false);
+    return;
+  }
+  if(n1.length < 4){
+    setMsg('새 비밀번호는 4자 이상이어야 합니다.', false);
+    return;
+  }
+  if(n1 !== n2){
+    setMsg('새 비밀번호 확인이 일치하지 않습니다.', false);
+    return;
+  }
+  const real = await getLibraryPassword();
+  if(cur !== real){
+    setMsg('현재 비밀번호가 올바르지 않습니다.', false);
+    return;
+  }
+  try{
+    await setLibraryPassword(n1);
+    setMsg('비밀번호가 변경되었습니다.', true);
+    ['libPwCur','libPwNew','libPwNew2'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+  }catch(e){
+    console.error(e);
+    // Supabase 테이블 없어도 로컬에는 저장됨
+    setMsg('클라우드 동기화 실패 — 이 브라우저에는 저장됨. (pay_settings SQL 확인) ' + (e.message||''), false);
+    try{
+      cachedLibPassword = n1;
+      localStorage.setItem('pay_table_lib_password', n1);
+      setMsg('이 브라우저에 비밀번호가 저장되었습니다. (다른 PC 공유는 pay_settings 테이블 필요)', true);
+    }catch(_){}
+  }
 }
 
 /** 탭 전환: 조견표 생성 | 저장된 자료 */
@@ -1253,10 +1589,15 @@ function switchAppTab(tabId){
   });
   document.getElementById('tabCreate')?.classList.toggle('on', !isLib);
   document.getElementById('tabLibrary')?.classList.toggle('on', isLib);
-  // 자료 탭에서는 생성 화면 wide 레이아웃 해제 (탭 전환 시 폭 정리)
   if(isLib){
     wrapEl?.classList.remove('wide');
-    loadArchives();
+    updateLibraryLockUi();
+    if(libraryUnlocked) loadArchives();
+    else {
+      // 탭 건수는 잠금 상태에서도 표시 (민감 목록은 숨김)
+      // loadArchives 없이 카운트만 갱신 가능하면 유지
+      setTimeout(()=> document.getElementById('libPwInput')?.focus(), 50);
+    }
   } else if(workspace?.classList.contains('on')){
     wrapEl?.classList.add('wide');
   }
@@ -1751,17 +2092,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
     const {capture, filename, jobName} = cardRegistry[i];
     zipBtn.textContent = `PNG 생성 중... ${i + 1}/${total}`;
     try{
-      await document.fonts.ready;
-      // 화면 밖/스크롤된 카드도 캡처되도록 잠깐 보이게 스크롤
       try{ capture.scrollIntoView({block:'nearest', behavior:'auto'}); }catch(_){}
-      const canvas = await html2canvas(capture, {
-        scale:2,
-        backgroundColor:'#ffffff',
-        useCORS:true,
-        logging:false,
-        windowWidth: capture.scrollWidth,
-        windowHeight: capture.scrollHeight
-      });
+      const canvas = await captureElementAsCanvas(capture);
       const blob = await new Promise((res, rej)=>{
         canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob 실패')), 'image/png');
       });
@@ -1828,12 +2160,25 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   }
 });
 
-// 초기화: Supabase + 라이브러리 + 탭
+// 초기화: Supabase + 라이브러리 + 탭 + 비밀번호
 supabaseClient = initSupabase();
 bindLibraryUi();
 bindAppTabs();
-if(supabaseClient) loadArchives();
-else setLibStatus('config.js 설정 후 새로고침하면 저장 목록이 표시됩니다.', 'err');
+try{
+  libraryUnlocked = sessionStorage.getItem(LIB_UNLOCK_SESSION_KEY) === '1';
+}catch(_){ libraryUnlocked = false; }
+updateLibraryLockUi();
+getLibraryPassword().catch(()=>{});
+// 잠금 해제된 세션만 목록 로드 (탭 건수는 잠금 중에도 보이게 조용히 로드)
+if(supabaseClient){
+  loadArchives().then(()=>{
+    if(!libraryUnlocked){
+      // 목록 HTML은 unlocked일 때만 보이지만 건수 배지는 갱신됨
+    }
+  });
+} else {
+  setLibStatus('config.js 설정 후 새로고침하면 저장 목록이 표시됩니다.', 'err');
+}
 </script>
 </body>
 </html>
