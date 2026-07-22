@@ -9,8 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
-<script src="config.js"></script>
+<!-- Supabase 키는 브라우저에 두지 않음 — /api/pay-auth, /api/pay-storage 서버 프록시 사용 -->
 <style>
   :root{
     --navy:#1f3864;
@@ -1418,49 +1417,17 @@ function exportCardAsPng(el, filename){
 }
 
 /* ============================================================
-   3. Supabase 아카이브 (센터별 저장 · 검색 · 재다운로드)
+   3. 아카이브 API 프록시 (브라우저에 Supabase 키 없음)
+   /api/pay-auth  ·  /api/pay-storage
    ============================================================ */
-const ARCHIVE_BUCKET = 'pay-archives';
-const DEFAULT_LIB_PASSWORD = '000000';
-const LIB_PW_SETTING_KEY = 'library_password';
 const LIB_UNLOCK_SESSION_KEY = 'pay_table_lib_unlocked';
-let supabaseClient = null;
+let cloudReady = false;      // 서버 env 설정됨
+let sessionAuthed = false;   // 서버 세션 쿠키 유효
 let currentArchiveId = null;
 let libraryUnlocked = false;
-let cachedLibPassword = null;
 let currentUploadFile = null;
 let archiveCache = [];
 let activeCenterFilter = '';
-
-function initSupabase(){
-  const url = (window.SUPABASE_URL || '').trim();
-  const key = (window.SUPABASE_ANON_KEY || '').trim();
-  const hint = document.getElementById('libConfigHint');
-  if(!url || !key){
-    if(hint) hint.textContent = ' ⚠ config.js 에 SUPABASE_URL / SUPABASE_ANON_KEY 를 넣어 주세요.';
-    return null;
-  }
-  if(typeof supabase === 'undefined' || !supabase.createClient){
-    if(hint) hint.textContent = ' ⚠ Supabase SDK 로드 실패 (네트워크/CDN 확인).';
-    return null;
-  }
-  if(hint) hint.textContent = '';
-  return supabase.createClient(url, key);
-}
-
-/**
- * Supabase Storage object key는 ASCII 위주만 허용.
- * 한글 센터명 등이 들어가면 Invalid key 오류 → 경로에는 영문/숫자/._- 만 사용.
- * 센터명은 DB(center_name)에 따로 저장하므로 검색·필터는 그대로 동작.
- */
-function storageSafeSegment(str){
-  const s = String(str || '')
-    .replace(/[^a-zA-Z0-9._-]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '')
-    .slice(0, 64);
-  return s || 'item';
-}
 
 function setSaveStatus(msg, type){
   const el = document.getElementById('saveStatus');
@@ -1483,127 +1450,163 @@ function formatKst(iso){
   }catch(_){ return iso; }
 }
 
-function publicUrl(path){
-  if(!supabaseClient || !path) return null;
-  const { data } = supabaseClient.storage.from(ARCHIVE_BUCKET).getPublicUrl(path);
-  return data && data.publicUrl ? data.publicUrl : null;
+function arrayBufferToBase64(buf){
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+  }
+  return btoa(binary);
+}
+
+async function blobToBase64(blob){
+  const buf = await blob.arrayBuffer();
+  return arrayBufferToBase64(buf);
+}
+
+/** 서버 프록시 호출 (credentials 포함) */
+async function payApi(action, payload){
+  const res = await fetch('/api/pay-storage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ action, ...(payload || {}) })
+  });
+  let data = {};
+  try{ data = await res.json(); }catch(_){}
+  if(res.status === 401){
+    sessionAuthed = false;
+    libraryUnlocked = false;
+    try{ sessionStorage.removeItem(LIB_UNLOCK_SESSION_KEY); }catch(_){}
+    updateLibraryLockUi();
+    const err = new Error(data.error || '인증이 필요합니다. 저장된 자료 탭에서 비밀번호를 입력하세요.');
+    err.status = 401;
+    throw err;
+  }
+  if(!res.ok){
+    const err = new Error(data.error || ('요청 실패 ' + res.status));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+async function checkPayAuthStatus(){
+  try{
+    const res = await fetch('/api/pay-auth', { method: 'GET', credentials: 'include' });
+    const data = await res.json().catch(()=>({}));
+    cloudReady = !!data.configured;
+    sessionAuthed = !!data.authenticated;
+    const hint = document.getElementById('libConfigHint');
+    if(hint){
+      hint.textContent = cloudReady
+        ? ''
+        : ' ⚠ 서버 환경변수 미설정 (Vercel: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)';
+    }
+    return data;
+  }catch(_){
+    cloudReady = false;
+    sessionAuthed = false;
+    const hint = document.getElementById('libConfigHint');
+    if(hint) hint.textContent = ' ⚠ API 연결 실패 — Vercel 배포·환경변수를 확인하세요.';
+    return { authenticated: false, configured: false };
+  }
+}
+
+async function loginPaySession(password){
+  const res = await fetch('/api/pay-auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ password: String(password || '').trim() })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || '로그인 실패');
+  sessionAuthed = true;
+  cloudReady = true;
+  return data;
+}
+
+async function logoutPaySession(){
+  try{
+    await fetch('/api/pay-auth', { method: 'DELETE', credentials: 'include' });
+  }catch(_){}
+  sessionAuthed = false;
 }
 
 async function uploadArchiveExcel(file, parsed){
-  if(!supabaseClient) return null;
-  const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(16).slice(2));
+  if(!cloudReady) return null;
   const center = parsed.centerName || '미상센터';
-  // 경로: archives/{uuid}/original.xlsx  (한글·특수문자 금지 → Invalid key 방지)
-  const excelPath = `archives/${storageSafeSegment(id)}/original.xlsx`;
-
-  const { error: upErr } = await supabaseClient.storage
-    .from(ARCHIVE_BUCKET)
-    .upload(excelPath, file, {
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      upsert: false
-    });
-  if(upErr) throw upErr;
-
   const jobNames = (parsed.jobs || []).map(j => j.displayName || j.jobName || '').filter(Boolean).join(' ');
   const searchText = [center, file.name, parsed.sheetName || '', jobNames, String(parsed.jobs?.length||'')].join(' ');
-
-  const row = {
-    id,
+  const buf = await file.arrayBuffer();
+  const file_base64 = arrayBufferToBase64(buf);
+  const data = await payApi('insert_archive', {
     center_name: center,
     original_filename: file.name,
-    excel_path: excelPath,
-    zip_path: null,
     job_count: (parsed.jobs || []).length,
-    png_count: 0,
     sheet_name: parsed.sheetName || '',
-    search_text: searchText
-  };
-
-  const { data, error } = await supabaseClient
-    .from('pay_archives')
-    .insert(row)
-    .select()
-    .single();
-  if(error) throw error;
-  return data;
+    search_text: searchText,
+    file_base64
+  });
+  return data.row;
 }
 
-async function uploadArchiveZip(archiveId, zipBlob, pngCount, centerName){
-  if(!supabaseClient || !archiveId) return null;
-  const zipPath = `archives/${storageSafeSegment(archiveId)}/pay_tables.zip`;
-
-  const { error: upErr } = await supabaseClient.storage
-    .from(ARCHIVE_BUCKET)
-    .upload(zipPath, zipBlob, {
-      contentType: 'application/zip',
-      upsert: true
-    });
-  if(upErr) throw upErr;
-
-  const { data, error } = await supabaseClient
-    .from('pay_archives')
-    .update({ zip_path: zipPath, png_count: pngCount || 0 })
-    .eq('id', archiveId)
-    .select()
-    .single();
-  if(error) throw error;
-  return data;
+async function uploadArchiveZip(archiveId, zipBlob, pngCount){
+  if(!cloudReady || !archiveId) return null;
+  const file_base64 = await blobToBase64(zipBlob);
+  const data = await payApi('update_zip', {
+    id: archiveId,
+    png_count: pngCount || 0,
+    file_base64
+  });
+  return data.row;
 }
 
-/** 저장 자료 삭제: Storage 파일 + DB 행 */
 async function deleteArchive(row){
-  if(!supabaseClient || !row || !row.id) throw new Error('삭제 대상 없음');
-  const paths = [row.excel_path, row.zip_path].filter(Boolean);
-  if(paths.length){
-    const { error: stErr } = await supabaseClient.storage
-      .from(ARCHIVE_BUCKET)
-      .remove(paths);
-    // 파일이 이미 없어도 DB는 지울 수 있게 — 치명 오류만 throw
-    if(stErr) console.warn('storage remove:', stErr);
-  }
-  const { error } = await supabaseClient
-    .from('pay_archives')
-    .delete()
-    .eq('id', row.id);
-  if(error) throw error;
+  if(!row || !row.id) throw new Error('삭제 대상 없음');
+  await payApi('delete', {
+    id: row.id,
+    excel_path: row.excel_path || null,
+    zip_path: row.zip_path || null
+  });
 }
 
 async function loadArchives(){
-  if(!supabaseClient){
-    setLibStatus('Supabase 미설정 — config.js 확인', 'err');
+  if(!cloudReady){
+    setLibStatus('서버 클라우드 미설정 — Vercel 환경변수 확인', 'err');
     return;
   }
-  // 잠금 상태: 건수만 조회 (상세 목록·파일 URL 미노출)
-  if(!libraryUnlocked){
-    try{
-      const { count, error } = await supabaseClient
-        .from('pay_archives')
-        .select('id', { count: 'exact', head: true });
-      if(!error){
-        const n = count || 0;
+  if(!libraryUnlocked || !sessionAuthed){
+    // 잠금: 건수는 인증 후에만 (민감 목록 비노출). 배지는 세션 있을 때만
+    if(sessionAuthed){
+      try{
+        const data = await payApi('count');
         const cnt = document.getElementById('libTabCount');
-        if(cnt) cnt.textContent = String(n);
-      }
-    }catch(_){}
+        if(cnt) cnt.textContent = String(data.count || 0);
+      }catch(_){}
+    }
     return;
   }
   setLibStatus('목록 불러오는 중…');
-  const { data, error } = await supabaseClient
-    .from('pay_archives')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(500);
-  if(error){
-    setLibStatus('불러오기 실패: ' + error.message, 'err');
-    console.error(error);
-    return;
+  try{
+    const data = await payApi('list');
+    archiveCache = (data.rows || []).map(r=>({
+      ...r,
+      // 다운로드 URL은 서버가 내려줌
+      excel_url: r.excel_url || null,
+      zip_url: r.zip_url || null
+    }));
+    renderCenterFilters();
+    renderArchiveList();
+    setLibStatus(`총 ${archiveCache.length}건`, 'ok');
+    const cnt = document.getElementById('libTabCount');
+    if(cnt) cnt.textContent = String(archiveCache.length);
+  }catch(err){
+    setLibStatus('불러오기 실패: ' + (err.message || err), 'err');
+    console.error(err);
   }
-  archiveCache = data || [];
-  renderCenterFilters();
-  renderArchiveList();
-  setLibStatus(`총 ${archiveCache.length}건`, 'ok');
-  const cnt = document.getElementById('libTabCount');
-  if(cnt) cnt.textContent = String(archiveCache.length);
 }
 
 function renderCenterFilters(){
@@ -1677,8 +1680,8 @@ function renderArchiveList(){
 
   rows.forEach(r=>{
     const tr = document.createElement('tr');
-    const excelUrl = r.excel_path ? publicUrl(r.excel_path) : null;
-    const zipUrl = r.zip_path ? publicUrl(r.zip_path) : null;
+    const excelUrl = r.excel_url || null;
+    const zipUrl = r.zip_url || null;
     tr.innerHTML = `
       <td><span class="muted">${escapeHtml(formatKst(r.created_at))}</span></td>
       <td><span class="center-name">${escapeHtml(r.center_name || '-')}</span></td>
@@ -1760,67 +1763,19 @@ function bindLibraryUi(){
   document.getElementById('libPwInput')?.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter') tryUnlockLibrary();
   });
-  document.getElementById('libLockAgainBtn')?.addEventListener('click', ()=>{
+  document.getElementById('libLockAgainBtn')?.addEventListener('click', async ()=>{
     libraryUnlocked = false;
     try{ sessionStorage.removeItem(LIB_UNLOCK_SESSION_KEY); }catch(_){}
+    await logoutPaySession();
     updateLibraryLockUi();
   });
   document.getElementById('libPwChangeBtn')?.addEventListener('click', ()=> changeLibraryPassword());
 }
 
-/** 저장된 자료 비밀번호 (기본 000000, Supabase pay_settings 우선) */
-async function getLibraryPassword(){
-  if(cachedLibPassword !== null) return cachedLibPassword;
-  // 로컬 백업
-  try{
-    const local = localStorage.getItem('pay_table_lib_password');
-    if(local) cachedLibPassword = local;
-  }catch(_){}
-  if(supabaseClient){
-    try{
-      const { data, error } = await supabaseClient
-        .from('pay_settings')
-        .select('value')
-        .eq('key', LIB_PW_SETTING_KEY)
-        .maybeSingle();
-      if(!error && data && data.value){
-        cachedLibPassword = String(data.value);
-        try{ localStorage.setItem('pay_table_lib_password', cachedLibPassword); }catch(_){}
-        return cachedLibPassword;
-      }
-      // 테이블은 있으나 행 없음 → 기본값 시드 시도
-      if(!error && !data){
-        await supabaseClient.from('pay_settings').upsert({
-          key: LIB_PW_SETTING_KEY,
-          value: DEFAULT_LIB_PASSWORD,
-          updated_at: new Date().toISOString()
-        });
-      }
-    }catch(e){
-      console.warn('pay_settings 조회 실패, 기본/로컬 비밀번호 사용', e);
-    }
-  }
-  if(cachedLibPassword === null) cachedLibPassword = DEFAULT_LIB_PASSWORD;
-  return cachedLibPassword;
-}
-
-async function setLibraryPassword(newPw){
-  cachedLibPassword = newPw;
-  try{ localStorage.setItem('pay_table_lib_password', newPw); }catch(_){}
-  if(supabaseClient){
-    const { error } = await supabaseClient.from('pay_settings').upsert({
-      key: LIB_PW_SETTING_KEY,
-      value: newPw,
-      updated_at: new Date().toISOString()
-    });
-    if(error) throw error;
-  }
-}
-
 function updateLibraryLockUi(){
   const lock = document.getElementById('libraryLock');
   const content = document.getElementById('libraryContent');
-  if(libraryUnlocked){
+  if(libraryUnlocked && sessionAuthed){
     lock?.classList.remove('show');
     content?.classList.add('unlocked');
   } else {
@@ -1841,16 +1796,17 @@ async function tryUnlockLibrary(){
     if(err) err.textContent = '비밀번호를 입력하세요.';
     return;
   }
-  const real = await getLibraryPassword();
-  if(typed !== real){
-    if(err) err.textContent = '비밀번호가 올바르지 않습니다.';
-    return;
+  if(err) err.textContent = '확인 중…';
+  try{
+    await loginPaySession(typed);
+    libraryUnlocked = true;
+    try{ sessionStorage.setItem(LIB_UNLOCK_SESSION_KEY, '1'); }catch(_){}
+    if(err) err.textContent = '';
+    updateLibraryLockUi();
+    loadArchives();
+  }catch(e){
+    if(err) err.textContent = e.message || '비밀번호가 올바르지 않습니다.';
   }
-  libraryUnlocked = true;
-  try{ sessionStorage.setItem(LIB_UNLOCK_SESSION_KEY, '1'); }catch(_){}
-  if(err) err.textContent = '';
-  updateLibraryLockUi();
-  loadArchives();
 }
 
 async function changeLibraryPassword(){
@@ -1875,13 +1831,12 @@ async function changeLibraryPassword(){
     setMsg('새 비밀번호 확인이 일치하지 않습니다.', false);
     return;
   }
-  const real = await getLibraryPassword();
-  if(cur !== real){
-    setMsg('현재 비밀번호가 올바르지 않습니다.', false);
+  if(!sessionAuthed){
+    setMsg('먼저 자료 탭 잠금을 해제하세요.', false);
     return;
   }
   try{
-    await setLibraryPassword(n1);
+    await payApi('set_password', { current: cur, next: n1 });
     setMsg('비밀번호가 변경되었습니다.', true);
     ['libPwCur','libPwNew','libPwNew2'].forEach(id=>{
       const el = document.getElementById(id);
@@ -1889,13 +1844,7 @@ async function changeLibraryPassword(){
     });
   }catch(e){
     console.error(e);
-    // Supabase 테이블 없어도 로컬에는 저장됨
-    setMsg('클라우드 동기화 실패 — 이 브라우저에는 저장됨. (pay_settings SQL 확인) ' + (e.message||''), false);
-    try{
-      cachedLibPassword = n1;
-      localStorage.setItem('pay_table_lib_password', n1);
-      setMsg('이 브라우저에 비밀번호가 저장되었습니다. (다른 PC 공유는 pay_settings 테이블 필요)', true);
-    }catch(_){}
+    setMsg(e.message || '비밀번호 변경 실패', false);
   }
 }
 
@@ -1991,20 +1940,22 @@ function handleFile(file){
       showWorkspace(true);
       applyWidthsFromControls();
 
-      // Supabase 자동 저장 (원본 엑셀)
-      if(supabaseClient){
+      // 클라우드 저장 (서버 프록시) — 세션 필요(자료 탭 비번 해제 후)
+      if(cloudReady && sessionAuthed){
         setSaveStatus('클라우드 저장 중… (엑셀)', 'warn');
         try{
           const row = await uploadArchiveExcel(file, parsedData);
-          currentArchiveId = row.id;
+          currentArchiveId = row && row.id;
           setSaveStatus(`클라우드 저장 완료 · 센터: ${row.center_name}`, 'ok');
-          loadArchives();
+          if(libraryUnlocked) loadArchives();
         }catch(saveErr){
           console.error(saveErr);
           setSaveStatus('클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
         }
+      } else if(cloudReady && !sessionAuthed){
+        setSaveStatus('조견표 생성은 가능 · 클라우드 저장은 「저장된 자료」탭 비밀번호 확인 후 가능', 'warn');
       } else {
-        setSaveStatus('로컬 전용 모드 (config.js 미설정 — 서버 저장 안 함)', 'warn');
+        setSaveStatus('로컬 전용 모드 (서버 환경변수 미설정 — 클라우드 저장 안 함)', 'warn');
       }
     }catch(err){
       fileMeta.textContent = `⚠ 오류: ${err.message}`;
@@ -2479,20 +2430,21 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   a.click();
   URL.revokeObjectURL(url);
 
-  // Supabase ZIP 저장 (같은 세션 아카이브에 연결)
-  if(supabaseClient && currentArchiveId){
+  // 클라우드 ZIP 저장 (서버 프록시 · 세션 필요)
+  if(cloudReady && sessionAuthed && currentArchiveId){
     zipBtn.textContent = '클라우드 ZIP 저장 중...';
     try{
-      await uploadArchiveZip(currentArchiveId, content, ok, parsedData.centerName);
+      await uploadArchiveZip(currentArchiveId, content, ok);
       setSaveStatus(`클라우드 저장 완료 · 엑셀 + 조견표 ZIP (${ok}장)`, 'ok');
-      loadArchives();
+      if(libraryUnlocked) loadArchives();
     }catch(saveErr){
       console.error(saveErr);
       setSaveStatus('ZIP 클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
     }
-  } else if(supabaseClient && !currentArchiveId){
-    // 엑셀 저장이 안 된 경우 ZIP만이라도 새 레코드로 남기기 어려우므로 안내
+  } else if(cloudReady && sessionAuthed && !currentArchiveId){
     setSaveStatus('ZIP 로컬 다운로드 완료 (엑셀 클라우드 저장이 없어 ZIP 서버 저장 생략)', 'warn');
+  } else if(cloudReady && !sessionAuthed){
+    setSaveStatus('ZIP 로컬 다운로드 완료 · 클라우드 저장은 자료 탭 비밀번호 확인 후 가능', 'warn');
   }
 
   zipBtn.disabled = false;
@@ -2506,29 +2458,27 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
     alert(`ZIP에 ${ok}개 포함, ${failed.length}개 실패:\n${failed.join('\n')}`);
   } else {
     alert(`ZIP에 조견표 ${ok}개가 모두 포함되었습니다.` +
-      (supabaseClient && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
+      (cloudReady && sessionAuthed && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
   }
 });
 
-// 초기화: Supabase + 라이브러리 + 탭 + 비밀번호
-supabaseClient = initSupabase();
+// 초기화: 서버 프록시 상태 + 탭 + 자료 잠금
 bindLibraryUi();
 bindAppTabs();
-try{
-  libraryUnlocked = sessionStorage.getItem(LIB_UNLOCK_SESSION_KEY) === '1';
-}catch(_){ libraryUnlocked = false; }
-updateLibraryLockUi();
-getLibraryPassword().catch(()=>{});
-// 잠금 해제된 세션만 목록 로드 (탭 건수는 잠금 중에도 보이게 조용히 로드)
-if(supabaseClient){
-  loadArchives().then(()=>{
-    if(!libraryUnlocked){
-      // 목록 HTML은 unlocked일 때만 보이지만 건수 배지는 갱신됨
-    }
-  });
-} else {
-  setLibStatus('config.js 설정 후 새로고침하면 저장 목록이 표시됩니다.', 'err');
-}
+(async ()=>{
+  await checkPayAuthStatus();
+  try{
+    // 서버 세션이 살아 있을 때만 UI 잠금 해제 복원
+    libraryUnlocked = sessionAuthed && sessionStorage.getItem(LIB_UNLOCK_SESSION_KEY) === '1';
+  }catch(_){ libraryUnlocked = false; }
+  updateLibraryLockUi();
+  if(cloudReady){
+    if(libraryUnlocked && sessionAuthed) loadArchives();
+    else setLibStatus('자료 조회는 비밀번호 확인 후 가능합니다.', '');
+  } else {
+    setLibStatus('서버 환경변수 설정 후 클라우드 기능을 사용할 수 있습니다.', 'err');
+  }
+})();
 </script>
 </body>
 </html>

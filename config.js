@@ -1,3 +1,3 @@
-// Supabase 연결 정보 (Project Settings → API)
-window.SUPABASE_URL = 'https://zbiwyqwjehnogxkzlhxx.supabase.co';
-window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiaXd5cXdqZWhub2d4a3psaHh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTQ1MzYsImV4cCI6MjA5NjY3MDUzNn0.SQJjHnDcMTRyElxtY9E-04yIkzPVF35L8hcx0lSyG48';
+// 브라우저에는 Supabase 키를 두지 않습니다.
+// 클라우드 기능은 /api/pay-auth, /api/pay-storage 서버 프록시를 사용합니다.
+// Vercel 환경변수: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, (선택) PAY_SESSION_SECRET
