@@ -24,22 +24,15 @@ create index if not exists pay_archives_created_idx
 create index if not exists pay_archives_search_idx
   on public.pay_archives using gin (to_tsvector('simple', coalesce(search_text, '')));
 
--- 2) RLS (공개)
+-- 2) RLS (anon 직접 접근 금지 — 서버 service_role 만 사용)
+-- 상세 잠금: supabase/rls-lockdown.sql
 alter table public.pay_archives enable row level security;
 
 drop policy if exists "pay_archives_select_all" on public.pay_archives;
 drop policy if exists "pay_archives_insert_all" on public.pay_archives;
 drop policy if exists "pay_archives_update_all" on public.pay_archives;
 drop policy if exists "pay_archives_delete_all" on public.pay_archives;
-
-create policy "pay_archives_select_all" on public.pay_archives
-  for select using (true);
-create policy "pay_archives_insert_all" on public.pay_archives
-  for insert with check (true);
-create policy "pay_archives_update_all" on public.pay_archives
-  for update using (true);
-create policy "pay_archives_delete_all" on public.pay_archives
-  for delete using (true);
+-- 개방 정책 생성하지 않음 (anon/authenticated 차단)
 
 -- 3) Storage 버킷 (대시보드에서 만들어도 됨)
 insert into storage.buckets (id, name, public, file_size_limit)
@@ -74,14 +67,13 @@ drop policy if exists "pay_settings_select_all" on public.pay_settings;
 drop policy if exists "pay_settings_upsert_all" on public.pay_settings;
 drop policy if exists "pay_settings_update_all" on public.pay_settings;
 drop policy if exists "pay_settings_insert_all" on public.pay_settings;
-
-create policy "pay_settings_select_all" on public.pay_settings
-  for select using (true);
-create policy "pay_settings_insert_all" on public.pay_settings
-  for insert with check (true);
-create policy "pay_settings_update_all" on public.pay_settings
-  for update using (true);
+-- 개방 정책 생성하지 않음 (서버 service_role 만 접근)
 
 insert into public.pay_settings (key, value)
 values ('library_password', '000000')
 on conflict (key) do nothing;
+
+revoke all on table public.pay_archives from anon, authenticated;
+revoke all on table public.pay_settings from anon, authenticated;
+grant all on table public.pay_archives to service_role;
+grant all on table public.pay_settings to service_role;

@@ -53,10 +53,18 @@ PAY_SESSION_SECRET = (아무 긴 랜덤 문자열, 예: openssl rand -hex 32)
 6. ZIP 생성 → 클라우드 ZIP 저장  
 7. 목록에서 엑셀/ZIP 다운로드·삭제  
 
-## 아직 하지 말 것 (문서 지시)
+## RLS 강화 (프록시 배포 후)
 
-- Supabase RLS 정책 삭제/강화 → **프록시 검증 완료 후 별도 승인**  
-- Production 데이터 삭제  
+1. (권장) Table Editor → `pay_archives`, `pay_settings` → **Export CSV** 백업  
+2. SQL Editor에서 `supabase/rls-lockdown.sql` **전체 실행**  
+3. 사이트 스모크 테스트:
+   - 자료 탭 비번 → 목록  
+   - 엑셀 클라우드 저장  
+   - ZIP 저장 · 다운로드 · 삭제  
+4. anon 키로 테이블 직접 조회 시 **빈 결과/권한 오류**여야 정상  
+
+**Storage 버킷 public 정책은 이 단계에서 변경하지 않음**  
+(다운로드 public URL 유지. private화 시 서명 URL 코드 추가 필요)
 
 ## 백업 권장 (작업 전)
 
