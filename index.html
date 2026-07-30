@@ -527,6 +527,17 @@
           </div>
         </div>
 
+        <div class="ot-note-box" id="otNoteBox" style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+            <strong style="font-size:13px;color:var(--navy);">초과근무수당 비고 수정 — <span id="otNoteJobName">-</span></strong>
+            <button type="button" class="btn-ghost btn-sm" id="otNoteResetBtn">자동값으로 복원</button>
+          </div>
+          <div class="row" style="display:flex;align-items:center;gap:8px;">
+            <input type="text" id="otNoteInput" placeholder="예: 3H, 5H, 교육3H" style="flex:1;min-width:160px;max-width:none;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;">
+          </div>
+          <div class="hint" id="otNoteAutoHint" style="margin-top:6px;"></div>
+        </div>
+
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
           <strong style="font-size:13px;color:var(--navy);">예외 및 특례사항 내용</strong>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -704,7 +715,7 @@ function parseBlock(ws, titleRow, blockLabel){
     const job = {
       block: blockLabel, groupLabel, jobName: jobname, displayName,
       items:[], grades:[], gradeNote:'',
-      overtime:null, overtimeNote:'', night:null, telecom:null,
+      overtime:null, overtimeNote:'', overtimeNoteOverride:null, night:null, telecom:null,
       stdPaySum:null, monthlyTotal:null, monthlyTotalNote:''
     };
     for(const [label, off] of PAY_LABEL_OFFSETS){
@@ -1196,6 +1207,14 @@ function overtimeNoteForJob(job){
   return full;
 }
 
+/** 자동 산출된 비고 대신 사용자가 직접 수정한 값이 있으면 그 값을 우선 사용 */
+function getOvertimeNote(job){
+  if(job.overtimeNoteOverride !== null && job.overtimeNoteOverride !== undefined){
+    return job.overtimeNoteOverride;
+  }
+  return overtimeNoteForJob(job);
+}
+
 function buildCapture(centerName, job, notes){
   const capture = document.createElement('div');
   capture.className = 'capture';
@@ -1284,7 +1303,7 @@ function buildCapture(centerName, job, notes){
   });
 
   // 초과근무·야간·통신비 — 값 없으면 숨김
-  row('초과근무수당', job.overtime, overtimeNoteForJob(job));
+  row('초과근무수당', job.overtime, getOvertimeNote(job));
   row('야간근로수당', job.night, '');
   row('통신비', job.telecom, '');
   row('월 보수 합계', job.monthlyTotal, job.monthlyTotalNote, true);
@@ -1901,6 +1920,11 @@ const previewContainer = document.getElementById('previewContainer');
 const previewJobName = document.getElementById('previewJobName');
 const resultPanel = document.getElementById('resultPanel');
 const resultsDiv = document.getElementById('results');
+const otNoteBox = document.getElementById('otNoteBox');
+const otNoteJobName = document.getElementById('otNoteJobName');
+const otNoteInput = document.getElementById('otNoteInput');
+const otNoteResetBtn = document.getElementById('otNoteResetBtn');
+const otNoteAutoHint = document.getElementById('otNoteAutoHint');
 
 function showWorkspace(on){
   if(on){
@@ -2035,7 +2059,57 @@ function showPreview(idx, chipEl){
   document.querySelectorAll('.job-chip').forEach(c=>c.classList.remove('previewing'));
   if(chipEl) chipEl.classList.add('previewing');
   fitPreviewScale();
+  syncOvertimeNoteEditor(job);
 }
+
+/**
+ * 초과근무수당 비고 수정 UI를 현재 미리보기 직무 기준으로 동기화
+ * - 자동 산출값을 기본으로 보여주되, 사용자가 override를 입력했으면 그 값을 표시
+ * - 입력 중(포커스 상태)에는 값을 덮어쓰지 않아 타이핑을 방해하지 않음
+ */
+function syncOvertimeNoteEditor(job){
+  if(!otNoteBox) return;
+  const disp = job.displayName || formatJobDisplay(job.groupLabel, job.jobName);
+  otNoteJobName.textContent = disp || '-';
+
+  const hasOvertime = job.overtime !== null && job.overtime !== undefined && job.overtime !== 0;
+  const autoVal = overtimeNoteForJob(job);
+  const hasOverride = job.overtimeNoteOverride !== null && job.overtimeNoteOverride !== undefined;
+
+  otNoteInput.disabled = !hasOvertime;
+  otNoteResetBtn.disabled = !hasOvertime || !hasOverride;
+
+  if(!hasOvertime){
+    if(document.activeElement !== otNoteInput) otNoteInput.value = '';
+    otNoteAutoHint.textContent = '이 직무는 초과근무수당 항목이 없어 비고를 수정할 수 없습니다.';
+    return;
+  }
+
+  if(document.activeElement !== otNoteInput){
+    otNoteInput.value = hasOverride ? job.overtimeNoteOverride : autoVal;
+  }
+  otNoteAutoHint.textContent = hasOverride
+    ? `자동 계산값: "${autoVal || '(없음)'}" — 현재 직접 수정한 값을 사용 중입니다.`
+    : `자동 계산값을 사용 중입니다. 필요 시 직접 수정하세요.`;
+}
+
+otNoteInput.addEventListener('input', ()=>{
+  if(!parsedData || !parsedData.jobs[previewJobIdx]) return;
+  const job = parsedData.jobs[previewJobIdx];
+  job.overtimeNoteOverride = otNoteInput.value;
+  const autoVal = overtimeNoteForJob(job);
+  otNoteResetBtn.disabled = false;
+  otNoteAutoHint.textContent = `자동 계산값: "${autoVal || '(없음)'}" — 현재 직접 수정한 값을 사용 중입니다.`;
+  scheduleLivePreview();
+});
+
+otNoteResetBtn.addEventListener('click', ()=>{
+  if(!parsedData || !parsedData.jobs[previewJobIdx]) return;
+  const job = parsedData.jobs[previewJobIdx];
+  job.overtimeNoteOverride = null;
+  syncOvertimeNoteEditor(job);
+  scheduleLivePreview();
+});
 
 /** 오른쪽 미리보기 패널 폭에 맞게 축소 표시 (실제 캡처 크기는 유지) */
 function fitPreviewScale(){
