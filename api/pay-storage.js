@@ -29,12 +29,15 @@ module.exports = async function handler(req, res) {
           '서버 환경변수 미설정: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 를 Vercel에 등록하세요.',
       });
     }
-    if (!isAuthed(req)) {
-      return json(res, 401, { error: '인증이 필요합니다. 저장된 자료 탭에서 비밀번호를 입력하세요.' });
-    }
-
     const body = await readBody(req);
     const action = body.action;
+
+    // 업로드(insert_archive/update_zip)는 비밀번호 없이도 자동 저장되도록 허용.
+    // 목록 조회/삭제/설정 변경 등 저장된 자료 열람·관리는 계속 인증 필요.
+    const PUBLIC_ACTIONS = new Set(['insert_archive', 'update_zip']);
+    if (!PUBLIC_ACTIONS.has(action) && !isAuthed(req)) {
+      return json(res, 401, { error: '인증이 필요합니다. 저장된 자료 탭에서 비밀번호를 입력하세요.' });
+    }
 
     switch (action) {
       case 'count': {

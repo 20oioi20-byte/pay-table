@@ -1964,8 +1964,9 @@ function handleFile(file){
       showWorkspace(true);
       applyWidthsFromControls();
 
-      // 클라우드 저장 (서버 프록시) — 세션 필요(자료 탭 비번 해제 후)
-      if(cloudReady && sessionAuthed){
+      // 클라우드 저장 (서버 프록시) — 업로드는 비밀번호 없이도 자동 저장됨.
+      // 저장된 자료 「열람」만 「저장된 자료」탭 비밀번호가 필요.
+      if(cloudReady){
         setSaveStatus('클라우드 저장 중… (엑셀)', 'warn');
         try{
           const row = await uploadArchiveExcel(file, parsedData);
@@ -1976,8 +1977,6 @@ function handleFile(file){
           console.error(saveErr);
           setSaveStatus('클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
         }
-      } else if(cloudReady && !sessionAuthed){
-        setSaveStatus('조견표 생성은 가능 · 클라우드 저장은 「저장된 자료」탭 비밀번호 확인 후 가능', 'warn');
       } else {
         setSaveStatus('로컬 전용 모드 (서버 환경변수 미설정 — 클라우드 저장 안 함)', 'warn');
       }
@@ -2504,8 +2503,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   a.click();
   URL.revokeObjectURL(url);
 
-  // 클라우드 ZIP 저장 (서버 프록시 · 세션 필요)
-  if(cloudReady && sessionAuthed && currentArchiveId){
+  // 클라우드 ZIP 저장 (서버 프록시) — 업로드는 비밀번호 없이도 자동 저장됨.
+  if(cloudReady && currentArchiveId){
     zipBtn.textContent = '클라우드 ZIP 저장 중...';
     try{
       await uploadArchiveZip(currentArchiveId, content, ok);
@@ -2515,10 +2514,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
       console.error(saveErr);
       setSaveStatus('ZIP 클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
     }
-  } else if(cloudReady && sessionAuthed && !currentArchiveId){
+  } else if(cloudReady && !currentArchiveId){
     setSaveStatus('ZIP 로컬 다운로드 완료 (엑셀 클라우드 저장이 없어 ZIP 서버 저장 생략)', 'warn');
-  } else if(cloudReady && !sessionAuthed){
-    setSaveStatus('ZIP 로컬 다운로드 완료 · 클라우드 저장은 자료 탭 비밀번호 확인 후 가능', 'warn');
   }
 
   zipBtn.disabled = false;
@@ -2532,7 +2529,7 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
     alert(`ZIP에 ${ok}개 포함, ${failed.length}개 실패:\n${failed.join('\n')}`);
   } else {
     alert(`ZIP에 조견표 ${ok}개가 모두 포함되었습니다.` +
-      (cloudReady && sessionAuthed && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
+      (cloudReady && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
   }
 });
 
