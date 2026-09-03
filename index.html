@@ -458,14 +458,6 @@
     </div>
     <div id="fileMeta"></div>
     <div id="saveStatus"></div>
-    <div id="inlineAuthBox" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff9e6;">
-      <div class="hint" style="margin-bottom:6px;color:#7a5b00;">클라우드에 저장하려면 비밀번호를 확인하세요. (확인 후 방금 올린 엑셀이 자동으로 저장됩니다)</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input type="password" id="inlineAuthPw" placeholder="비밀번호" autocomplete="current-password" maxlength="64" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;">
-        <button type="button" class="btn-primary btn-sm" id="inlineAuthBtn">확인 후 저장</button>
-      </div>
-      <div id="inlineAuthErr" style="margin-top:4px;color:#b00;font-size:12.5px;min-height:1.3em;"></div>
-    </div>
   </div>
 
   <div class="panel" id="jobPanel" style="display:none;">
@@ -1955,7 +1947,7 @@ fileInput.addEventListener('change', e=>{
   if(e.target.files.length) handleFile(e.target.files[0]);
 });
 
-/** 업로드된 엑셀을 클라우드(Supabase)에 저장 — 세션 인증된 상태에서만 호출 */
+/** 업로드된 엑셀을 클라우드(Supabase)에 저장 — 비밀번호 확인 없이 항상 저장 (열람/삭제만 비밀번호 필요) */
 async function attemptCloudSave(file, parsed){
   setSaveStatus('클라우드 저장 중… (엑셀)', 'warn');
   try{
@@ -1972,7 +1964,6 @@ async function attemptCloudSave(file, parsed){
 function handleFile(file){
   fileMeta.textContent = `읽는 중... (${file.name})`;
   setSaveStatus('');
-  hideInlineAuthBox();
   currentArchiveId = null;
   currentUploadFile = file;
   const reader = new FileReader();
@@ -1987,12 +1978,9 @@ function handleFile(file){
       showWorkspace(true);
       applyWidthsFromControls();
 
-      // 클라우드 저장 (서버 프록시) — 세션 필요(자료 탭 비번 확인 후)
-      if(cloudReady && sessionAuthed){
+      // 클라우드 저장 (서버 프록시) — 업로드하면 비밀번호 확인 없이 항상 저장
+      if(cloudReady){
         await attemptCloudSave(file, parsedData);
-      } else if(cloudReady && !sessionAuthed){
-        setSaveStatus('조견표 생성은 가능 · 아래에서 비밀번호를 확인하면 클라우드 저장이 진행됩니다', 'warn');
-        showInlineAuthBox();
       } else {
         setSaveStatus('로컬 전용 모드 (서버 환경변수 미설정 — 클라우드 저장 안 함)', 'warn');
       }
@@ -2005,50 +1993,6 @@ function handleFile(file){
   };
   reader.readAsArrayBuffer(file);
 }
-
-/** 업로드 직후 세션 미인증 상태일 때 표시하는 인라인 비밀번호 확인 박스 */
-function showInlineAuthBox(){
-  const box = document.getElementById('inlineAuthBox');
-  if(!box) return;
-  box.style.display = 'block';
-  const err = document.getElementById('inlineAuthErr');
-  if(err) err.textContent = '';
-  const pw = document.getElementById('inlineAuthPw');
-  if(pw){ pw.value = ''; setTimeout(()=> pw.focus(), 50); }
-}
-
-function hideInlineAuthBox(){
-  const box = document.getElementById('inlineAuthBox');
-  if(box) box.style.display = 'none';
-}
-
-async function tryInlineAuthAndSave(){
-  const pw = document.getElementById('inlineAuthPw');
-  const err = document.getElementById('inlineAuthErr');
-  const typed = (pw?.value || '').trim();
-  if(!typed){
-    if(err) err.textContent = '비밀번호를 입력하세요.';
-    return;
-  }
-  if(err) err.textContent = '확인 중…';
-  try{
-    await loginPaySession(typed);
-    libraryUnlocked = true;
-    try{ sessionStorage.setItem(LIB_UNLOCK_SESSION_KEY, '1'); }catch(_){}
-    updateLibraryLockUi();
-    hideInlineAuthBox();
-    if(currentUploadFile && parsedData){
-      await attemptCloudSave(currentUploadFile, parsedData);
-    }
-  }catch(e){
-    if(err) err.textContent = e.message || '비밀번호가 올바르지 않습니다.';
-  }
-}
-
-document.getElementById('inlineAuthBtn')?.addEventListener('click', ()=> tryInlineAuthAndSave());
-document.getElementById('inlineAuthPw')?.addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){ e.preventDefault(); tryInlineAuthAndSave(); }
-});
 
 function renderJobGrid(){
   jobGrid.innerHTML = '';
@@ -2563,8 +2507,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   a.click();
   URL.revokeObjectURL(url);
 
-  // 클라우드 ZIP 저장 (서버 프록시 · 세션 필요)
-  if(cloudReady && sessionAuthed && currentArchiveId){
+  // 클라우드 ZIP 저장 (서버 프록시) — 비밀번호 확인 없이 항상 저장
+  if(cloudReady && currentArchiveId){
     zipBtn.textContent = '클라우드 ZIP 저장 중...';
     try{
       await uploadArchiveZip(currentArchiveId, content, ok);
@@ -2574,10 +2518,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
       console.error(saveErr);
       setSaveStatus('ZIP 클라우드 저장 실패: ' + (saveErr.message || saveErr), 'err');
     }
-  } else if(cloudReady && sessionAuthed && !currentArchiveId){
+  } else if(cloudReady && !currentArchiveId){
     setSaveStatus('ZIP 로컬 다운로드 완료 (엑셀 클라우드 저장이 없어 ZIP 서버 저장 생략)', 'warn');
-  } else if(cloudReady && !sessionAuthed){
-    setSaveStatus('ZIP 로컬 다운로드 완료 · 클라우드 저장은 자료 탭 비밀번호 확인 후 가능', 'warn');
   }
 
   zipBtn.disabled = false;
@@ -2591,7 +2533,7 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
     alert(`ZIP에 ${ok}개 포함, ${failed.length}개 실패:\n${failed.join('\n')}`);
   } else {
     alert(`ZIP에 조견표 ${ok}개가 모두 포함되었습니다.` +
-      (cloudReady && sessionAuthed && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
+      (cloudReady && currentArchiveId ? '\n(클라우드에도 저장되었습니다)' : ''));
   }
 });
 
