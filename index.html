@@ -1172,39 +1172,36 @@ function subtitleFor(job){
 }
 
 /**
- * 초과근무수당 비고: 역할별로 해당 시간만 표시
- * 그룹명(교육/QA, 팀장) 또는 호칭(실장, 센터장) 기준 — 센터 파일 공통
+ * 초과근무수당 비고: 엑셀의 비고 셀 하나에 여러 역할의 시간이
+ * "역할명 N H" 식으로 함께 적혀 있는 경우(예: "교육 3H, 팀장 7H, 관리자 10H"),
+ * 이 직무의 그룹명/호칭에 해당하는 부분만 뽑아서 보여준다.
+ * 특정 센터의 직책명을 미리 가정하지 않고 엑셀 원문 텍스트만 사용한다 —
+ * 원문에 없는 값을 임의로 채워 넣지 않는다 (자동 추정이 틀리면
+ * 미리보기 화면의 "초과근무수당 비고 수정"에서 직접 고칠 수 있다).
  */
 function overtimeNoteForJob(job){
   if(job.overtime===null || job.overtime===0) return '';
+  const full = job.overtimeNote || '';
+  if(!full) return '';
+
   // 그룹 + 호칭 모두 검사 (예: 그룹 "팀장"+호칭 "선임", 그룹 "Leader"+호칭 "센터장")
   const name = `${job.groupLabel || ''} ${job.jobName || ''} ${job.displayName || ''}`.replace(/\s+/g,'');
-  const full = job.overtimeNote || '';
 
-  const ROLE_RULES = [
-    { test: n => /교육/.test(n) || /QA/i.test(n) || /큐에이/.test(n) || /강사/.test(n),
-      extract: /교육\s*\d+\s*H/i, fallback: '교육3H' },
-    { test: n => /팀장/.test(n) && !/선임팀장|센터장/.test(n),
-      extract: /팀장\s*\d+\s*H/i, fallback: '팀장7H' },
-    { test: n => /실장/.test(n),
-      extract: /실장\s*\d+\s*H/i, fallback: '실장13H' },
-    { test: n => /센터장/.test(n),
-      extract: /센터장\s*\d+\s*H/i, fallback: '센터장20H' },
-  ];
+  // 비고 원문에서 "역할명 N H" 형태 조각을 모두 추출
+  const segments = [...full.matchAll(/([가-힣A-Za-z]+)\s*(\d+)\s*[Hh]/g)]
+    .map(m => ({ role: m[1], text: `${m[1]}${m[2]}H` }))
+    .sort((a,b)=> b.role.length - a.role.length); // 더 구체적인(긴) 역할명을 먼저 매칭
 
-  for(const rule of ROLE_RULES){
-    if(rule.test(name)){
-      const m = full.match(rule.extract);
-      return m ? m[0].replace(/\s+/g,'') : rule.fallback;
-    }
-  }
-  // 위 역할이 아니면 전체 문구(교육3H, 팀장7H…)를 붙이지 않음
-  if(/교육\s*\d+\s*H|팀장\s*\d+\s*H|실장\s*\d+\s*H|센터장\s*\d+\s*H/i.test(full)
-     && /교육|팀장|실장|센터장/.test(full)
-     && (full.match(/H/gi)||[]).length >= 2){
-    return '';
-  }
-  return full;
+  if(!segments.length) return full; // 이런 패턴이 없으면 원문 그대로 노출
+
+  const matched = segments.find(seg => name.includes(seg.role));
+  if(matched) return matched.text;
+
+  // 역할이 여러 개 나열된 공용 비고인데 이 직무 이름과 일치하는 역할이 없으면
+  // 해당 특례 대상이 아닌 것으로 보고 비고를 비운다
+  if(segments.length > 1) return '';
+
+  return segments[0].text;
 }
 
 /** 자동 산출된 비고 대신 사용자가 직접 수정한 값이 있으면 그 값을 우선 사용 */
