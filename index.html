@@ -154,6 +154,12 @@
     flex-shrink:0; background:#fff; color:transparent;
   }
   .job-chip.on .chk{ background:var(--gold); border-color:var(--gold); color:var(--navy-dark); }
+  .job-chip.ot-warn{ border-color:#c77700; box-shadow:0 0 0 1px #c77700 inset; }
+  .job-chip.ot-warn.on{ background:#c77700; border-color:#c77700; }
+  .ot-warn-badge{
+    flex-shrink:0; font-size:11px; line-height:1; color:#c77700;
+  }
+  .job-chip.on .ot-warn-badge{ color:#ffe9c2; }
 
   .preview-frame{
     border:1px dashed #9aa4b5; border-radius:8px; padding:16px;
@@ -1172,17 +1178,23 @@ function subtitleFor(job){
 }
 
 /**
- * 초과근무수당 비고: 엑셀의 비고 셀 하나에 여러 역할의 시간이
+ * 초과근무수당 비고 자동 추정: 엑셀의 비고 셀 하나에 여러 역할의 시간이
  * "역할명 N H" 식으로 함께 적혀 있는 경우(예: "교육 3H, 팀장 7H, 관리자 10H"),
  * 이 직무의 그룹명/호칭에 해당하는 부분만 뽑아서 보여준다.
  * 특정 센터의 직책명을 미리 가정하지 않고 엑셀 원문 텍스트만 사용한다 —
- * 원문에 없는 값을 임의로 채워 넣지 않는다 (자동 추정이 틀리면
- * 미리보기 화면의 "초과근무수당 비고 수정"에서 직접 고칠 수 있다).
+ * 원문에 없는 값을 임의로 채워 넣지 않는다.
+ *
+ * confident:true 는 직무 이름으로 역할명이 정확히 매칭된 경우만이고,
+ * 그 외(원문에 패턴이 없어 그대로 노출/여러 역할 중 매칭 실패/역할이
+ * 하나뿐이라 추정만 한 경우)는 confident:false 로 표시해 화면에서
+ * "확인 필요" 알림을 띄울 수 있게 한다.
  */
-function overtimeNoteForJob(job){
-  if(job.overtime===null || job.overtime===0) return '';
+function computeOvertimeNoteAuto(job){
+  if(job.overtime===null || job.overtime===undefined || job.overtime===0){
+    return { text:'', confident:true };
+  }
   const full = job.overtimeNote || '';
-  if(!full) return '';
+  if(!full) return { text:'', confident:false };
 
   // 그룹 + 호칭 모두 검사 (예: 그룹 "팀장"+호칭 "선임", 그룹 "Leader"+호칭 "센터장")
   const name = `${job.groupLabel || ''} ${job.jobName || ''} ${job.displayName || ''}`.replace(/\s+/g,'');
@@ -1192,16 +1204,28 @@ function overtimeNoteForJob(job){
     .map(m => ({ role: m[1], text: `${m[1]}${m[2]}H` }))
     .sort((a,b)=> b.role.length - a.role.length); // 더 구체적인(긴) 역할명을 먼저 매칭
 
-  if(!segments.length) return full; // 이런 패턴이 없으면 원문 그대로 노출
+  if(!segments.length) return { text: full, confident:false }; // 패턴이 없으면 원문 그대로 노출(추정)
 
   const matched = segments.find(seg => name.includes(seg.role));
-  if(matched) return matched.text;
+  if(matched) return { text: matched.text, confident:true };
 
   // 역할이 여러 개 나열된 공용 비고인데 이 직무 이름과 일치하는 역할이 없으면
-  // 해당 특례 대상이 아닌 것으로 보고 비고를 비운다
-  if(segments.length > 1) return '';
+  // 해당 특례 대상이 아닌 것으로 보고 비고를 비운다 — 다만 확신할 수 없으니 확인 필요
+  if(segments.length > 1) return { text:'', confident:false };
 
-  return segments[0].text;
+  return { text: segments[0].text, confident:false };
+}
+
+function overtimeNoteForJob(job){
+  return computeOvertimeNoteAuto(job).text;
+}
+
+/** 자동 추정이 직무 이름으로 확실히 매칭되지 않아 사용자 확인이 필요한 경우 true */
+function isOvertimeNoteUncertain(job){
+  const hasOverride = job.overtimeNoteOverride !== null && job.overtimeNoteOverride !== undefined;
+  if(hasOverride) return false; // 사용자가 직접 확인/수정한 값은 항상 신뢰
+  return !computeOvertimeNoteAuto(job).confident
+    && !(job.overtime===null || job.overtime===undefined || job.overtime===0);
 }
 
 /** 자동 산출된 비고 대신 사용자가 직접 수정한 값이 있으면 그 값을 우선 사용 */
@@ -1991,6 +2015,15 @@ function handleFile(file){
   reader.readAsArrayBuffer(file);
 }
 
+/** 직무 칩에 초과근무수당 비고 자동 매칭 불확실 경고(⚠) 표시를 갱신 */
+function updateChipWarnBadge(chip, job){
+  if(!chip) return;
+  const uncertain = isOvertimeNoteUncertain(job);
+  chip.classList.toggle('ot-warn', uncertain);
+  const badge = chip.querySelector('.ot-warn-badge');
+  if(badge) badge.hidden = !uncertain;
+}
+
 function renderJobGrid(){
   jobGrid.innerHTML = '';
   selectedJobs = new Set(parsedData.jobs.map((_, i)=> i));
@@ -2018,8 +2051,10 @@ function renderJobGrid(){
       `<span class="lbl-wrap">` +
         (g ? `<span class="lbl-group">${g}</span>` : '') +
         `<span class="lbl-rank">${n || escapeHtml(job.displayName || '')}</span>` +
-      `</span>`;
+      `</span>` +
+      `<span class="ot-warn-badge" title="초과근무수당 비고 자동 매칭이 불확실합니다 — 클릭해서 확인하세요" hidden>⚠</span>`;
     chip.title = job.displayName || formatJobDisplay(job.groupLabel, job.jobName);
+    updateChipWarnBadge(chip, job);
 
     const chk = chip.querySelector('.chk');
     chk.addEventListener('click', (e)=>{
@@ -2081,16 +2116,30 @@ function syncOvertimeNoteEditor(job){
 
   if(!hasOvertime){
     if(document.activeElement !== otNoteInput) otNoteInput.value = '';
+    otNoteAutoHint.style.color = '';
     otNoteAutoHint.textContent = '이 직무는 초과근무수당 항목이 없어 비고를 수정할 수 없습니다.';
+    const chip0 = jobGrid.querySelector(`.job-chip[data-idx="${previewJobIdx}"]`);
+    updateChipWarnBadge(chip0, job);
     return;
   }
 
   if(document.activeElement !== otNoteInput){
     otNoteInput.value = hasOverride ? job.overtimeNoteOverride : autoVal;
   }
-  otNoteAutoHint.textContent = hasOverride
-    ? `자동 계산값: "${autoVal || '(없음)'}" — 현재 직접 수정한 값을 사용 중입니다.`
-    : `자동 계산값을 사용 중입니다. 필요 시 직접 수정하세요.`;
+  const uncertain = isOvertimeNoteUncertain(job);
+  if(hasOverride){
+    otNoteAutoHint.style.color = '';
+    otNoteAutoHint.textContent = `자동 계산값: "${autoVal || '(없음)'}" — 현재 직접 수정한 값을 사용 중입니다.`;
+  } else if(uncertain){
+    otNoteAutoHint.style.color = '#c77700';
+    otNoteAutoHint.textContent = `⚠ 자동 매칭이 불확실합니다. 엑셀 비고 원문: "${job.overtimeNote || '(없음)'}" — 이 직무에 맞는 값인지 확인하고 필요하면 직접 수정하세요.`;
+  } else {
+    otNoteAutoHint.style.color = '';
+    otNoteAutoHint.textContent = '자동 계산값을 사용 중입니다. 필요 시 직접 수정하세요.';
+  }
+
+  const chip = jobGrid.querySelector(`.job-chip[data-idx="${previewJobIdx}"]`);
+  updateChipWarnBadge(chip, job);
 }
 
 otNoteInput.addEventListener('input', ()=>{
@@ -2099,7 +2148,10 @@ otNoteInput.addEventListener('input', ()=>{
   job.overtimeNoteOverride = otNoteInput.value;
   const autoVal = overtimeNoteForJob(job);
   otNoteResetBtn.disabled = false;
+  otNoteAutoHint.style.color = '';
   otNoteAutoHint.textContent = `자동 계산값: "${autoVal || '(없음)'}" — 현재 직접 수정한 값을 사용 중입니다.`;
+  const chip = jobGrid.querySelector(`.job-chip[data-idx="${previewJobIdx}"]`);
+  updateChipWarnBadge(chip, job);
   scheduleLivePreview();
 });
 
@@ -2436,10 +2488,37 @@ function regenerateResults(){
   }
 }
 
+/** 선택된 직무 중 초과근무수당 비고 자동 매칭이 불확실한 것들을 모아 반환 */
+function collectUncertainOvertimeJobs(){
+  if(!parsedData) return [];
+  const list = [];
+  parsedData.jobs.forEach((job, idx)=>{
+    if(!selectedJobs.has(idx)) return;
+    if(isOvertimeNoteUncertain(job)){
+      list.push({
+        idx,
+        disp: job.displayName || formatJobDisplay(job.groupLabel, job.jobName),
+        raw: job.overtimeNote || '(비고 없음)'
+      });
+    }
+  });
+  return list;
+}
+
 document.getElementById('generateBtn').addEventListener('click', ()=>{
   if(!parsedData || selectedJobs.size===0){
     alert('생성할 직무를 먼저 선택하세요. (체크박스로 선택 후 다시 눌러 주세요)');
     return;
+  }
+  const uncertain = collectUncertainOvertimeJobs();
+  if(uncertain.length){
+    const lines = uncertain.map(u => `- ${u.disp}  (엑셀 비고 원문: "${u.raw}")`).join('\n');
+    const proceed = confirm(
+      `다음 ${uncertain.length}개 직무는 초과근무수당 비고가 자동으로 확실하게 매칭되지 않았습니다:\n\n${lines}\n\n` +
+      `[취소]: 생성을 멈추고 직무 목록에서 ⚠ 표시된 칩을 눌러 확인/수정합니다.\n` +
+      `[확인]: 자동 추정값(또는 빈 값) 그대로 생성을 진행합니다.`
+    );
+    if(!proceed) return;
   }
   collectNotesFromEditor();
   applyWidthsFromControls();
