@@ -1870,8 +1870,16 @@ function updateLibraryLockUi(){
 /**
  * 사이트 전체 접속 차단 게이트: 세션 인증 안 됐으면 헤더/본문/푸터를 전부 숨기고
  * 비밀번호 입력 화면만 보이게 한다. 「저장된 자료」탭 비밀번호와 같은 세션을 공유한다.
+ *
+ * 다운로드한 HTML 파일을 file:// 로 직접 열었을 때는 서버(API)가 아예 없어서
+ * 로그인이 불가능하므로 게이트를 적용하지 않는다 — 이 경우는 원래도 클라우드
+ * 저장 없이 로컬로만 동작하던 모드라 비밀번호로 막을 대상이 없다.
  */
 function applySiteGate(){
+  if(location.protocol === 'file:'){
+    document.body.classList.remove('gated');
+    return;
+  }
   const gated = !(cloudReady && sessionAuthed);
   document.body.classList.toggle('gated', gated);
   if(gated){
