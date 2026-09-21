@@ -32,11 +32,10 @@ module.exports = async function handler(req, res) {
     const body = await readBody(req);
     const action = body.action;
 
-    // 업로드 저장(insert_archive/update_zip)은 비밀번호 없이도 항상 저장되도록 허용.
-    // 저장된 자료 열람/삭제/설정 변경은 여전히 비밀번호 인증이 필요.
-    const PUBLIC_WRITE_ACTIONS = new Set(['insert_archive', 'update_zip']);
-    if (!PUBLIC_WRITE_ACTIONS.has(action) && !isAuthed(req)) {
-      return json(res, 401, { error: '인증이 필요합니다. 저장된 자료 탭에서 비밀번호를 입력하세요.' });
+    // 사이트 전체가 비밀번호로 보호되므로, 이 시점에 도달했다는 것 자체가
+    // 이미 로그인했다는 뜻이어야 한다 — 모든 액션에 세션 인증 필요.
+    if (!isAuthed(req)) {
+      return json(res, 401, { error: '인증이 필요합니다. 비밀번호를 다시 입력하세요.' });
     }
 
     switch (action) {

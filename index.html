@@ -430,9 +430,46 @@
   #libraryContent.unlocked{ display:block; }
   #libraryLock{ display:none; }
   #libraryLock.show{ display:block; }
+
+  /* 사이트 전체 접속 차단 게이트 */
+  body.gated > header,
+  body.gated > .wrap,
+  body.gated > footer{ display:none; }
+  #siteGate{ display:none; }
+  body.gated #siteGate{
+    display:flex; align-items:center; justify-content:center;
+    position:fixed; inset:0; background:var(--navy); z-index:1000; padding:20px;
+  }
+  .gate-box{
+    background:#fff; border-radius:12px; padding:32px 28px; width:100%; max-width:340px;
+    text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.25);
+  }
+  .gate-box h2{ font-size:16px; color:var(--navy); margin:0 0 6px; }
+  .gate-box p{ font-size:12.5px; color:#8a8f98; margin:0 0 18px; }
+  .gate-box input{
+    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    font-family:inherit; font-size:14px; margin-bottom:10px; text-align:center;
+  }
+  .gate-box .gate-err{ color:#b00; font-size:12.5px; min-height:1.3em; margin-bottom:8px; }
+  .gate-box button{
+    width:100%; border:none; border-radius:8px; padding:11px 16px; cursor:pointer;
+    font-family:inherit; font-size:14px; font-weight:700;
+    background:var(--navy); color:#fff;
+  }
+  .gate-box button:hover{ background:var(--navy-dark); }
 </style>
 </head>
-<body>
+<body class="gated">
+
+<div id="siteGate">
+  <div class="gate-box">
+    <h2>🔒 깡비서 급여조견표 생성기</h2>
+    <p>비밀번호를 입력해야 이용할 수 있습니다.</p>
+    <input type="password" id="gatePwInput" placeholder="비밀번호" autocomplete="current-password" maxlength="64">
+    <div class="gate-err" id="gatePwErr"></div>
+    <button type="button" id="gatePwBtn">확인</button>
+  </div>
+</div>
 
 <header>
   <div>
@@ -599,7 +636,7 @@
       <div class="panel" id="libraryPanel">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:4px;">
           <h2 style="margin:0;">📁 저장된 자료 관리</h2>
-          <button type="button" class="btn-ghost btn-sm" id="libLockAgainBtn">다시 잠금</button>
+          <button type="button" class="btn-ghost btn-sm" id="libLockAgainBtn">로그아웃 (사이트 전체 잠금)</button>
         </div>
         <p class="hint" style="margin:0 0 12px;">
           업로드한 엑셀과 생성한 조견표 ZIP이 Supabase에 저장됩니다.
@@ -1520,7 +1557,8 @@ async function payApi(action, payload){
     libraryUnlocked = false;
     try{ sessionStorage.removeItem(LIB_UNLOCK_SESSION_KEY); }catch(_){}
     updateLibraryLockUi();
-    const err = new Error(data.error || '인증이 필요합니다. 저장된 자료 탭에서 비밀번호를 입력하세요.');
+    applySiteGate(); // 세션 만료 시 사이트 전체 재잠금
+    const err = new Error(data.error || '인증이 필요합니다. 비밀번호를 다시 입력하세요.');
     err.status = 401;
     throw err;
   }
@@ -1808,6 +1846,7 @@ function bindLibraryUi(){
     try{ sessionStorage.removeItem(LIB_UNLOCK_SESSION_KEY); }catch(_){}
     await logoutPaySession();
     updateLibraryLockUi();
+    applySiteGate(); // 같은 세션을 공유하므로 로그아웃 시 사이트 전체가 다시 잠긴다
   });
   document.getElementById('libPwChangeBtn')?.addEventListener('click', ()=> changeLibraryPassword());
 }
@@ -1827,6 +1866,48 @@ function updateLibraryLockUi(){
     if(err) err.textContent = '';
   }
 }
+
+/**
+ * 사이트 전체 접속 차단 게이트: 세션 인증 안 됐으면 헤더/본문/푸터를 전부 숨기고
+ * 비밀번호 입력 화면만 보이게 한다. 「저장된 자료」탭 비밀번호와 같은 세션을 공유한다.
+ */
+function applySiteGate(){
+  const gated = !(cloudReady && sessionAuthed);
+  document.body.classList.toggle('gated', gated);
+  if(gated){
+    const inp = document.getElementById('gatePwInput');
+    const err = document.getElementById('gatePwErr');
+    if(err) err.textContent = cloudReady ? '' : '서버 환경변수 미설정 — Vercel 설정을 확인하세요.';
+    if(inp){ inp.value=''; setTimeout(()=> inp.focus(), 50); }
+  }
+}
+
+async function tryUnlockSiteGate(){
+  const inp = document.getElementById('gatePwInput');
+  const err = document.getElementById('gatePwErr');
+  const typed = (inp?.value || '').trim();
+  if(!typed){
+    if(err) err.textContent = '비밀번호를 입력하세요.';
+    return;
+  }
+  if(err) err.textContent = '확인 중…';
+  try{
+    await loginPaySession(typed);
+    libraryUnlocked = true;
+    try{ sessionStorage.setItem(LIB_UNLOCK_SESSION_KEY, '1'); }catch(_){}
+    if(err) err.textContent = '';
+    applySiteGate();
+    updateLibraryLockUi();
+    if(libraryUnlocked && sessionAuthed) loadArchives();
+  }catch(e){
+    if(err) err.textContent = e.message || '비밀번호가 올바르지 않습니다.';
+  }
+}
+
+document.getElementById('gatePwBtn')?.addEventListener('click', ()=> tryUnlockSiteGate());
+document.getElementById('gatePwInput')?.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') tryUnlockSiteGate();
+});
 
 async function tryUnlockLibrary(){
   const inp = document.getElementById('libPwInput');
@@ -2622,6 +2703,7 @@ bindAppTabs();
     // 서버 세션이 살아 있을 때만 UI 잠금 해제 복원
     libraryUnlocked = sessionAuthed && sessionStorage.getItem(LIB_UNLOCK_SESSION_KEY) === '1';
   }catch(_){ libraryUnlocked = false; }
+  applySiteGate();
   updateLibraryLockUi();
   if(cloudReady){
     if(libraryUnlocked && sessionAuthed) loadArchives();

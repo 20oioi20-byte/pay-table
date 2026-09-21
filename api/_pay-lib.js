@@ -15,7 +15,7 @@ const SESSION_SECRET =
   process.env.SESSION_SECRET ||
   (SB_KEY ? crypto.createHash('sha256').update('pay-table|' + SB_KEY).digest('hex') : '');
 const COOKIE_NAME = 'pay_session';
-const DEFAULT_PASSWORD = '000000';
+const DEFAULT_PASSWORD = '!qseqse23';
 const BUCKET = 'pay-archives';
 const SESSION_HOURS = 8;
 
