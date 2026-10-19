@@ -1,29 +1,27 @@
 <title>급여 종합관리 샘플</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: 상단 필터 바 → KPI 한 줄 → 비교(유형×인력) / 추이(센터) 2열 → 편차 히트맵 → 변경 히스토리 원장 */
+/* Layout: 필터 바 + 경로(전사 › 유형 › 센터) → KPI 한 줄 → 단계별 화면(전사: 유형 비교·분포·주의 센터 / 유형: 센터 순위·추이 / 센터: 추이·구성) → 변경 히스토리 */
 :root{
-  --bg:#f3f5f8; --surface:#ffffff; --ink:#18202c; --muted:#5d6878; --line:#dfe4ea;
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#18202c; --muted:#5d6878; --line:#dfe4ea; --hover:#eef3f8;
   --accent:#1f5f8b; --accent-soft:#e3eef6;
   --r-mgr:#3b4a9e; --r-gen:#1b8a7a; --r-new:#c27a12;
   --up:#b4372b; --down:#1f6fb2; --ok:#2f7d4f; --warn:#b06d00; --warn-soft:#fdf0d8;
-  --heat-pos:180,55,43; --heat-neg:31,111,178;
   --f-body:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
   --f-num:"Consolas","SFMono-Regular","Menlo",monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#11161d; --surface:#19202a; --ink:#e6ebf1; --muted:#97a3b3; --line:#2b3542;
+  --bg:#11161d; --surface:#19202a; --ink:#e6ebf1; --muted:#97a3b3; --line:#2b3542; --hover:#222c38;
   --accent:#6fb0dc; --accent-soft:#1d3346;
   --r-mgr:#8b98f0; --r-gen:#4cc4b1; --r-new:#e7a94a;
-  --up:#ef7f72; --down:#6fb0f0; --ok:#6cc58f; --warn:#e7a94a; --warn-soft:#3a2f1a;
-  --heat-pos:239,127,114; --heat-neg:111,176,240; color-scheme:dark}}
+  --up:#ef7f72; --down:#6fb0f0; --ok:#6cc58f; --warn:#e7a94a; --warn-soft:#3a2f1a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#11161d; --surface:#19202a; --ink:#e6ebf1; --muted:#97a3b3; --line:#2b3542;
+  --bg:#11161d; --surface:#19202a; --ink:#e6ebf1; --muted:#97a3b3; --line:#2b3542; --hover:#222c38;
   --accent:#6fb0dc; --accent-soft:#1d3346;
   --r-mgr:#8b98f0; --r-gen:#4cc4b1; --r-new:#e7a94a;
-  --up:#ef7f72; --down:#6fb0f0; --ok:#6cc58f; --warn:#e7a94a; --warn-soft:#3a2f1a;
-  --heat-pos:239,127,114; --heat-neg:111,176,240; color-scheme:dark}
+  --up:#ef7f72; --down:#6fb0f0; --ok:#6cc58f; --warn:#e7a94a; --warn-soft:#3a2f1a; color-scheme:dark}
 
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
 .wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
@@ -33,120 +31,159 @@ header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justif
 header.top h1{margin:0;font-size:22px;letter-spacing:-.01em;text-wrap:balance}
 header.top .sub{color:var(--muted);font-size:13px;margin-top:2px}
 .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn);vertical-align:middle;margin-left:6px}
-.src{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
-.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer}
+.src{font-size:12px;color:var(--muted)}
+button,input,select{font:inherit}
+.btn{font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:5px 12px;border-radius:6px;cursor:pointer}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
-.btn:focus-visible,.chip:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .filters{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
 .fgroup{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.fgroup>label,.flabel{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em}
-select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
-.chip{font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600}
-.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
+.flabel{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+select,input[type=search]{font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+input[type=search]{width:200px;max-width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font-size:12px;padding:5px 11px;border:0;background:transparent;color:var(--muted);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);font-weight:700}
+.seg .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+
+.crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:15px}
+.crumb button{border:0;background:none;color:var(--accent);cursor:pointer;padding:2px 4px;font-size:15px;border-radius:4px}
+.crumb button:hover{background:var(--hover)}
+.crumb .cur{font-weight:700;padding:2px 4px}
+.crumb .sep{color:var(--muted)}
+.crumb .hint{font-size:12px;color:var(--muted);margin-left:8px}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .kpi .k{font-size:12px;color:var(--muted)}
-.kpi .v{font-size:22px;font-weight:700}
+.kpi .v{font-size:22px;font-weight:700;overflow-wrap:anywhere}
 .kpi .d{font-size:12px;color:var(--muted)}
-.kpi .d b.up{color:var(--up)} .kpi .d b.warn{color:var(--warn)}
+b.up{color:var(--up)} b.down{color:var(--down)} b.warn{color:var(--warn)}
 
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:16px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .panel h2{margin:0;font-size:15px}
-.panel .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.panel .note{font-size:12px;color:var(--muted);margin:0}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.note{font-size:12px;color:var(--muted);margin:0}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c)}
 .legend span.ln::before{height:3px;vertical-align:3px;border-radius:0}
 .legend span.dash::before{height:0;border-top:2px dashed var(--c);background:none;vertical-align:3px}
+.legend span.band::before{opacity:.25}
 svg.chart{width:100%;height:auto;display:block}
 svg .axis{stroke:var(--line);stroke-width:1}
 svg .gl{stroke:var(--line);stroke-width:1;stroke-dasharray:2 3}
 svg text{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+svg text.ink{fill:var(--ink)}
 svg text.val{fill:var(--ink);font-size:10px;font-family:var(--f-num)}
 svg text.end{fill:var(--ink);font-weight:700;font-size:11px;font-family:var(--f-num)}
+svg .hit{cursor:pointer}
+svg .hit .bg{fill:transparent}
+svg .hit:hover .bg{fill:var(--hover)}
+svg .hit:hover text.lbl{fill:var(--accent);text-decoration:underline}
+.rankbox{max-height:560px;overflow-y:auto;border-top:1px solid var(--line)}
+
+.watch{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+.watch h3{margin:0 0 6px;font-size:13px}
+.watch ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column}
+.watch li{display:flex;justify-content:space-between;gap:8px;padding:5px 6px;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;border-radius:4px}
+.watch li:hover{background:var(--hover)}
+.watch li .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.watch li .nm small{color:var(--muted);margin-left:4px}
 
 .tblwrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
 th{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;background:var(--surface);position:sticky;top:0}
 td.r,th.r{text-align:right}
-td.heat{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+tr.go{cursor:pointer} tr.go:hover td{background:var(--hover)}
 .typetag{font-size:11px;padding:1px 7px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
 .delta.up{color:var(--up)} .delta.down{color:var(--down)}
 .pill{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px}
-.pill.ok{color:var(--ok);background:transparent;border:1px solid var(--ok)}
+.pill.ok{color:var(--ok);border:1px solid var(--ok)}
 .pill.warn{color:var(--warn);background:var(--warn-soft)}
-.scroll{max-height:360px;overflow:auto}
-.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
-.flow div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted)}
-.flow b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
-@media (prefers-reduced-motion:no-preference){svg .bar{transition:height .25s,y .25s}}
+.more{align-self:center}
 </style>
 
 <div class="wrap">
   <header class="top">
     <div>
       <h1>급여 종합관리 <span class="badge">샘플 데이터</span></h1>
-      <div class="sub">급여조견표 생성기에서 업로드된 급여테이블을 시점별 스냅샷으로 누적해 비교합니다. 표시된 센터·금액은 모두 가상의 예시입니다.</div>
+      <div class="sub">전사 → 센터유형 → 센터 순서로 눌러 들어가며 비교합니다. 표시된 센터·금액은 모두 가상의 예시입니다.</div>
     </div>
-    <div class="src">
-      <span id="srcInfo"></span>
-      <button class="btn" id="btnImport" type="button">이력 파일 불러오기</button>
-      <button class="btn" id="btnExport" type="button">이력 파일 내보내기</button>
-    </div>
+    <div class="src" id="srcInfo"></div>
   </header>
 
   <section class="filters" aria-label="필터">
-    <div class="fgroup"><label for="asOf">기준 시점</label><select id="asOf"></select></div>
-    <div class="fgroup"><span class="flabel">센터 유형</span><span id="typeChips"></span></div>
-    <div class="fgroup"><span class="flabel">인력 유형</span><span id="roleChips"></span></div>
+    <div class="fgroup"><label class="flabel" for="asOf">기준 시점</label><select id="asOf"></select></div>
+    <div class="fgroup"><span class="flabel">비교 기준 인력</span><div class="seg" id="roleSeg"></div></div>
+    <div class="fgroup"><label class="flabel" for="jump">센터 바로 찾기</label>
+      <input type="search" id="jump" list="centerList" placeholder="센터명 입력 (170곳)"><datalist id="centerList"></datalist></div>
   </section>
 
+  <nav class="crumb" id="crumb" aria-label="현재 위치"></nav>
   <section class="kpis" id="kpis"></section>
 
-  <div class="grid2">
-    <section class="panel">
-      <div class="ph"><h2>센터유형 × 인력유형 평균 월 총액</h2><div class="legend" id="legendRoles"></div></div>
-      <p class="note">기준 시점에 유효한 급여테이블 기준, 센터 단순평균 (단위: 만원)</p>
-      <div id="chartType"></div>
-    </section>
-    <section class="panel">
-      <div class="ph">
-        <h2>센터별 급여 추이</h2>
-        <div class="fgroup">
-          <select id="trendCenter" aria-label="센터 선택"></select>
-          <select id="trendRole" aria-label="인력 유형 선택"></select>
-        </div>
-      </div>
-      <div class="legend" id="legendTrend"></div>
-      <div id="chartTrend"></div>
-    </section>
+  <!-- 1단계: 전사 -->
+  <div id="viewAll">
+    <div class="grid2">
+      <section class="panel">
+        <div class="ph"><h2>센터유형별 평균 월 총액</h2><div class="legend" id="legendRoles"></div></div>
+        <p class="note">유형을 누르면 소속 센터 비교로 이동합니다 (단위: 만원)</p>
+        <div id="chartType"></div>
+      </section>
+      <section class="panel">
+        <div class="ph"><h2>유형별 센터 분포</h2><span class="note" id="stripRole"></span></div>
+        <p class="note">점 하나가 센터 1곳입니다. 세로 막대는 유형 평균, 점선은 전사 평균입니다. 행을 누르면 해당 유형으로 이동합니다.</p>
+        <div id="chartStrip"></div>
+      </section>
+    </div>
   </div>
 
-  <section class="panel">
-    <div class="ph"><h2>센터별 전사 평균 대비 편차</h2><p class="note">같은 인력유형의 전사 평균 대비 %, 붉을수록 높고 푸를수록 낮음 · 최저임금 여유율은 신입상담사 기본급+직무수당 기준</p></div>
-    <div class="tblwrap"><table id="heatTbl"></table></div>
+  <!-- 2단계: 유형 -->
+  <div id="viewType" hidden>
+    <div class="grid2">
+      <section class="panel">
+        <div class="ph"><h2 id="rankTitle">센터 순위</h2>
+          <div class="fgroup"><div class="seg" id="rankSeg"></div><input type="search" id="rankSearch" placeholder="이 유형 안에서 검색"></div></div>
+        <p class="note">유형 평균 대비 편차입니다. 막대를 누르면 센터 상세로 이동합니다.</p>
+        <div class="rankbox" id="chartRank"></div>
+      </section>
+      <section class="panel">
+        <div class="ph"><h2 id="typeTrendTitle">유형 급여 추이</h2></div>
+        <div class="legend" id="legendTypeTrend"></div>
+        <div id="chartTypeTrend"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 3단계: 센터 -->
+  <div id="viewCenter" hidden>
+    <div class="grid2">
+      <section class="panel">
+        <div class="ph"><h2>센터 급여 추이</h2></div>
+        <div class="legend" id="legendTrend"></div>
+        <div id="chartTrend"></div>
+      </section>
+      <section class="panel">
+        <div class="ph"><h2>항목별 구성과 유형 평균 비교</h2><span class="note" id="compNote"></span></div>
+        <div class="tblwrap"><table id="compTbl"></table></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" id="watchPanel">
+    <div class="ph"><h2 id="watchTitle">주의해서 볼 센터</h2><span class="note">같은 유형 평균 대비 편차 기준 · 누르면 센터 상세로 이동</span></div>
+    <div class="watch" id="watch"></div>
   </section>
 
   <section class="panel">
-    <div class="ph"><h2>급여 변경 히스토리</h2>
-      <div class="fgroup"><select id="histCenter" aria-label="히스토리 센터"></select><span class="note" id="histCount"></span></div>
-    </div>
-    <div class="tblwrap scroll"><table id="histTbl"></table></div>
-  </section>
-
-  <section class="panel">
-    <h2>데이터가 쌓이는 흐름 (외부 저장소 없음)</h2>
-    <div class="flow">
-      <div><b>1. 조견표 생성기에서 엑셀 업로드</b>기존 파서가 센터명·직무·항목별 금액을 읽음</div>
-      <div><b>2. 스냅샷 자동 기록</b>적용일·센터·직무·금액을 브라우저 내부 저장소(IndexedDB)에 1건으로 저장</div>
-      <div><b>3. 이력 파일로 백업</b>JSON 1개로 내보내 사내 PC·사내 공유폴더에 보관, 다른 PC에서 다시 불러오기</div>
-      <div><b>4. 종합관리 화면</b>이 화면이 이력 파일을 읽어 유형별 비교·추이·변경내역을 계산</div>
-    </div>
+    <div class="ph"><h2 id="histTitle">급여 변경 히스토리</h2>
+      <div class="fgroup"><input type="search" id="histSearch" placeholder="센터명·항목 검색"><span class="note" id="histCount"></span></div></div>
+    <div class="tblwrap"><table id="histTbl"></table></div>
+    <button class="btn more" id="histMore" type="button">20건 더 보기</button>
   </section>
 </div>
 
@@ -158,235 +195,353 @@ const ROLES = [
   {id:'new', name:'신입상담사', color:'var(--r-new)'}
 ];
 const TYPES = ['공공','금융','유통','통신'];
-const CENTERS = [
-  ['C01','세종센터','공공'],['C02','대전센터','공공'],['C03','광주센터','공공'],
-  ['C04','여의도센터','금융'],['C05','강남센터','금융'],['C06','부산센터','금융'],['C07','대구센터','금융'],
-  ['C08','판교센터','유통'],['C09','인천센터','유통'],['C10','수원센터','유통'],
-  ['C11','구로센터','통신'],['C12','천안센터','통신']
-].map(([id,name,type])=>({id,name,type}));
+const TYPE_COUNT = {'공공':42,'금융':51,'유통':44,'통신':33};
+const REGIONS = ['서울','부산','대구','인천','광주','대전','울산','세종','수원','성남','고양','용인','창원','청주','천안','전주','포항','김해','제주','원주','춘천','구미','아산','평택','익산','여수','순천','진주','목포','강릉'];
 const PERIODS = ['2024-01','2024-07','2025-01','2025-07','2026-01','2026-07'];
-// 최저임금(시급) × 209시간
-const MIN_WAGE = {2024:9860, 2025:10030, 2026:10320};
+const MIN_WAGE = {2024:9860, 2025:10030, 2026:10320}; // 시급, 월 = ×209
 const minMonthly = y => MIN_WAGE[y]*209;
 
-let seed = 7;
+let seed = 11;
 const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
 
-const BASE = { // 2024-01 신입/일반/관리자 기본급 수준 (원)
+const CENTERS = [];
+{ const cnt = {}; let n = 0;
+  TYPES.forEach(t=>{ for(let i=0;i<TYPE_COUNT[t];i++){
+    const rg = REGIONS[Math.floor(rnd()*REGIONS.length)], k = rg+t; cnt[k]=(cnt[k]||0)+1;
+    CENTERS.push({id:'C'+String(++n).padStart(3,'0'), name:`${rg} ${t}${cnt[k]}센터`, type:t});
+  }});
+}
+const BASE = {
   '공공':{new:2060740, gen:2280000, mgr:2950000},
   '금융':{new:2120000, gen:2410000, mgr:3180000},
   '유통':{new:2060740, gen:2230000, mgr:2880000},
   '통신':{new:2080000, gen:2320000, mgr:3020000}
 };
 function buildItems(type, role, basic, tenure){
-  const job = role==='mgr' ? 120000 : (type==='금융' ? 100000 : 60000);
-  const pos = role==='mgr' ? (type==='금융' ? 300000 : 250000) : 0;
-  const ten = role==='new' ? 0 : tenure;
-  return {'기본급':basic, '직책수당':pos, '직무수당':job, '근속수당':ten, '급식비':200000};
+  return {'기본급':basic,
+    '직책수당': role==='mgr' ? (type==='금융'?300000:250000) : 0,
+    '직무수당': role==='mgr' ? 120000 : (type==='금융'?100000:60000),
+    '근속수당': role==='new' ? 0 : tenure,
+    '급식비':200000};
 }
-const snapshots = []; // {date, centerId, file, jobs:[{role, items}]}
-CENTERS.forEach((c,ci)=>{
-  const off = 0.97 + rnd()*0.07;
-  let cur = {};
+const snapshots = [];
+CENTERS.forEach(c=>{
+  const off = 0.93 + rnd()*0.14, tight = rnd() < 0.05;
+  const cur = {};
   ROLES.forEach(r=>{ cur[r.id] = Math.round(BASE[c.type][r.id]*(r.id==='new'?1:off)/1000)*1000; });
   const tenure = Math.round((20000+rnd()*40000)/10000)*10000;
   PERIODS.forEach((p,pi)=>{
     const y = +p.slice(0,4), jan = p.endsWith('-01');
-    const changed = pi===0 || jan || rnd() < 0.35;
-    if(!changed) return;
-    if(pi>0){
-      ROLES.forEach(r=>{
-        if(ci===9 && r.id==='new') return;
-        const rate = jan ? 0.018 + rnd()*0.03 : 0.01 + rnd()*0.02;
-        cur[r.id] = Math.round(cur[r.id]*(1+rate)/1000)*1000;
-      });
-    }
-    // 신입 기본급은 최저임금 하한 보장 (한 센터는 일부러 여유가 작게)
-    const floor = minMonthly(y);
-    if(cur.new + 60000 < floor) cur.new = floor - 60000 + Math.round(rnd()*30)*1000;
-    if(ci===9 && (jan || pi===0)) cur.new = Math.round((floor*1.012 - 60000)/1000)*1000;
-    snapshots.push({
-      date:p, centerId:c.id,
-      file:`급여테이블(변경후)_${c.name}_${p.replace('-','')}.xlsx`,
-      jobs: ROLES.map(r=>({role:r.id, items:buildItems(c.type, r.id, cur[r.id], tenure)}))
+    if(!(pi===0 || jan || rnd() < 0.35)) return;
+    if(pi>0) ROLES.forEach(r=>{
+      if(tight && r.id==='new') return;
+      cur[r.id] = Math.round(cur[r.id]*(1+(jan ? 0.018+rnd()*0.03 : 0.01+rnd()*0.02))/1000)*1000;
     });
+    const floor = minMonthly(y);
+    if(cur.new + 60000 < floor) cur.new = floor - 60000 + Math.round(rnd()*40)*1000;
+    if(tight && (jan || pi===0)) cur.new = Math.round((floor*(1.005+rnd()*0.01) - 60000)/1000)*1000;
+    snapshots.push({date:p, centerId:c.id, file:`급여테이블(변경후)_${c.name.replace(/\s/g,'')}_${p.replace('-','')}.xlsx`,
+      jobs: ROLES.map(r=>({role:r.id, items:buildItems(c.type, r.id, cur[r.id], tenure)}))});
   });
 });
 
 /* ---------- 계산 ---------- */
-const total = items => Object.values(items).reduce((a,b)=>a+(b||0),0);
 const centerById = Object.fromEntries(CENTERS.map(c=>[c.id,c]));
-function snapAt(centerId, date){
-  let s=null;
-  for(const x of snapshots) if(x.centerId===centerId && x.date<=date && (!s || x.date>s.date)) s=x;
-  return s;
-}
-function valueAt(centerId, role, date){
-  const s = snapAt(centerId, date); if(!s) return null;
-  const j = s.jobs.find(j=>j.role===role); return j ? total(j.items) : null;
+const snapsByCenter = {};
+snapshots.forEach(s=>(snapsByCenter[s.centerId] ||= []).push(s));
+Object.values(snapsByCenter).forEach(l=>l.sort((a,b)=>a.date.localeCompare(b.date)));
+const total = items => Object.values(items).reduce((a,b)=>a+(b||0),0);
+function snapAt(id, date){ let s=null; for(const x of snapsByCenter[id]||[]){ if(x.date<=date) s=x; else break; } return s; }
+const itemsAt = (id, role, date) => { const s=snapAt(id,date); return s ? s.jobs.find(j=>j.role===role).items : null; };
+const _vc = new Map();
+function valueAt(id, role, date){
+  const k = id+role+date; if(_vc.has(k)) return _vc.get(k);
+  const it = itemsAt(id, role, date), v = it ? total(it) : null; _vc.set(k, v); return v;
 }
 const avg = a => { const v=a.filter(x=>x!=null); return v.length ? v.reduce((p,q)=>p+q,0)/v.length : null; };
 const man = v => (v/10000).toFixed(1);
 const won = v => Math.round(v).toLocaleString('ko-KR');
 const pct = (v,d=1) => (v>0?'+':'')+(v*100).toFixed(d)+'%';
-const prevPeriod = p => { const y=+p.slice(0,4), m=p.slice(5); return (y-1)+'-'+m; };
+const prevYear = p => (+p.slice(0,4)-1)+p.slice(4);
+const centersOf = t => CENTERS.filter(c=>c.type===t);
+const typeAvg = (t, role, d) => avg(centersOf(t).map(c=>valueAt(c.id,role,d)));
+const coAvg = (role, d) => avg(CENTERS.map(c=>valueAt(c.id,role,d)));
+function wageMargin(id, d){ const it = itemsAt(id,'new',d); return (it['기본급']+it['직무수당'])/minMonthly(+d.slice(0,4))-1; }
+const roleOf = id => ROLES.find(r=>r.id===id);
 
 /* ---------- 상태 ---------- */
-const state = {
-  asOf: PERIODS[PERIODS.length-1],
-  types: new Set(TYPES),
-  roles: new Set(ROLES.map(r=>r.id)),
-  trendCenter: 'C05', trendRole: 'gen', histCenter: 'all'
-};
-const visibleCenters = () => CENTERS.filter(c=>state.types.has(c.type));
-const visibleRoles = () => ROLES.filter(r=>state.roles.has(r.id));
+const state = { asOf: PERIODS[PERIODS.length-1], role:'gen', type:null, center:null, rankMode:'all', rankQ:'', histQ:'', histN:20 };
+const $ = id => document.getElementById(id);
+function go(type, center){
+  state.type = type; state.center = center; state.rankQ=''; $('rankSearch').value=''; state.histN = 20;
+  render(); window.scrollTo({top:0, behavior:'smooth'});
+}
 
 /* ---------- 필터 UI ---------- */
-const $ = id => document.getElementById(id);
-function initFilters(){
+function initUi(){
   $('asOf').innerHTML = PERIODS.map(p=>`<option value="${p}">${p.replace('-','년 ')}월</option>`).join('');
   $('asOf').value = state.asOf;
   $('asOf').onchange = e=>{ state.asOf=e.target.value; render(); };
-  $('typeChips').innerHTML = TYPES.map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="true">${t}</button>`).join(' ');
-  $('roleChips').innerHTML = ROLES.map(r=>`<button type="button" class="chip" data-r="${r.id}" aria-pressed="true"><span class="dot" style="background:${r.color}"></span>${r.name}</button>`).join(' ');
-  $('typeChips').onclick = e=>{ const b=e.target.closest('.chip'); if(!b) return; toggle(state.types,b.dataset.t,b); };
-  $('roleChips').onclick = e=>{ const b=e.target.closest('.chip'); if(!b) return; toggle(state.roles,b.dataset.r,b); };
-  $('trendCenter').innerHTML = CENTERS.map(c=>`<option value="${c.id}">${c.name} (${c.type})</option>`).join('');
-  $('trendCenter').value = state.trendCenter;
-  $('trendCenter').onchange = e=>{ state.trendCenter=e.target.value; renderTrend(); };
-  $('trendRole').innerHTML = ROLES.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
-  $('trendRole').value = state.trendRole;
-  $('trendRole').onchange = e=>{ state.trendRole=e.target.value; renderTrend(); };
-  $('histCenter').innerHTML = `<option value="all">전체 센터</option>`+CENTERS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  $('histCenter').onchange = e=>{ state.histCenter=e.target.value; renderHistory(); };
+  $('roleSeg').innerHTML = ROLES.map(r=>`<button type="button" data-role="${r.id}" aria-pressed="${r.id===state.role}"><span class="dot" style="background:${r.color}"></span>${r.name}</button>`).join('');
+  $('roleSeg').onclick = e=>{ const b=e.target.closest('button'); if(!b) return; state.role=b.dataset.role;
+    [...$('roleSeg').children].forEach(x=>x.setAttribute('aria-pressed', x===b)); render(); };
+  $('rankSeg').innerHTML = [['all','전체'],['top','상위 10'],['bottom','하위 10']].map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k==='all'}">${l}</button>`).join('');
+  $('rankSeg').onclick = e=>{ const b=e.target.closest('button'); if(!b) return; state.rankMode=b.dataset.k;
+    [...$('rankSeg').children].forEach(x=>x.setAttribute('aria-pressed', x===b)); renderRank(); };
+  $('rankSearch').oninput = e=>{ state.rankQ=e.target.value.trim(); renderRank(); };
+  $('centerList').innerHTML = CENTERS.map(c=>`<option value="${c.name}">${c.type}</option>`).join('');
+  $('jump').onchange = e=>{ const c = CENTERS.find(x=>x.name===e.target.value.trim()); if(c){ e.target.value=''; go(c.type, c.id); } };
+  $('histSearch').oninput = e=>{ state.histQ=e.target.value.trim(); state.histN=20; renderHistory(); };
+  $('histMore').onclick = ()=>{ state.histN += 20; renderHistory(); };
   $('legendRoles').innerHTML = ROLES.map(r=>`<span style="--c:${r.color}">${r.name}</span>`).join('');
-  $('srcInfo').textContent = `스냅샷 ${snapshots.length}건 · 센터 ${CENTERS.length}곳 · 최종 반영 ${PERIODS[PERIODS.length-1]}`;
-  const msg = '샘플 화면에서는 동작하지 않습니다. 실제 버전에서는 내부 PC의 JSON 이력 파일을 읽고 씁니다.';
-  $('btnImport').onclick = $('btnExport').onclick = e=>{ e.target.textContent='샘플 전용 안내: 비활성'; e.target.title=msg; };
-}
-function toggle(set, key, btn){
-  if(set.has(key)){ if(set.size===1) return; set.delete(key); } else set.add(key);
-  btn.setAttribute('aria-pressed', set.has(key));
-  render();
+  $('srcInfo').textContent = `스냅샷 ${snapshots.length.toLocaleString()}건 · 센터 ${CENTERS.length}곳 · 최종 반영 ${PERIODS[PERIODS.length-1]}`;
+  document.addEventListener('click', e=>{
+    const el = e.target.closest('[data-go-center],[data-go-type],[data-go-all]'); if(!el) return;
+    if(el.dataset.goAll!==undefined) go(null,null);
+    else if(el.dataset.goCenter) go(centerById[el.dataset.goCenter].type, el.dataset.goCenter);
+    else go(el.dataset.goType, null);
+  });
+  document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.matches('[data-go-center],[data-go-type]')) e.target.click(); });
 }
 
-/* ---------- KPI ---------- */
+/* ---------- 경로 + KPI ---------- */
+function renderCrumb(){
+  const parts = [state.type||state.center ? `<button type="button" data-go-all>전사</button>` : `<span class="cur">전사</span>`];
+  if(state.type) parts.push(state.center ? `<button type="button" data-go-type="${state.type}">${state.type}</button>` : `<span class="cur">${state.type} (${centersOf(state.type).length}곳)</span>`);
+  if(state.center) parts.push(`<span class="cur">${centerById[state.center].name}</span>`);
+  const hint = !state.type ? '유형을 눌러 세부 센터로 이동' : !state.center ? '센터를 눌러 상세로 이동' : '';
+  $('crumb').innerHTML = parts.join('<span class="sep">›</span>') + (hint?`<span class="hint">${hint}</span>`:'');
+}
+function kpiHtml(list){ return list.map(([k,v,d])=>`<div class="kpi"><span class="k">${k}</span><span class="v num">${v}</span><span class="d">${d}</span></div>`).join(''); }
 function renderKpis(){
-  const cs = visibleCenters(), d = state.asOf, py = prevPeriod(d);
-  const genNow = avg(cs.map(c=>valueAt(c.id,'gen',d)));
-  const genPrev = avg(cs.map(c=>valueAt(c.id,'gen',py)));
-  const changed = new Set(snapshots.filter(s=>s.date===d && cs.some(c=>c.id===s.centerId)).map(s=>s.centerId)).size;
-  const y = +d.slice(0,4);
-  const tight = cs.filter(c=>{ const s=snapAt(c.id,d); if(!s) return false; const it=s.jobs.find(j=>j.role==='new').items; return (it['기본급']+it['직무수당'])/minMonthly(y)-1 < 0.02; }).length;
-  const mgr = avg(cs.map(c=>valueAt(c.id,'mgr',d))), nw = avg(cs.map(c=>valueAt(c.id,'new',d)));
-  $('kpis').innerHTML = [
-    ['관리 센터', `${cs.length}곳`, `유형 ${state.types.size}개 · 누적 스냅샷 ${snapshots.filter(s=>cs.some(c=>c.id===s.centerId)).length}건`],
-    ['일반상담사 평균 월 총액', `${man(genNow)}만원`, genPrev ? `전년 동월 대비 <b class="up">${pct(genNow/genPrev-1)}</b>` : '전년 데이터 없음'],
-    ['관리자 ↔ 신입 격차', `${man(mgr-nw)}만원`, `신입 대비 관리자 ${(mgr/nw).toFixed(2)}배`],
+  const d = state.asOf, role = state.role, rn = roleOf(role).name, y = +d.slice(0,4);
+  if(state.center){
+    const c = centerById[state.center], peers = centersOf(c.type);
+    const v = valueAt(c.id,role,d), ta = typeAvg(c.type,role,d);
+    const rank = peers.map(p=>valueAt(p.id,role,d)).sort((a,b)=>b-a).indexOf(v)+1;
+    const list = snapsByCenter[c.id].filter(s=>s.date<=d), last = list[list.length-1], prev = list[list.length-2];
+    const lv = prev ? total(last.jobs.find(j=>j.role===role).items)/total(prev.jobs.find(j=>j.role===role).items)-1 : null;
+    const m = wageMargin(c.id,d);
+    $('kpis').innerHTML = kpiHtml([
+      [`${rn} 월 총액`, `${man(v)}만원`, `${won(v)}원`],
+      [`${c.type} 유형 평균 대비`, `${pct(v/ta-1)}`, `유형 평균 ${man(ta)}만원`],
+      [`${c.type} 유형 내 순위`, `${rank} / ${peers.length}`, `상위 ${Math.round(rank/peers.length*100)}%`],
+      ['최근 변경', last.date, lv!=null ? `직전 대비 <b class="up">${pct(lv)}</b>` : '최초 등록'],
+      ['신입 최저임금 여유', pct(m), m<0.02 ? '<b class="warn">점검 필요</b>' : `${y}년 시급 ${won(MIN_WAGE[y])}원 기준`]
+    ]);
+    return;
+  }
+  const cs = state.type ? centersOf(state.type) : CENTERS;
+  const vals = cs.map(c=>({c, v:valueAt(c.id,role,d)})).sort((a,b)=>b.v-a.v);
+  const now = avg(vals.map(x=>x.v)), prev = avg(cs.map(c=>valueAt(c.id,role,prevYear(d))));
+  const changed = cs.filter(c=>snapsByCenter[c.id].some(s=>s.date===d)).length;
+  const tight = cs.filter(c=>wageMargin(c.id,d)<0.02).length;
+  const co = coAvg(role,d);
+  $('kpis').innerHTML = kpiHtml([
+    [state.type ? `${state.type} 센터 수` : '관리 센터', `${cs.length}곳`, state.type ? `전사 ${CENTERS.length}곳 중 ${Math.round(cs.length/CENTERS.length*100)}%` : `유형 ${TYPES.length}개`],
+    [`${rn} 평균 월 총액`, `${man(now)}만원`, (state.type ? `전사 대비 <b class="${now>=co?'up':'down'}">${pct(now/co-1)}</b> · ` : '') + (prev ? `전년 대비 <b class="up">${pct(now/prev-1)}</b>` : '')],
+    ['최고 ~ 최저 격차', `${man(vals[0].v-vals[vals.length-1].v)}만원`, `${vals[0].c.name} ↔ ${vals[vals.length-1].c.name}`],
     ['이번 시점 변경 센터', `${changed}곳`, `${d} 적용 급여테이블 기준`],
-    ['최저임금 여유 2% 미만', `${tight}곳`, tight ? `<b class="warn">신입상담사 점검 필요</b>` : `${y}년 시급 ${won(MIN_WAGE[y])}원 기준`]
-  ].map(([k,v,dd])=>`<div class="kpi"><span class="k">${k}</span><span class="v num">${v}</span><span class="d">${dd}</span></div>`).join('');
+    ['최저임금 여유 2% 미만', `${tight}곳`, tight ? '<b class="warn">신입상담사 점검 필요</b>' : `${y}년 시급 ${won(MIN_WAGE[y])}원 기준`]
+  ]);
 }
 
-/* ---------- 유형 × 인력 막대 ---------- */
+/* ---------- 1단계: 유형별 막대 ---------- */
 function renderTypeChart(){
-  const types = TYPES.filter(t=>state.types.has(t)), roles = visibleRoles(), d = state.asOf;
-  const data = types.map(t=>({t, v:roles.map(r=>avg(CENTERS.filter(c=>c.type===t).map(c=>valueAt(c.id,r.id,d))))}));
-  const W=560,H=280,L=44,R=10,T=18,B=30, iw=W-L-R, ih=H-T-B;
+  const d = state.asOf;
+  const data = TYPES.map(t=>({t, n:centersOf(t).length, v:ROLES.map(r=>typeAvg(t,r.id,d))}));
+  const W=560,H=290,L=44,R=10,T=18,B=40, iw=W-L-R, ih=H-T-B;
   const max = Math.ceil(Math.max(...data.flatMap(x=>x.v))/500000)*500000, min = 2000000;
   const y = v => T + ih - (v-min)/(max-min)*ih;
   let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="센터유형별 인력유형 평균 월 총액">`;
-  for(let v=min; v<=max; v+=500000){ s+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v/10000}</text>`; }
-  const gw = iw/types.length, bw = Math.min(34,(gw-24)/roles.length);
+  for(let v=min; v<=max; v+=500000) s+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v/10000}</text>`;
+  const gw = iw/TYPES.length, bw = 30;
   data.forEach((g,gi)=>{
-    const x0 = L + gi*gw + (gw - bw*roles.length - 4*(roles.length-1))/2;
+    const gx = L+gi*gw, x0 = gx + (gw - bw*3 - 8)/2;
+    s += `<g class="hit" data-go-type="${g.t}" tabindex="0" role="button" aria-label="${g.t} 센터 비교 보기"><rect class="bg" x="${gx+4}" y="${T-12}" width="${gw-8}" height="${H-T}" rx="6"/>`;
     g.v.forEach((v,ri)=>{
-      const x = x0 + ri*(bw+4), yy=y(v);
-      s+=`<rect class="bar" x="${x}" y="${yy}" width="${bw}" height="${T+ih-yy}" rx="2" fill="${roles[ri].color}"><title>${g.t} · ${roles[ri].name}: ${won(v)}원</title></rect>`;
+      const x = x0 + ri*(bw+4), yy = y(v);
+      s+=`<rect x="${x}" y="${yy}" width="${bw}" height="${T+ih-yy}" rx="2" fill="${ROLES[ri].color}" opacity="${ROLES[ri].id===state.role?1:.45}"><title>${g.t} · ${ROLES[ri].name}: ${won(v)}원</title></rect>`;
       s+=`<text class="val" x="${x+bw/2}" y="${yy-4}" text-anchor="middle">${man(v)}</text>`;
     });
-    s+=`<text x="${L+gi*gw+gw/2}" y="${H-10}" text-anchor="middle" style="fill:var(--ink);font-weight:600">${g.t}</text>`;
+    s+=`<text class="ink lbl" x="${gx+gw/2}" y="${H-22}" text-anchor="middle" style="font-weight:700">${g.t} ›</text>`;
+    s+=`<text x="${gx+gw/2}" y="${H-8}" text-anchor="middle">${g.n}곳</text></g>`;
   });
   s+=`<line class="axis" x1="${L}" x2="${W-R}" y1="${T+ih}" y2="${T+ih}"/></svg>`;
   $('chartType').innerHTML = s;
 }
 
-/* ---------- 센터 추이 ---------- */
-function renderTrend(){
-  const c = centerById[state.trendCenter], role = ROLES.find(r=>r.id===state.trendRole);
-  const series = [
-    {name:`${c.name}`, color:'var(--accent)', w:3, dash:'', v:PERIODS.map(p=>valueAt(c.id,role.id,p))},
-    {name:`${c.type} 유형 평균`, color:role.color, w:2, dash:'', v:PERIODS.map(p=>avg(CENTERS.filter(x=>x.type===c.type).map(x=>valueAt(x.id,role.id,p))))},
-    {name:'전사 평균', color:'var(--muted)', w:2, dash:'5 4', v:PERIODS.map(p=>avg(CENTERS.map(x=>valueAt(x.id,role.id,p))))}
-  ];
-  $('legendTrend').innerHTML = series.map(s=>`<span class="${s.dash?'dash':'ln'}" style="--c:${s.color}">${s.name}</span>`).join('') + `<span class="ln" style="--c:transparent">● 해당 센터 급여테이블 변경 시점</span>`;
-  const all = series.flatMap(s=>s.v).filter(v=>v!=null);
+/* ---------- 1단계: 분포 점 차트 ---------- */
+function renderStrip(){
+  const d = state.asOf, role = roleOf(state.role);
+  $('stripRole').textContent = `${role.name} 기준`;
+  const rows = TYPES.map(t=>({t, pts:centersOf(t).map(c=>({c, v:valueAt(c.id,role.id,d)})), a:typeAvg(t,role.id,d)}));
+  const all = rows.flatMap(r=>r.pts.map(p=>p.v));
+  const W=560,L=78,R=16,T=10,rowH=56,B=26,H=T+rowH*rows.length+B, iw=W-L-R;
+  const step = 100000, min = Math.floor(Math.min(...all)/step)*step, max = Math.ceil(Math.max(...all)/step)*step;
+  const x = v => L + (v-min)/(max-min)*iw;
+  const tick = (max-min) > 800000 ? 200000 : 100000;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="유형별 센터 ${role.name} 월 총액 분포">`;
+  for(let v=min; v<=max; v+=tick) s+=`<line class="gl" x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${T+rowH*rows.length}"/><text x="${x(v)}" y="${H-8}" text-anchor="middle">${v/10000}</text>`;
+  let sd = 3;
+  rows.forEach((r,i)=>{
+    const cy = T + i*rowH + rowH/2;
+    s += `<g class="hit" data-go-type="${r.t}" tabindex="0" role="button" aria-label="${r.t} 센터 비교 보기"><rect class="bg" x="0" y="${T+i*rowH+2}" width="${W}" height="${rowH-4}" rx="6"/>`;
+    s += `<text class="ink lbl" x="8" y="${cy-2}" style="font-weight:700">${r.t} ›</text><text x="8" y="${cy+13}">${r.pts.length}곳</text>`;
+    r.pts.forEach(p=>{ sd=(sd*9301+49297)%233280; const jy = (sd/233280-0.5)*rowH*0.55;
+      s+=`<circle cx="${x(p.v)}" cy="${cy+jy}" r="3.5" fill="${role.color}" opacity=".55"><title>${p.c.name}: ${man(p.v)}만원</title></circle>`; });
+    s += `<line x1="${x(r.a)}" x2="${x(r.a)}" y1="${cy-rowH/2+6}" y2="${cy+rowH/2-6}" stroke="var(--ink)" stroke-width="2.5"/>`;
+    s += `<text class="val" x="${x(r.a)+5}" y="${cy-rowH/2+14}">${man(r.a)}</text></g>`;
+  });
+  const co = coAvg(role.id,d);
+  s += `<line x1="${x(co)}" x2="${x(co)}" y1="${T}" y2="${T+rowH*rows.length}" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
+  s += `</svg>`;
+  $('chartStrip').innerHTML = s;
+}
+
+/* ---------- 2단계: 유형 내 센터 순위 (편차 막대) ---------- */
+function renderRank(){
+  if(!state.type || state.center) return;
+  const d = state.asOf, role = roleOf(state.role), t = state.type, ta = typeAvg(t,role.id,d);
+  $('rankTitle').textContent = `${t} 센터 순위 · ${role.name}`;
+  let rows = centersOf(t).map(c=>({c, v:valueAt(c.id,role.id,d)})).map(r=>({...r, dv:r.v/ta-1})).sort((a,b)=>b.dv-a.dv);
+  rows.forEach((r,i)=>r.rank=i+1);
+  if(state.rankMode==='top') rows = rows.slice(0,10);
+  if(state.rankMode==='bottom') rows = rows.slice(-10);
+  if(state.rankQ) rows = rows.filter(r=>r.c.name.includes(state.rankQ));
+  if(!rows.length){ $('chartRank').innerHTML = `<p class="note" style="padding:12px 0">검색 결과가 없습니다.</p>`; return; }
+  const W=560,L=150,R=86,rowH=22,T=24, H=T+rowH*rows.length+6, iw=W-L-R, cx = L+iw/2;
+  const lim = Math.max(0.05, Math.ceil(Math.max(...rows.map(r=>Math.abs(r.dv)))*100/2)*2/100);
+  const x = v => cx + v/lim*(iw/2);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${t} 센터별 유형 평균 대비 편차">`;
+  [-lim,-lim/2,0,lim/2,lim].forEach(v=>{ s+=`<line class="${v===0?'axis':'gl'}" x1="${x(v)}" x2="${x(v)}" y1="${T-6}" y2="${H}"/><text x="${x(v)}" y="${T-10}" text-anchor="middle">${v===0?'평균 '+man(ta):pct(v,0)}</text>`; });
+  rows.forEach((r,i)=>{
+    const y = T + i*rowH, x1 = Math.min(x(0),x(r.dv)), w = Math.max(1,Math.abs(x(r.dv)-x(0)));
+    const tight = wageMargin(r.c.id,d) < 0.02;
+    s += `<g class="hit" data-go-center="${r.c.id}" tabindex="0" role="button" aria-label="${r.c.name} 상세 보기"><rect class="bg" x="0" y="${y}" width="${W}" height="${rowH}" rx="4"/>`;
+    s += `<text x="4" y="${y+15}" class="val" style="fill:var(--muted)">${r.rank}</text>`;
+    s += `<text class="ink lbl" x="28" y="${y+15}">${r.c.name}${tight?' ⚠':''}</text>`;
+    s += `<rect x="${x1}" y="${y+5}" width="${w}" height="${rowH-10}" rx="2" fill="${r.dv>=0?'var(--up)':'var(--down)'}" opacity=".75"/>`;
+    s += `<text class="val" x="${W-R+8}" y="${y+15}">${man(r.v)} <tspan style="fill:${r.dv>=0?'var(--up)':'var(--down)'}">${pct(r.dv)}</tspan></text></g>`;
+  });
+  s += `</svg>`;
+  $('chartRank').innerHTML = s;
+}
+
+/* ---------- 공용: 선 차트 ---------- */
+function lineChart(el, series, band, marks){
+  const all = series.flatMap(s=>s.v).concat(band?band.flatMap(b=>[b.lo,b.hi]):[]).filter(v=>v!=null);
   const W=560,H=280,L=44,R=64,T=16,B=30, iw=W-L-R, ih=H-T-B;
   const min = Math.floor(Math.min(...all)/100000)*100000, max = Math.ceil(Math.max(...all)/100000)*100000;
   const x = i => L + i*iw/(PERIODS.length-1), y = v => T+ih-(v-min)/(max-min)*ih;
   const step = Math.max(100000, Math.ceil((max-min)/5/100000)*100000);
-  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.name} ${role.name} 월 총액 추이">`;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">`;
   for(let v=min; v<=max; v+=step) s+=`<line class="gl" x1="${L}" x2="${L+iw}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v/10000}</text>`;
   PERIODS.forEach((p,i)=>{ s+=`<text x="${x(i)}" y="${H-10}" text-anchor="middle">${p.slice(2).replace('-','.')}</text>`; });
   s+=`<line class="axis" x1="${L}" x2="${L+iw}" y1="${T+ih}" y2="${T+ih}"/>`;
+  if(band) s+=`<path d="M${band.map((b,i)=>`${x(i)},${y(b.hi)}`).join(' L')} L${[...band].reverse().map((b,j)=>`${x(band.length-1-j)},${y(b.lo)}`).join(' L')}Z" fill="${band.color}" opacity=".14"/>`;
   [...series].reverse().forEach(se=>{
-    const pts = se.v.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);
-    s+=`<polyline fill="none" stroke="${se.color}" stroke-width="${se.w}" stroke-dasharray="${se.dash}" stroke-linejoin="round" points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
+    s+=`<polyline fill="none" stroke="${se.color}" stroke-width="${se.w}" stroke-dasharray="${se.dash||''}" stroke-linejoin="round" points="${se.v.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"/>`;
   });
   const main = series[0];
-  if(main.v[0]!=null) s+=`<path d="M${x(0)},${T+ih} ${main.v.map((v,i)=>`L${x(i)},${y(v)}`).join(' ')} L${x(PERIODS.length-1)},${T+ih}Z" fill="var(--accent)" opacity=".08"/>`;
-  PERIODS.forEach((p,i)=>{
-    if(snapshots.some(sn=>sn.centerId===c.id && sn.date===p))
-      s+=`<circle cx="${x(i)}" cy="${y(main.v[i])}" r="4" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"><title>${p} 변경: ${won(main.v[i])}원</title></circle>`;
-  });
+  (marks||[]).forEach(i=>{ s+=`<circle cx="${x(i)}" cy="${y(main.v[i])}" r="4" fill="var(--surface)" stroke="${main.color}" stroke-width="2"><title>${PERIODS[i]} 변경: ${won(main.v[i])}원</title></circle>`; });
   const last = main.v[main.v.length-1], first = main.v[0];
   s+=`<text class="end" x="${L+iw+8}" y="${y(last)+4}">${man(last)}</text>`;
-  s+=`<text x="${L+iw+8}" y="${y(last)+18}" style="fill:var(--up);font-family:var(--f-num)">${pct(last/first-1)}</text>`;
-  s+=`</svg>`;
-  $('chartTrend').innerHTML = s;
+  s+=`<text x="${L+iw+8}" y="${y(last)+18}" style="fill:var(--up);font-family:var(--f-num)">${pct(last/first-1)}</text></svg>`;
+  el.innerHTML = s;
 }
 
-/* ---------- 편차 히트맵 ---------- */
-function renderHeat(){
-  const d = state.asOf, y = +d.slice(0,4), cs = visibleCenters(), roles = visibleRoles();
-  const coAvg = Object.fromEntries(ROLES.map(r=>[r.id, avg(CENTERS.map(c=>valueAt(c.id,r.id,d)))]));
-  const rows = cs.map(c=>{
-    const s = snapAt(c.id,d), it = s.jobs.find(j=>j.role==='new').items;
-    const margin = (it['기본급']+it['직무수당'])/minMonthly(y)-1;
-    return {c, s, margin, dev: roles.map(r=>{ const v=valueAt(c.id,r.id,d); return {v, dv:v/coAvg[r.id]-1}; })};
-  }).sort((a,b)=>TYPES.indexOf(a.c.type)-TYPES.indexOf(b.c.type) || a.c.name.localeCompare(b.c.name));
-  const cell = x => {
-    const a = Math.min(Math.abs(x.dv)/0.08,1)*0.55, rgb = x.dv>=0 ? 'var(--heat-pos)' : 'var(--heat-neg)';
-    return `<td class="heat" style="background:rgba(${rgb},${a.toFixed(2)})" title="${won(x.v)}원">${man(x.v)} <small>(${pct(x.dv)})</small></td>`;
-  };
-  $('heatTbl').innerHTML = `<thead><tr><th>센터</th><th>유형</th>${roles.map(r=>`<th class="r">${r.name} 만원(편차)</th>`).join('')}<th class="r">최저임금 여유</th><th>최근 변경</th></tr></thead><tbody>`+
-    rows.map(r=>`<tr><td>${r.c.name}</td><td><span class="typetag">${r.c.type}</span></td>${r.dev.map(cell).join('')}
-      <td class="r"><span class="pill ${r.margin<0.02?'warn':'ok'}">${pct(r.margin)}</span></td><td class="num">${r.s.date}</td></tr>`).join('')+
-    `<tr><td><b>전사 평균</b></td><td></td>${roles.map(r=>`<td class="heat"><b>${man(coAvg[r.id])}</b></td>`).join('')}<td></td><td></td></tr></tbody>`;
+/* ---------- 2단계: 유형 추이 ---------- */
+function renderTypeTrend(){
+  const t = state.type, role = roleOf(state.role);
+  $('typeTrendTitle').textContent = `${t} 유형 ${role.name} 급여 추이`;
+  const band = PERIODS.map(p=>{ const v=centersOf(t).map(c=>valueAt(c.id,role.id,p)).filter(v=>v!=null); return {lo:Math.min(...v), hi:Math.max(...v)}; });
+  band.color = role.color;
+  const series = [
+    {name:`${t} 평균`, color:role.color, w:3, v:PERIODS.map(p=>typeAvg(t,role.id,p))},
+    {name:'전사 평균', color:'var(--muted)', w:2, dash:'5 4', v:PERIODS.map(p=>coAvg(role.id,p))}
+  ];
+  $('legendTypeTrend').innerHTML = `<span class="ln" style="--c:${role.color}">${t} 평균</span><span class="dash" style="--c:var(--muted)">전사 평균</span><span class="band" style="--c:${role.color}">${t} 센터 최고~최저 범위</span>`;
+  lineChart($('chartTypeTrend'), series, band);
+}
+
+/* ---------- 3단계: 센터 ---------- */
+function renderCenter(){
+  const c = centerById[state.center], role = roleOf(state.role), d = state.asOf;
+  const series = [
+    {name:c.name, color:'var(--accent)', w:3, v:PERIODS.map(p=>valueAt(c.id,role.id,p))},
+    {name:`${c.type} 평균`, color:role.color, w:2, v:PERIODS.map(p=>typeAvg(c.type,role.id,p))},
+    {name:'전사 평균', color:'var(--muted)', w:2, dash:'5 4', v:PERIODS.map(p=>coAvg(role.id,p))}
+  ];
+  $('legendTrend').innerHTML = series.map(s=>`<span class="${s.dash?'dash':'ln'}" style="--c:${s.color}">${s.name}</span>`).join('') + `<span>○ 급여테이블 변경 시점 · ${role.name}</span>`;
+  lineChart($('chartTrend'), series, null, PERIODS.map((p,i)=>snapsByCenter[c.id].some(s=>s.date===p)?i:-1).filter(i=>i>=0));
+  const keys = Object.keys(itemsAt(c.id,'gen',d));
+  const peer = r => { const ls = centersOf(c.type).map(p=>itemsAt(p.id,r,d)); return Object.fromEntries(keys.map(k=>[k, avg(ls.map(i=>i[k]))])); };
+  const cols = ROLES.map(r=>({r, it:itemsAt(c.id,r.id,d), pa:peer(r.id)}));
+  $('compNote').textContent = `${d} 기준 · 괄호는 ${c.type} 평균 대비`;
+  const diff = (a,b) => { const x=a-b; return Math.abs(x)<5000 ? '' : ` <small class="delta ${x>0?'up':'down'}">(${x>0?'+':'−'}${won(Math.abs(x))})</small>`; };
+  $('compTbl').innerHTML = `<thead><tr><th>항목</th>${cols.map(x=>`<th class="r">${x.r.name}</th>`).join('')}</tr></thead><tbody>`+
+    keys.map(k=>`<tr><td>${k}</td>${cols.map(x=>`<td class="r num">${won(x.it[k])}${diff(x.it[k],x.pa[k])}</td>`).join('')}</tr>`).join('')+
+    `<tr><td><b>월 총액</b></td>${cols.map(x=>`<td class="r num"><b>${won(total(x.it))}</b>${diff(total(x.it),total(x.pa))}</td>`).join('')}</tr>`+
+    `<tr><td style="color:var(--muted)">${c.type} 평균</td>${cols.map(x=>`<td class="r num" style="color:var(--muted)">${won(total(x.pa))}</td>`).join('')}</tr></tbody>`;
+}
+
+/* ---------- 주의 센터 ---------- */
+function renderWatch(){
+  const panel = $('watchPanel');
+  if(state.center){ panel.hidden = true; return; }
+  panel.hidden = false;
+  const d = state.asOf, role = state.role, cs = state.type ? centersOf(state.type) : CENTERS;
+  const ta = Object.fromEntries(TYPES.map(t=>[t, typeAvg(t,role,d)]));
+  const rows = cs.map(c=>{ const v=valueAt(c.id,role,d); return {c, v, dv:v/ta[c.type]-1, m:wageMargin(c.id,d)}; });
+  $('watchTitle').textContent = `주의해서 볼 센터 · ${state.type ? state.type+' '+cs.length+'곳' : '전사 '+cs.length+'곳'} 중`;
+  const li = (r, val) => `<li data-go-center="${r.c.id}" tabindex="0" role="button"><span class="nm">${r.c.name}${state.type?'':`<small>${r.c.type}</small>`}</span>${val}</li>`;
+  const hi = [...rows].sort((a,b)=>b.dv-a.dv).slice(0,5), lo = [...rows].sort((a,b)=>a.dv-b.dv).slice(0,5);
+  const tight = rows.filter(r=>r.m<0.02).sort((a,b)=>a.m-b.m).slice(0,5);
+  $('watch').innerHTML = `
+    <div><h3>평균보다 높은 센터 Top 5</h3><ol>${hi.map(r=>li(r,`<b class="up num">${pct(r.dv)}</b>`)).join('')}</ol></div>
+    <div><h3>평균보다 낮은 센터 Top 5</h3><ol>${lo.map(r=>li(r,`<b class="down num">${pct(r.dv)}</b>`)).join('')}</ol></div>
+    <div><h3>신입 최저임금 여유 2% 미만</h3><ol>${tight.length ? tight.map(r=>li(r,`<span class="pill warn">${pct(r.m)}</span>`)).join('') : '<li style="cursor:default">해당 센터 없음</li>'}</ol></div>`;
 }
 
 /* ---------- 변경 히스토리 ---------- */
 function renderHistory(){
-  const roles = visibleRoles(), out = [];
-  CENTERS.filter(c=>state.types.has(c.type) && (state.histCenter==='all' || c.id===state.histCenter)).forEach(c=>{
-    const list = snapshots.filter(s=>s.centerId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const cs = state.center ? [centerById[state.center]] : state.type ? centersOf(state.type) : CENTERS;
+  const scope = state.center ? centerById[state.center].name : state.type ? `${state.type} 유형` : '전사';
+  $('histTitle').textContent = `급여 변경 히스토리 · ${scope}`;
+  const out = [];
+  cs.forEach(c=>{
+    const list = snapsByCenter[c.id].filter(s=>s.date<=state.asOf);
     for(let i=1;i<list.length;i++){
       const a=list[i-1], b=list[i];
-      roles.forEach(r=>{
+      ROLES.forEach(r=>{
         const ia=a.jobs.find(j=>j.role===r.id).items, ib=b.jobs.find(j=>j.role===r.id).items;
         Object.keys(ib).forEach(k=>{ if(ia[k]!==ib[k]) out.push({date:b.date,c,r,k,from:ia[k],to:ib[k],file:b.file}); });
       });
     }
   });
-  out.sort((a,b)=>b.date.localeCompare(a.date) || a.c.name.localeCompare(b.c.name));
-  $('histCount').textContent = `변경 항목 ${out.length}건`;
+  const q = state.histQ;
+  const rows = (q ? out.filter(h=>h.c.name.includes(q) || h.k.includes(q) || h.r.name.includes(q)) : out)
+    .sort((a,b)=>b.date.localeCompare(a.date) || a.c.name.localeCompare(b.c.name));
+  $('histCount').textContent = `변경 항목 ${rows.length.toLocaleString()}건`;
+  const shown = rows.slice(0, state.histN);
   $('histTbl').innerHTML = `<thead><tr><th>적용 시점</th><th>센터</th><th>인력 유형</th><th>항목</th><th class="r">변경 전</th><th class="r">변경 후</th><th class="r">증감</th><th>원본 파일</th></tr></thead><tbody>`+
-    out.map(h=>{ const dlt=h.to-h.from;
-      return `<tr><td class="num">${h.date}</td><td>${h.c.name} <span class="typetag">${h.c.type}</span></td><td>${h.r.name}</td><td>${h.k}</td>
+    shown.map(h=>{ const dl=h.to-h.from;
+      return `<tr class="${state.center?'':'go'}" ${state.center?'':`data-go-center="${h.c.id}"`}><td class="num">${h.date}</td><td>${h.c.name} <span class="typetag">${h.c.type}</span></td><td>${h.r.name}</td><td>${h.k}</td>
       <td class="r num">${won(h.from)}</td><td class="r num">${won(h.to)}</td>
-      <td class="r num delta ${dlt>0?'up':'down'}">${dlt>0?'▲':'▼'} ${won(Math.abs(dlt))} (${pct(dlt/h.from)})</td><td style="color:var(--muted);font-size:12px">${h.file}</td></tr>`; }).join('')+`</tbody>`;
+      <td class="r num delta ${dl>0?'up':'down'}">${dl>0?'▲':'▼'} ${won(Math.abs(dl))} (${pct(dl/h.from)})</td><td style="color:var(--muted);font-size:12px">${h.file}</td></tr>`; }).join('')+`</tbody>`;
+  $('histMore').hidden = rows.length <= state.histN;
 }
 
-function render(){ renderKpis(); renderTypeChart(); renderTrend(); renderHeat(); renderHistory(); }
-initFilters(); render();
+function render(){
+  $('viewAll').hidden = !!state.type;
+  $('viewType').hidden = !state.type || !!state.center;
+  $('viewCenter').hidden = !state.center;
+  renderCrumb(); renderKpis();
+  if(!state.type){ renderTypeChart(); renderStrip(); }
+  else if(!state.center){ renderRank(); renderTypeTrend(); }
+  else renderCenter();
+  renderWatch(); renderHistory();
+}
+initUi(); render();
 </script>
