@@ -500,9 +500,9 @@
   <div class="panel">
     <h2>① 급여테이블 업로드</h2>
     <div id="dropzone">
-      <div>엑셀 파일(.xlsx)을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
+      <div>엑셀 파일(.xlsx) 또는 <strong>자동연동 파일(.json)</strong>을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
       <div class="hint">시트 이름이 <strong>급여테이블(변경후)</strong> 인 시트를 자동으로 읽습니다 · 업로드 시 서버(Supabase)에 자동 저장됩니다</div>
-      <input type="file" id="fileInput" accept=".xlsx">
+      <input type="file" id="fileInput" accept=".xlsx,.json">
     </div>
     <div id="pasteBox">
       <div><strong>보안 엑셀은 해제하지 말고 붙여넣기로 불러오세요</strong></div>
@@ -2092,6 +2092,7 @@ async function attemptCloudSave(file, parsed){
 }
 
 function handleFile(file){
+  if(/\.json$/i.test(file.name)) return handleLinkedJsonFile(file);
   fileMeta.textContent = `읽는 중... (${file.name})`;
   setSaveStatus('');
   currentArchiveId = null;
@@ -2146,10 +2147,34 @@ function decodePastedPaytable(text){
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-  const payload = JSON.parse(new TextDecoder('utf-8').decode(bytes));
-  const values = (payload.values || []).map(row => row.map(v => (v === '' || v === null) ? null : v));
+  return paytablePayloadToWorkbook(JSON.parse(new TextDecoder('utf-8').decode(bytes)));
+}
+
+/** 스크립트가 넘긴 {sheet, file, start, values} → SheetJS 워크북 (파일 업로드와 같은 parsePaytable 입력) */
+function paytablePayloadToWorkbook(payload){
+  if(!payload || !Array.isArray(payload.values) || !payload.sheet){
+    throw new Error('연동 데이터 형식이 아닙니다. 급여테이블 자동연동으로 만든 파일인지 확인해 주세요.');
+  }
+  const values = payload.values.map(row => row.map(v => (v === '' || v === null) ? null : v));
   const ws = XLSX.utils.aoa_to_sheet(values, {origin: payload.start || 'A1'});
   return { wb: { SheetNames:[payload.sheet], Sheets:{ [payload.sheet]: ws } }, fileName: payload.file || '' };
+}
+
+/** Power Automate가 저장한 .json 연동 파일 — 클라우드 저장 없이 화면에서만 사용 */
+function handleLinkedJsonFile(file){
+  fileMeta.textContent = `읽는 중... (${file.name})`;
+  setSaveStatus('');
+  currentArchiveId = null;
+  currentUploadFile = null;
+  file.text().then(text=>{
+    try{
+      const { wb, fileName } = paytablePayloadToWorkbook(JSON.parse(text.replace(/^\uFEFF/, '')));
+      showParsed(parsePaytable(wb), (fileName || file.name) + ' (자동연동)');
+      setSaveStatus('자동연동 파일로 불러옴 · 원본 파일은 이 화면 밖으로 저장되지 않습니다', 'ok');
+    }catch(err){
+      showParseError(err instanceof SyntaxError ? new Error('연동 파일을 읽지 못했습니다. 파일이 손상됐거나 다른 파일입니다.') : err);
+    }
+  });
 }
 
 function handlePastedText(text){
