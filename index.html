@@ -121,6 +121,11 @@
   #dropzone strong{ color:var(--navy); }
   #fileInput{ display:none; }
   #fileMeta{ margin-top:10px; font-size:12.5px; color:#444; }
+  #pasteBox{ margin-top:12px; border:1px solid #d5dbe5; border-radius:10px; padding:12px 14px; background:#f8fafc; }
+  #pasteBox strong{ color:var(--navy); }
+  #pasteInput{ width:100%; box-sizing:border-box; margin-top:8px; height:64px; resize:vertical;
+    font:12px/1.4 Consolas, monospace; border:1px solid #c9d1dd; border-radius:6px; padding:8px; }
+  #pasteBox ol{ margin:6px 0 0; padding-left:18px; font-size:12px; color:#5a6472; }
 
   .job-grid{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; align-items:flex-start; }
   .job-group-label{
@@ -498,6 +503,15 @@
       <div>엑셀 파일(.xlsx)을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
       <div class="hint">시트 이름이 <strong>급여테이블(변경후)</strong> 인 시트를 자동으로 읽습니다 · 업로드 시 서버(Supabase)에 자동 저장됩니다</div>
       <input type="file" id="fileInput" accept=".xlsx">
+    </div>
+    <div id="pasteBox">
+      <div><strong>보안 엑셀은 해제하지 말고 붙여넣기로 불러오세요</strong></div>
+      <ol>
+        <li>보안 엑셀을 열고 [자동화] 탭에서 <b>급여테이블_연동</b> 스크립트를 실행합니다</li>
+        <li>선택된 칸을 <b>Ctrl+C</b> 로 복사해 아래 칸에 <b>Ctrl+V</b> 합니다 (자동으로 읽습니다)</li>
+        <li>엑셀에서 스크립트를 한 번 더 실행하면 임시 시트가 지워집니다</li>
+      </ol>
+      <textarea id="pasteInput" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
     </div>
     <div id="fileMeta"></div>
     <div id="saveStatus"></div>
@@ -2056,6 +2070,12 @@ dropzone.addEventListener('drop', e=>{
 fileInput.addEventListener('change', e=>{
   if(e.target.files.length) handleFile(e.target.files[0]);
 });
+const pasteInput = document.getElementById('pasteInput');
+pasteInput.addEventListener('paste', e=>{
+  const text = e.clipboardData && e.clipboardData.getData('text');
+  if(text){ e.preventDefault(); pasteInput.value = ''; handlePastedText(text); }
+});
+pasteInput.addEventListener('change', ()=>{ handlePastedText(pasteInput.value); pasteInput.value = ''; });
 
 /** 업로드된 엑셀을 클라우드(Supabase)에 저장 — 비밀번호 확인 없이 항상 저장 (열람/삭제만 비밀번호 필요) */
 async function attemptCloudSave(file, parsed){
@@ -2081,12 +2101,7 @@ function handleFile(file){
     try{
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, {type:'array', cellFormula:false});
-      parsedData = parsePaytable(wb);
-      fileMeta.textContent = `✔ ${file.name}  ·  센터명: ${parsedData.centerName}  ·  시트: ${parsedData.sheetName}  ·  직무 ${parsedData.jobs.length}개 인식됨`;
-      renderJobGrid();
-      renderNotesEditor();
-      showWorkspace(true);
-      applyWidthsFromControls();
+      showParsed(parsePaytable(wb), file.name);
 
       // 클라우드 저장 (서버 프록시) — 업로드하면 비밀번호 확인 없이 항상 저장
       if(cloudReady){
@@ -2095,13 +2110,60 @@ function handleFile(file){
         setSaveStatus('로컬 전용 모드 (서버 환경변수 미설정 — 클라우드 저장 안 함)', 'warn');
       }
     }catch(err){
-      fileMeta.textContent = `⚠ 오류: ${err.message}`;
-      jobPanel.style.display='none';
-      showWorkspace(false);
-      resultPanel.style.display='none';
+      showParseError(err);
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+function showParsed(parsed, sourceLabel){
+  parsedData = parsed;
+  fileMeta.textContent = `✔ ${sourceLabel}  ·  센터명: ${parsedData.centerName}  ·  시트: ${parsedData.sheetName}  ·  직무 ${parsedData.jobs.length}개 인식됨`;
+  renderJobGrid();
+  renderNotesEditor();
+  showWorkspace(true);
+  applyWidthsFromControls();
+}
+
+function showParseError(err){
+  fileMeta.textContent = `⚠ 오류: ${err.message}`;
+  jobPanel.style.display='none';
+  showWorkspace(false);
+  resultPanel.style.display='none';
+}
+
+/* ============================================================
+   보안 엑셀 붙여넣기 연동 (office-scripts/급여테이블_연동.ts 출력)
+   PAYTABLE-V1 / p<Base64 조각>… / END  →  시트 값 격자 → SheetJS 시트
+   ============================================================ */
+function decodePastedPaytable(text){
+  const lines = String(text).split(/\r?\n/).map(x => x.trim().replace(/^"|"$/g,'')).filter(Boolean);
+  const i0 = lines.indexOf('PAYTABLE-V1');
+  const i1 = lines.indexOf('END', i0 + 1);
+  if(i0 < 0) throw new Error('붙여넣은 내용에서 연동 데이터를 찾지 못했습니다. 엑셀에서 스크립트를 실행한 뒤 선택된 칸 전체를 복사해 주세요.');
+  if(i1 < 0) throw new Error('붙여넣은 내용이 중간에 잘렸습니다. 선택된 칸 전체(END 까지)를 다시 복사해 주세요.');
+  const b64 = lines.slice(i0 + 1, i1).map(x => x.replace(/^p/, '')).join('');
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  const payload = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  const values = (payload.values || []).map(row => row.map(v => (v === '' || v === null) ? null : v));
+  const ws = XLSX.utils.aoa_to_sheet(values, {origin: payload.start || 'A1'});
+  return { wb: { SheetNames:[payload.sheet], Sheets:{ [payload.sheet]: ws } }, fileName: payload.file || '' };
+}
+
+function handlePastedText(text){
+  if(!text || !text.trim()) return;
+  setSaveStatus('');
+  currentArchiveId = null;
+  currentUploadFile = null;
+  try{
+    const { wb, fileName } = decodePastedPaytable(text);
+    showParsed(parsePaytable(wb), (fileName || '보안 엑셀') + ' (붙여넣기)');
+    setSaveStatus('붙여넣기로 불러옴 · 원본 파일은 이 화면 밖으로 저장되지 않습니다', 'ok');
+  }catch(err){
+    showParseError(err);
+  }
 }
 
 /** 직무 칩에 초과근무수당 비고 자동 매칭 불확실 경고(⚠) 표시를 갱신 */
