@@ -121,6 +121,28 @@
   #dropzone strong{ color:var(--navy); }
   #fileInput{ display:none; }
   #fileMeta{ margin-top:10px; font-size:12.5px; color:#444; }
+  #linkBox{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
+  #linkGoBtn{ font-size:15px; padding:12px 22px; }
+  #linkStatus{ font-size:12.5px; color:#555; }
+  #linkRecent{ flex-basis:100%; display:flex; flex-wrap:wrap; gap:6px; }
+  #linkRecent button{ font-size:12px; padding:4px 10px; border-radius:6px; border:1px solid #c9d1dd; background:#fff; cursor:pointer; }
+  #linkRecent button.cur{ border-color:var(--navy); background:#eef2fb; font-weight:700; }
+  #linkRecent button .done{ color:#2a7a3a; margin-left:4px; }
+  #checkPanel .check-sum{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:13px; margin-bottom:8px; }
+  .ck-pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .ck-pill.block{ background:#fbe3e1; color:#b42318; }
+  .ck-pill.confirm{ background:#fdf0d8; color:#9a5b00; }
+  .ck-pill.info{ background:#e7eef8; color:#2b4f80; }
+  .ck-pill.ok{ background:#e3f3e6; color:#2a7a3a; }
+  .ck-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .ck-item{ display:grid; grid-template-columns:auto 1fr; gap:4px 10px; align-items:start; border:1px solid #e2e5ea; border-radius:8px; padding:8px 10px; font-size:13px; }
+  .ck-item .ck-job{ font-weight:700; }
+  .ck-item .ck-msg{ color:#444; }
+  .ck-item .ck-act{ grid-column:2; display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12.5px; }
+  .ck-item .ck-act input[type=text]{ flex:1; min-width:180px; font-size:12.5px; padding:4px 6px; border:1px solid #c9d1dd; border-radius:5px; }
+  .ck-item.acked{ background:#f6fbf7; }
+  #checkGate{ margin-top:8px; font-size:12.5px; font-weight:700; }
+  #checkGate.locked{ color:#b42318; } #checkGate.open{ color:#2a7a3a; }
   #pasteBox{ margin-top:12px; border:1px solid #d5dbe5; border-radius:10px; padding:12px 14px; background:#f8fafc; }
   #pasteBox strong{ color:var(--navy); }
   #pasteInput{ width:100%; box-sizing:border-box; margin-top:8px; height:64px; resize:vertical;
@@ -499,6 +521,12 @@
 
   <div class="panel">
     <h2>① 급여테이블 업로드</h2>
+    <div id="linkBox">
+      <button type="button" class="btn-primary" id="linkGoBtn">급여조견표 생성</button>
+      <button type="button" class="btn-ghost" id="linkFolderBtn">연동 폴더 연결</button>
+      <span id="linkStatus">처음 한 번 <b>연동 폴더 연결</b>로 OneDrive의 '조견표연동결과' 폴더를 고르면, 이후에는 버튼 하나로 최신 파일을 불러와 바로 검사합니다.</span>
+      <div id="linkRecent"></div>
+    </div>
     <div id="dropzone">
       <div>엑셀 파일(.xlsx) 또는 <strong>자동연동 파일(.json)</strong>을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
       <div class="hint">시트 이름이 <strong>급여테이블(변경후)</strong> 인 시트를 자동으로 읽습니다 · 업로드 시 서버(Supabase)에 자동 저장됩니다</div>
@@ -515,6 +543,13 @@
     </div>
     <div id="fileMeta"></div>
     <div id="saveStatus"></div>
+  </div>
+
+  <div class="panel" id="checkPanel" style="display:none;">
+    <h2>검사 결과 · 체크리스트</h2>
+    <div class="check-sum" id="checkSum"></div>
+    <ul class="ck-list" id="checkList"></ul>
+    <div id="checkGate"></div>
   </div>
 
   <div class="panel" id="jobPanel" style="display:none;">
@@ -2124,10 +2159,12 @@ function showParsed(parsed, sourceLabel){
   renderNotesEditor();
   showWorkspace(true);
   applyWidthsFromControls();
+  runChecks();
 }
 
 function showParseError(err){
   fileMeta.textContent = `⚠ 오류: ${err.message}`;
+  document.getElementById('checkPanel').style.display='none';
   jobPanel.style.display='none';
   showWorkspace(false);
   resultPanel.style.display='none';
@@ -2189,6 +2226,218 @@ function handlePastedText(text){
   }catch(err){
     showParseError(err);
   }
+}
+
+/* ============================================================
+   검사 엔진 · 체크리스트
+   차단(block): 고치기 전엔 생성 불가 · 확인(confirm): 항목별 체크해야 생성 · 정보(info): 표시만
+   ============================================================ */
+const MIN_WAGE_HOURLY = 10320;           // 2026년 최저임금(시급) — 매년 1월 갱신
+const MIN_WAGE_MONTHLY = MIN_WAGE_HOURLY * 209;
+let checkState = { issues: [], acked: new Set(), reasons: {} };
+
+function jobLabel(job){ return job.displayName || formatJobDisplay(job.groupLabel, job.jobName); }
+function itemValue(job, name){
+  const it = (job.items || []).find(([label]) => String(label).includes(name));
+  return it ? it[1] : null;
+}
+
+function collectIssues(parsed){
+  const issues = [];
+  const add = (level, key, job, msg) => issues.push({ level, key, job, msg });
+  if(!parsed.jobs.length){
+    add('block', 'nojobs', '전체', "'보수테이블' 아래에서 직무를 찾지 못했습니다. 시트 양식을 확인해 주세요.");
+    return issues;
+  }
+  parsed.jobs.forEach((job, idx)=>{
+    const name = jobLabel(job);
+    const base = itemValue(job, '기본급');
+    if(base === null || base === 0){
+      add('block', `base:${idx}`, name, '기본급이 비어 있습니다.');
+      return;
+    }
+    const sum6 = (job.items || []).reduce((a, [, v]) => a + (typeof v === 'number' ? v : 0), 0);
+    if(sum6 < MIN_WAGE_MONTHLY){
+      add('block', `minw:${idx}`, name, `월 고정급 ${won(sum6)}원이 최저임금 월환산액 ${won(MIN_WAGE_MONTHLY)}원보다 적습니다.`);
+    } else if(sum6 < MIN_WAGE_MONTHLY * 1.02){
+      add('confirm', `minw:${idx}`, name, `월 고정급 ${won(sum6)}원, 최저임금 대비 여유 ${((sum6 / MIN_WAGE_MONTHLY - 1) * 100).toFixed(1)}% (2% 미만)`);
+    }
+    if(typeof job.stdPaySum === 'number'){
+      const commute = itemValue(job, '통근') || 0, meal = itemValue(job, '급식') || 0;
+      const fits = [sum6, sum6 - commute, sum6 - commute - meal].some(v => Math.abs(v - job.stdPaySum) < 1);
+      if(!fits) add('confirm', `std:${idx}`, name, `기준급여합계 ${won(job.stdPaySum)}원이 항목 합계 ${won(sum6)}원과 맞지 않습니다.`);
+    }
+    if(typeof job.monthlyTotal === 'number' && typeof job.stdPaySum === 'number'){
+      const extras = [job.overtime, job.night, job.telecom].map(v => typeof v === 'number' ? v : 0);
+      const combos = [0,1,2,3,4,5,6,7].map(m => job.stdPaySum + extras.reduce((a, v, i) => a + ((m >> i) & 1 ? v : 0), 0));
+      if(!combos.some(v => Math.abs(v - job.monthlyTotal) < 1)){
+        add('confirm', `total:${idx}`, name, `월총액 ${won(job.monthlyTotal)}원이 기준급여합계와 수당(연장·야간·통신비) 합으로 설명되지 않습니다.`);
+      }
+    } else if(job.monthlyTotal === null){
+      add('confirm', `total:${idx}`, name, '월총액이 비어 있습니다.');
+    }
+    if(isOvertimeNoteUncertain(job)){
+      add('confirm', `ot:${idx}`, name, `연장근로수당 비고를 자동으로 확정하지 못했습니다 (엑셀 비고: "${job.overtimeNote || '없음'}"). 미리보기에서 확인하세요.`);
+    }
+    if(!(job.grades || []).some(([g]) => /B/i.test(String(g)))){
+      add('info', `grade:${idx}`, name, 'B등급 행을 찾지 못했습니다. 통계 비교 때 필요합니다.');
+    }
+  });
+  return issues;
+}
+
+function runChecks(){
+  checkState = { issues: collectIssues(parsedData), acked: new Set(), reasons: {} };
+  parsedData.checkLog = checkState;
+  renderChecklist();
+}
+
+function checkGateOpen(){
+  if(!parsedData) return false;
+  const { issues, acked } = checkState;
+  return !issues.some(i => i.level === 'block') &&
+         issues.filter(i => i.level === 'confirm').every(i => acked.has(i.key));
+}
+
+function renderChecklist(){
+  const panel = document.getElementById('checkPanel');
+  const { issues, acked, reasons } = checkState;
+  const nBlock = issues.filter(i => i.level === 'block').length;
+  const nConfirm = issues.filter(i => i.level === 'confirm').length;
+  const nInfo = issues.filter(i => i.level === 'info').length;
+  panel.style.display = 'block';
+  document.getElementById('checkSum').innerHTML = (nBlock + nConfirm + nInfo === 0)
+    ? '<span class="ck-pill ok">이상 없음</span> 검사 항목을 모두 통과했습니다.'
+    : `${nBlock ? `<span class="ck-pill block">차단 ${nBlock}</span>` : ''}${nConfirm ? `<span class="ck-pill confirm">확인 ${nConfirm}</span>` : ''}${nInfo ? `<span class="ck-pill info">정보 ${nInfo}</span>` : ''}`;
+  const label = { block:'차단', confirm:'확인', info:'정보' };
+  const order = { block:0, confirm:1, info:2 };
+  document.getElementById('checkList').innerHTML = [...issues].sort((a, b) => order[a.level] - order[b.level]).map(i => `
+    <li class="ck-item${acked.has(i.key) ? ' acked' : ''}">
+      <span class="ck-pill ${i.level}">${label[i.level]}</span>
+      <div><span class="ck-job">${escapeHtml(i.job)}</span> · <span class="ck-msg">${escapeHtml(i.msg)}</span></div>
+      ${i.level === 'confirm' ? `<div class="ck-act">
+        <label><input type="checkbox" data-ck="${escapeHtml(i.key)}" ${acked.has(i.key) ? 'checked' : ''}> 확인함</label>
+        <input type="text" data-ckr="${escapeHtml(i.key)}" placeholder="사유 (선택)" value="${escapeHtml(reasons[i.key] || '')}">
+      </div>` : ''}
+    </li>`).join('');
+  const gate = document.getElementById('checkGate');
+  const open = checkGateOpen();
+  gate.className = open ? 'open' : 'locked';
+  gate.textContent = open ? '조견표를 생성할 수 있습니다.'
+    : nBlock ? '차단 항목이 있어 생성할 수 없습니다. 원본 엑셀을 고친 뒤 다시 불러와 주세요.'
+    : '확인 항목을 모두 체크해야 생성할 수 있습니다.';
+  document.getElementById('generateBtn').disabled = !open;
+}
+
+document.getElementById('checkList').addEventListener('change', e=>{
+  const key = e.target.dataset.ck;
+  if(key){
+    if(e.target.checked){ checkState.acked.add(key); checkState.reasons[key + '@'] = new Date().toISOString(); }
+    else checkState.acked.delete(key);
+    renderChecklist();
+  }
+});
+document.getElementById('checkList').addEventListener('input', e=>{
+  const key = e.target.dataset.ckr;
+  if(key) checkState.reasons[key] = e.target.value;
+});
+
+/* ============================================================
+   연동 폴더 바로 불러오기 (OneDrive '조견표연동결과' 동기화 폴더)
+   폴더 권한은 브라우저에만 기억 — 파일 내용은 어디에도 저장하지 않음
+   ============================================================ */
+const linkIdb = {
+  open(){ return new Promise((res, rej)=>{ const r = indexedDB.open('paytable-link', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('kv'); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }); },
+  async get(k){ const db = await this.open(); return new Promise(res=>{ const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = ()=> res(q.result); q.onerror = ()=> res(undefined); }); },
+  async set(k, v){ const db = await this.open(); return new Promise(res=>{ const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = ()=> res(); t.onerror = ()=> res(); }); }
+};
+let linkDir = null;
+const linkStatus = document.getElementById('linkStatus');
+const linkSupported = typeof window.showDirectoryPicker === 'function';
+
+function linkDoneSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem('paytableLinkDone') || '[]')); }catch(e){ return new Set(); }
+}
+function markLinkDone(file){
+  try{
+    const set = linkDoneSet(); set.add(`${file.name}|${file.lastModified}`);
+    localStorage.setItem('paytableLinkDone', JSON.stringify([...set].slice(-500)));
+  }catch(e){ /* 표시용이라 실패해도 무시 */ }
+}
+
+async function pickLinkFolder(){
+  if(!linkSupported){ linkStatus.textContent = '이 브라우저는 폴더 연결을 지원하지 않습니다. 크롬이나 엣지에서 열거나, 아래에 연동 파일을 끌어다 놓아 주세요.'; return null; }
+  try{
+    linkDir = await window.showDirectoryPicker({ id:'paytable-linked', mode:'read' });
+    await linkIdb.set('dir', linkDir);
+    linkStatus.textContent = `연결됨: ${linkDir.name} 폴더`;
+    return linkDir;
+  }catch(e){ return null; } // 사용자가 취소
+}
+
+async function ensureLinkFolder(){
+  if(!linkDir){ try{ linkDir = await linkIdb.get('dir') || null; }catch(e){ linkDir = null; } }
+  if(!linkDir) return pickLinkFolder();
+  if(await linkDir.queryPermission({ mode:'read' }) !== 'granted' &&
+     await linkDir.requestPermission({ mode:'read' }) !== 'granted') return pickLinkFolder();
+  return linkDir;
+}
+
+async function listLinkedFiles(dir){
+  const files = [];
+  for await (const entry of dir.values()){
+    if(entry.kind === 'file' && /\.json$/i.test(entry.name)) files.push(await entry.getFile());
+  }
+  return files.sort((a, b) => b.lastModified - a.lastModified);
+}
+
+function renderLinkRecent(files, current){
+  const done = linkDoneSet();
+  const box = document.getElementById('linkRecent');
+  box.innerHTML = '';
+  files.slice(0, 12).forEach(f=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = f === current ? 'cur' : '';
+    b.title = `수정: ${new Date(f.lastModified).toLocaleString('ko-KR')}`;
+    b.innerHTML = `${escapeHtml(f.name.replace(/\.xlsx?\.json$|\.json$/i, ''))}${done.has(`${f.name}|${f.lastModified}`) ? '<span class="done">✓</span>' : ''}`;
+    b.addEventListener('click', ()=> loadLinkedFile(f, files));
+    box.appendChild(b);
+  });
+}
+
+async function loadLinkedFile(file, files){
+  renderLinkRecent(files, file);
+  linkStatus.textContent = `불러오는 중: ${file.name}`;
+  await new Promise(res=>{
+    const obs = new MutationObserver(()=>{ if(!/^읽는 중/.test(fileMeta.textContent)){ obs.disconnect(); res(); } });
+    obs.observe(fileMeta, { childList:true, characterData:true, subtree:true });
+    handleLinkedJsonFile(file);
+  });
+  if(!parsedData || /오류/.test(fileMeta.textContent)){ linkStatus.textContent = `불러오지 못했습니다: ${file.name}`; return; }
+  markLinkDone(file);
+  renderLinkRecent(files, file);
+  const nIssue = checkState.issues.filter(i => i.level !== 'info').length;
+  linkStatus.textContent = nIssue ? `${file.name} · 검사에서 ${nIssue}건이 나왔습니다. 체크리스트를 확인해 주세요.` : `${file.name} · 이상 없음, 조견표를 생성했습니다.`;
+  if(checkGateOpen()) generateTables();
+  else document.getElementById('checkPanel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.getElementById('linkFolderBtn').addEventListener('click', async ()=>{
+  const dir = await pickLinkFolder();
+  if(dir) document.getElementById('linkGoBtn').click();
+});
+document.getElementById('linkGoBtn').addEventListener('click', async ()=>{
+  const dir = await ensureLinkFolder();
+  if(!dir) return;
+  const files = await listLinkedFiles(dir);
+  if(!files.length){ linkStatus.textContent = `${dir.name} 폴더에 연동 파일(.json)이 없습니다. 원본 폴더에 엑셀을 넣고 1~2분 뒤 다시 눌러 주세요.`; return; }
+  loadLinkedFile(files[0], files);
+});
+if(!linkSupported){
+  linkStatus.textContent = '이 브라우저는 폴더 연결을 지원하지 않습니다. 크롬이나 엣지에서 열거나, 아래에 연동 파일을 끌어다 놓아 주세요.';
+} else {
+  linkIdb.get('dir').then(d=>{ if(d){ linkDir = d; linkStatus.textContent = `연결됨: ${d.name} 폴더 · 버튼을 누르면 가장 최근 파일을 불러와 바로 검사합니다.`; } }).catch(()=>{});
 }
 
 /** 직무 칩에 초과근무수당 비고 자동 매칭 불확실 경고(⚠) 표시를 갱신 */
@@ -2681,12 +2930,19 @@ function collectUncertainOvertimeJobs(){
   return list;
 }
 
-document.getElementById('generateBtn').addEventListener('click', ()=>{
+document.getElementById('generateBtn').addEventListener('click', ()=> generateTables());
+
+function generateTables(){
   if(!parsedData || selectedJobs.size===0){
     alert('생성할 직무를 먼저 선택하세요. (체크박스로 선택 후 다시 눌러 주세요)');
     return;
   }
-  const uncertain = collectUncertainOvertimeJobs();
+  if(!checkGateOpen()){
+    document.getElementById('checkPanel').scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  // 체크리스트에서 이미 확인한 직무는 다시 묻지 않음
+  const uncertain = collectUncertainOvertimeJobs().filter(u => !checkState.acked.has(`ot:${u.idx}`));
   if(uncertain.length){
     const lines = uncertain.map(u => `- ${u.disp}  (엑셀 비고 원문: "${u.raw}")`).join('\n');
     const proceed = confirm(
@@ -2700,11 +2956,16 @@ document.getElementById('generateBtn').addEventListener('click', ()=>{
   applyWidthsFromControls();
   regenerateResults();
   resultPanel.scrollIntoView({behavior:'smooth', block:'start'});
-});
+}
 
 document.getElementById('zipBtn').addEventListener('click', async ()=>{
   if(cardRegistry.length===0){
     alert('먼저 「선택 직무 조견표 생성」을 눌러 카드를 만들어 주세요.');
+    return;
+  }
+  if(!checkGateOpen()){
+    alert('체크리스트를 먼저 완료해 주세요.');
+    document.getElementById('checkPanel').scrollIntoView({behavior:'smooth', block:'start'});
     return;
   }
   const zipBtn = document.getElementById('zipBtn');
