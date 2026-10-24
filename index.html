@@ -459,9 +459,7 @@
   #libraryLock.show{ display:block; }
 
   /* 사이트 전체 접속 차단 게이트 */
-  body.gated > header,
-  body.gated > .wrap,
-  body.gated > footer{ display:none; }
+  body.gated > .app-shell{ display:none; }
   #siteGate{ display:none; }
   body.gated #siteGate{
     display:flex; align-items:center; justify-content:center;
@@ -484,6 +482,113 @@
     background:var(--navy); color:#fff;
   }
   .gate-box button:hover{ background:var(--navy-dark); }
+
+  /* ============================================================
+     관리 시스템 레이아웃 (사이드바 + 상단바 + 페이지 헤더 + KPI)
+     ============================================================ */
+  :root{
+    --sb-bg:#0f1b30; --sb-ink:#c9d3e6; --sb-quiet:#7d8aa3; --sb-hover:#18284a; --sb-on:#1e3563;
+    --pri:#1d4ed8; --pri-dark:#1e40af; --pri-soft:#eaf0ff;
+    --bg:#f4f6f9; --card:#ffffff; --line:#e4e8ee; --ink2:#111827; --muted:#6b7280;
+    --ok:#15803d; --ok-soft:#e8f6ec; --warn:#b45309; --warn-soft:#fdf3e1; --bad:#b91c1c; --bad-soft:#fdeaea;
+  }
+  body{ background:var(--bg); color:var(--ink2); font-size:14px; }
+  [hidden]{ display:none !important; }
+  .app-shell{ display:grid; grid-template-columns:232px minmax(0,1fr); min-height:100vh; }
+  .sidebar{ background:var(--sb-bg); color:var(--sb-ink); display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .brand{ display:flex; gap:10px; align-items:center; padding:20px 18px 18px; border-bottom:1px solid rgba(255,255,255,.07); }
+  .brand-mark{ width:32px; height:32px; border-radius:8px; background:var(--pri); color:#fff; font-weight:800;
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .brand strong{ display:block; color:#fff; font-size:14.5px; letter-spacing:.3px; }
+  .brand small{ display:block; color:var(--sb-quiet); font-size:11.5px; margin-top:1px; }
+  .side-nav{ display:flex; flex-direction:column; padding:8px 10px; gap:2px; flex:1; }
+  .side-group{ font-size:11px; color:var(--sb-quiet); letter-spacing:.06em; padding:16px 10px 6px; }
+  .side-nav .app-tab, .side-item{
+    display:flex; align-items:center; gap:10px; width:100%; min-width:0; flex:none; text-align:left;
+    background:transparent; color:var(--sb-ink); border:0; border-radius:8px; padding:10px 12px;
+    font:inherit; font-size:13.5px; font-weight:500; cursor:pointer; }
+  .side-nav .app-tab:hover{ background:var(--sb-hover); color:#fff; }
+  .side-nav .app-tab.on{ background:var(--sb-on); color:#fff; font-weight:700; box-shadow:inset 3px 0 0 #5b8cff; }
+  .side-nav .app-tab .tab-count{ margin-left:auto; background:rgba(255,255,255,.12); color:#fff; }
+  .side-nav .app-tab.on .tab-count{ background:#5b8cff; color:#fff; }
+  .side-item.soon{ cursor:default; color:var(--sb-quiet); }
+  .side-item em{ margin-left:auto; font-style:normal; font-size:10.5px; border:1px solid rgba(255,255,255,.15);
+    border-radius:999px; padding:1px 7px; }
+  .side-nav .app-tab > span:not(.tab-count), .side-item > span{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .side-item em, .side-nav .tab-count{ flex-shrink:0; white-space:nowrap; }
+  .side-foot{ padding:14px 18px; border-top:1px solid rgba(255,255,255,.07); font-size:12px; color:var(--sb-ink);
+    display:grid; grid-template-columns:auto 1fr; gap:2px 8px; align-items:center; }
+  .side-foot small{ grid-column:2; color:var(--sb-quiet); font-size:11px; }
+  .side-dot{ width:8px; height:8px; border-radius:50%; background:#6b7280; }
+  .side-dot.on{ background:#22c55e; }
+
+  .main{ min-width:0; display:flex; flex-direction:column; }
+  .topbar{ height:60px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center;
+    justify-content:space-between; padding:0 28px; position:sticky; top:0; z-index:20; }
+  .crumb{ font-size:13px; color:var(--muted); }
+  .crumb b{ color:var(--ink2); }
+  .user-chip{ display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+  .user-chip b{ display:block; color:var(--ink2); font-size:13px; }
+  .avatar{ width:32px; height:32px; border-radius:50%; background:var(--pri-soft); color:var(--pri);
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; }
+
+  .page-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; padding:26px 28px 18px; }
+  .page-head h1{ margin:0; font-size:23px; font-weight:800; letter-spacing:-.01em; }
+  .page-head p{ margin:6px 0 0; font-size:13px; color:var(--muted); }
+  .page-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .page-actions button{ padding:10px 16px; font-size:13.5px; }
+  #linkGoBtn{ font-size:13.5px; padding:10px 18px; }
+
+  .kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding:0 28px 14px; }
+  .kpi{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .kpi .k{ font-size:12.5px; color:var(--muted); }
+  .kpi .v{ font-size:24px; font-weight:800; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .kpi .v.ok{ color:var(--ok); } .kpi .v.warn{ color:var(--warn); } .kpi .v.bad{ color:var(--bad); }
+  .kpi .d{ font-size:12px; color:var(--muted); min-height:1.3em; }
+
+  .stepper{ list-style:none; margin:0 28px 18px; padding:12px 14px; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+  .stepper li{ display:flex; align-items:center; gap:8px; min-width:0; font-size:13px; }
+  .stepper .n{ width:24px; height:24px; border-radius:50%; border:1.5px solid #cbd2dc; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+  .stepper .t{ font-weight:600; color:var(--ink2); white-space:nowrap; }
+  .stepper .s{ margin-left:auto; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  .stepper li.done .n{ background:var(--pri); border-color:var(--pri); color:#fff; }
+  .stepper li.cur .n{ border-color:var(--pri); color:var(--pri); }
+  .stepper li.cur .s{ color:var(--pri); font-weight:700; }
+  .stepper li.stop .n{ border-color:var(--bad); color:var(--bad); }
+  .stepper li.stop .s{ color:var(--bad); font-weight:700; }
+
+  .main .wrap, .main .wrap.wide{ max-width:none; margin:0; padding:0 28px 28px; }
+  .main footer{ padding:14px 28px 24px; font-size:11.5px; color:var(--muted); margin-top:auto; }
+  .panel{ border:1px solid var(--line); border-radius:12px; padding:20px 22px; box-shadow:none; }
+  .panel h2{ font-size:15.5px; color:var(--ink2); font-weight:700; }
+  button{ border-radius:8px; }
+  .btn-primary{ background:var(--pri); }
+  .btn-primary:hover{ background:var(--pri-dark); }
+  .btn-primary:disabled{ background:#9fb3e8; cursor:not-allowed; }
+  .btn-ghost{ background:#fff; color:var(--ink2); border:1px solid #d5dbe4; }
+  .btn-ghost:hover{ background:#f3f5f8; }
+  #dropzone{ border:1.5px dashed #c3ccd9; border-radius:10px; background:#fafbfd; padding:26px 20px; }
+  #dropzone.drag{ background:var(--pri-soft); border-color:var(--pri); }
+  #pasteBox{ background:#fafbfd; border-color:var(--line); }
+  #linkBox{ background:var(--pri-soft); border-radius:10px; padding:12px 14px; }
+  #linkStatus{ color:#1e3a8a; }
+  .tab-pane > .panel:first-child h2, #checkPanel h2{ display:flex; align-items:center; gap:8px; }
+  .ck-item{ border-color:var(--line); }
+  .app-tabs{ display:none; }
+  @media (max-width: 1100px){ .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } .stepper{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media (max-width: 860px){
+    .app-shell{ grid-template-columns:1fr; }
+    .sidebar{ position:static; height:auto; }
+    .side-nav{ flex-direction:row; flex-wrap:wrap; }
+    .side-group, .side-item.soon, .side-foot{ display:none; }
+    .side-nav .app-tab{ width:auto; }
+    .topbar{ position:static; padding:0 16px; }
+    .page-head, .kpis, .main .wrap, .main footer{ padding-left:16px; padding-right:16px; }
+    .stepper{ margin-left:16px; margin-right:16px; grid-template-columns:1fr 1fr; }
+  }
 </style>
 </head>
 <body class="gated">
@@ -498,23 +603,59 @@
   </div>
 </div>
 
-<header>
-  <div>
-    <h1>깡비서 급여조견표 생성기</h1>
-    <p>급여테이블(변경후) 시트를 업로드하면 직무별 급여조견표를 자동 생성 · 이미지 저장합니다</p>
-  </div>
-</header>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="메뉴">
+    <div class="brand"><span class="brand-mark">K</span><div><strong>KKANGBI PAY</strong><small>급여조견표 관리시스템</small></div></div>
+    <nav class="side-nav" role="tablist" aria-label="화면 전환">
+      <div class="side-group">업무</div>
+      <button type="button" class="app-tab on" role="tab" id="tabBtnCreate" data-tab="create" aria-selected="true">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>조견표 생성</span>
+      </button>
+      <button type="button" class="app-tab" role="tab" id="tabBtnLibrary" data-tab="library" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>저장된 자료</span> <span class="tab-count" id="libTabCount">0</span>
+      </button>
+      <div class="side-group">분석</div>
+      <span class="side-item soon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>급여 종합관리</span><em>준비 중</em></span>
+      <span class="side-item soon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 15h8"/></svg><span>인건비 보고서</span><em>준비 중</em></span>
+      <div class="side-group">기준</div>
+      <span class="side-item soon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>기준정보 관리</span><em>준비 중</em></span>
+    </nav>
+    <div class="side-foot"><span class="side-dot" id="sideLinkDot"></span><span id="sideLinkState">연동 폴더 미연결</span><small>v3.0 · 이 PC에서 실행</small></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb">급여관리 / 조견표 / <b id="crumbCur">생성</b></div>
+      <div class="user-chip"><span class="avatar">PM</span><span><b>급여 담당</b><small>운영기획</small></span></div>
+    </div>
+
+    <div class="page-head">
+      <div>
+        <h1 id="pageTitle">급여조견표 생성</h1>
+        <p id="pageSub">급여테이블(변경후) 시트를 읽어 검사한 뒤 직무별 조견표를 만듭니다</p>
+      </div>
+      <div class="page-actions" id="pageActions">
+        <button type="button" class="btn-ghost" id="linkFolderBtn">연동 폴더 연결</button>
+        <button type="button" class="btn-primary" id="linkGoBtn">급여조견표 생성</button>
+      </div>
+    </div>
+
+    <section class="kpis" id="kpiRow" aria-label="현재 작업 요약">
+      <div class="kpi"><span class="k">센터</span><span class="v" id="kpiCenter">—</span><span class="d" id="kpiCenterSub">급여테이블을 불러오세요</span></div>
+      <div class="kpi"><span class="k">인식 직무</span><span class="v" id="kpiJobs">—</span><span class="d" id="kpiJobsSub">&nbsp;</span></div>
+      <div class="kpi"><span class="k">검사 결과</span><span class="v" id="kpiCheck">—</span><span class="d" id="kpiCheckSub">&nbsp;</span></div>
+      <div class="kpi"><span class="k">생성 조견표</span><span class="v" id="kpiCards">0</span><span class="d" id="kpiCardsSub">&nbsp;</span></div>
+    </section>
+
+    <ol class="stepper" id="stepper" aria-label="처리 단계">
+      <li data-step="load"><span class="n">1</span><span class="t">불러오기</span><span class="s" id="stepLoad">대기</span></li>
+      <li data-step="check"><span class="n">2</span><span class="t">검사</span><span class="s" id="stepCheck">대기</span></li>
+      <li data-step="list"><span class="n">3</span><span class="t">체크리스트</span><span class="s" id="stepList">대기</span></li>
+      <li data-step="gen"><span class="n">4</span><span class="t">조견표 생성</span><span class="s" id="stepGen">대기</span></li>
+      <li data-step="zip"><span class="n">5</span><span class="t">ZIP 다운로드</span><span class="s" id="stepZip">대기</span></li>
+    </ol>
 
 <div class="wrap">
-
-  <nav class="app-tabs" role="tablist" aria-label="화면 전환">
-    <button type="button" class="app-tab on" role="tab" id="tabBtnCreate" data-tab="create" aria-selected="true">
-      조견표 생성
-    </button>
-    <button type="button" class="app-tab" role="tab" id="tabBtnLibrary" data-tab="library" aria-selected="false">
-      저장된 자료 <span class="tab-count" id="libTabCount">0</span>
-    </button>
-  </nav>
 
   <!-- ===== 탭1: 조견표 생성 ===== -->
   <div class="tab-pane on" id="tabCreate" role="tabpanel">
@@ -522,8 +663,6 @@
   <div class="panel">
     <h2>① 급여테이블 업로드</h2>
     <div id="linkBox">
-      <button type="button" class="btn-primary" id="linkGoBtn">급여조견표 생성</button>
-      <button type="button" class="btn-ghost" id="linkFolderBtn">연동 폴더 연결</button>
       <span id="linkStatus">처음 한 번 <b>연동 폴더 연결</b>로 OneDrive의 '조견표연동결과' 폴더를 고르면, 이후에는 버튼 하나로 최신 파일을 불러와 바로 검사합니다.</span>
       <div id="linkRecent"></div>
     </div>
@@ -736,9 +875,11 @@
     </div>
   </div><!-- /#tabLibrary -->
 
-</div>
+</div><!-- /.wrap -->
 
-<footer>깡비서 급여조견표 생성기 · 업로드·ZIP은 클라우드(Supabase)에 저장되며 자료 탭에서 다시 받을 수 있습니다</footer>
+<footer>연동 파일·붙여넣기로 불러온 급여 데이터는 이 화면에서만 처리하며 외부로 저장하지 않습니다 · 엑셀 파일을 직접 올리면 서버 설정에 따라 저장소에 보관될 수 있습니다</footer>
+  </div><!-- /.main -->
+</div><!-- /.app-shell -->
 
 <script>
 /* ============================================================
@@ -2029,6 +2170,10 @@ async function changeLibraryPassword(){
 /** 탭 전환: 조견표 생성 | 저장된 자료 */
 function switchAppTab(tabId){
   const isLib = tabId === 'library';
+  document.getElementById('pageTitle').textContent = isLib ? '저장된 자료' : '급여조견표 생성';
+  document.getElementById('pageSub').textContent = isLib ? '이전에 올린 급여테이블과 조견표 ZIP을 센터별로 찾아 다시 받습니다' : '급여테이블(변경후) 시트를 읽어 검사한 뒤 직무별 조견표를 만듭니다';
+  document.getElementById('crumbCur').textContent = isLib ? '저장된 자료' : '생성';
+  ['pageActions','kpiRow','stepper'].forEach(id => document.getElementById(id).hidden = isLib);
   document.querySelectorAll('.app-tab').forEach(btn=>{
     const on = btn.dataset.tab === tabId;
     btn.classList.toggle('on', on);
@@ -2159,12 +2304,15 @@ function showParsed(parsed, sourceLabel){
   renderNotesEditor();
   showWorkspace(true);
   applyWidthsFromControls();
+  zipDone = false;
   runChecks();
 }
 
 function showParseError(err){
   fileMeta.textContent = `⚠ 오류: ${err.message}`;
   document.getElementById('checkPanel').style.display='none';
+  parsedData = null;
+  updateDashboard();
   jobPanel.style.display='none';
   showWorkspace(false);
   resultPanel.style.display='none';
@@ -2226,6 +2374,53 @@ function handlePastedText(text){
   }catch(err){
     showParseError(err);
   }
+}
+
+/* ============================================================
+   상단 요약(KPI) · 처리 단계 표시
+   ============================================================ */
+let zipDone = false;
+function setStep(id, cls, text){
+  const s = document.getElementById(id);
+  if(!s) return;
+  s.textContent = text;
+  s.parentElement.className = cls;
+}
+function setKpi(id, text, cls, sub){
+  const v = document.getElementById(id);
+  v.textContent = text;
+  v.className = 'v' + (cls ? ' ' + cls : '');
+  if(sub !== undefined) document.getElementById(id + 'Sub').textContent = sub || '\u00a0';
+}
+function updateDashboard(){
+  const has = !!parsedData;
+  const issues = has && checkState ? checkState.issues : [];
+  const nBlock = issues.filter(i => i.level === 'block').length;
+  const nConfirm = issues.filter(i => i.level === 'confirm').length;
+  const nAcked = issues.filter(i => i.level === 'confirm' && checkState.acked.has(i.key)).length;
+  const open = has && checkGateOpen();
+  const cards = typeof cardRegistry !== 'undefined' ? cardRegistry.length : 0;
+
+  setKpi('kpiCenter', has ? parsedData.centerName : '—', '', has ? parsedData.sheetName : '급여테이블을 불러오세요');
+  setKpi('kpiJobs', has ? `${parsedData.jobs.length}개` : '—', '', has ? `생성 대상 ${selectedJobs.size}개 선택` : '');
+  if(!has) setKpi('kpiCheck', '—', '', '');
+  else if(nBlock) setKpi('kpiCheck', `차단 ${nBlock}`, 'bad', '원본을 고친 뒤 다시 불러와 주세요');
+  else if(nConfirm) setKpi('kpiCheck', `확인 ${nAcked}/${nConfirm}`, open ? 'ok' : 'warn', open ? '모두 확인함 · 생성 가능' : '체크리스트를 완료해 주세요');
+  else setKpi('kpiCheck', '이상 없음', 'ok', '검사 항목 모두 통과');
+  setKpi('kpiCards', `${cards}장`, '', cards ? (zipDone ? 'ZIP 다운로드 완료' : 'ZIP으로 한 번에 받을 수 있습니다') : '');
+
+  if(!has){ ['stepLoad','stepCheck','stepList','stepGen','stepZip'].forEach((id, i)=> setStep(id, i === 0 ? 'cur' : '', i === 0 ? '진행 전' : '대기')); return; }
+  setStep('stepLoad', 'done', '완료');
+  setStep('stepCheck', nBlock ? 'stop' : 'done', nBlock ? `차단 ${nBlock}건` : '완료');
+  if(nBlock) setStep('stepList', '', '대기');
+  else if(!nConfirm) setStep('stepList', 'done', '해당 없음');
+  else setStep('stepList', open ? 'done' : 'cur', open ? '확인 완료' : `${nAcked}/${nConfirm} 확인`);
+  setStep('stepGen', cards ? 'done' : (open ? 'cur' : ''), cards ? `${cards}장` : (open ? '진행 가능' : '대기'));
+  setStep('stepZip', zipDone ? 'done' : (cards ? 'cur' : ''), zipDone ? '완료' : (cards ? '진행 가능' : '대기'));
+}
+function setSideLink(name){
+  document.getElementById('sideLinkState').textContent = name ? `연동 폴더: ${name}` : '연동 폴더 미연결';
+  document.getElementById('sideLinkDot').classList.toggle('on', !!name);
 }
 
 /* ============================================================
@@ -2327,6 +2522,7 @@ function renderChecklist(){
     : nBlock ? '차단 항목이 있어 생성할 수 없습니다. 원본 엑셀을 고친 뒤 다시 불러와 주세요.'
     : '확인 항목을 모두 체크해야 생성할 수 있습니다.';
   document.getElementById('generateBtn').disabled = !open;
+  updateDashboard();
 }
 
 document.getElementById('checkList').addEventListener('change', e=>{
@@ -2371,6 +2567,7 @@ async function pickLinkFolder(){
     linkDir = await window.showDirectoryPicker({ id:'paytable-linked', mode:'read' });
     await linkIdb.set('dir', linkDir);
     linkStatus.textContent = `연결됨: ${linkDir.name} 폴더`;
+    setSideLink(linkDir.name);
     return linkDir;
   }catch(e){ return null; } // 사용자가 취소
 }
@@ -2437,7 +2634,7 @@ document.getElementById('linkGoBtn').addEventListener('click', async ()=>{
 if(!linkSupported){
   linkStatus.textContent = '이 브라우저는 폴더 연결을 지원하지 않습니다. 크롬이나 엣지에서 열거나, 아래에 연동 파일을 끌어다 놓아 주세요.';
 } else {
-  linkIdb.get('dir').then(d=>{ if(d){ linkDir = d; linkStatus.textContent = `연결됨: ${d.name} 폴더 · 버튼을 누르면 가장 최근 파일을 불러와 바로 검사합니다.`; } }).catch(()=>{});
+  linkIdb.get('dir').then(d=>{ if(d){ linkDir = d; setSideLink(d.name); linkStatus.textContent = `연결됨: ${d.name} 폴더 · 버튼을 누르면 가장 최근 파일을 불러와 바로 검사합니다.`; } }).catch(()=>{});
 }
 
 /** 직무 칩에 초과근무수당 비고 자동 매칭 불확실 경고(⚠) 표시를 갱신 */
@@ -2612,6 +2809,7 @@ function fitPreviewScale(){
 function updateCountHint(){
   if(!parsedData){ jobCountHint.textContent = ''; return; }
   jobCountHint.textContent = `${selectedJobs.size} / ${parsedData.jobs.length}개 직무 선택됨`;
+  if(typeof updateDashboard === 'function' && document.getElementById('kpiJobs')) updateDashboard();
 }
 
 document.getElementById('toggleAllBtn').addEventListener('click', ()=>{
@@ -2911,6 +3109,8 @@ function regenerateResults(){
   if(hint){
     hint.textContent = `생성 ${cardRegistry.length}개 · 선택 ${selectedJobs.size}개 · 전체 직무 ${parsedData.jobs.length}개  · 카드별 개별 다운로드 가능`;
   }
+  zipDone = false;
+  updateDashboard();
 }
 
 /** 선택된 직무 중 초과근무수당 비고 자동 매칭이 불확실한 것들을 모아 반환 */
@@ -3037,6 +3237,8 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
 
   zipBtn.disabled = false;
   zipBtn.textContent = '전체 PNG 일괄 다운로드(ZIP)';
+  zipDone = true;
+  updateDashboard();
 
   const hint = document.getElementById('resultCountHint');
   if(hint){
@@ -3053,6 +3255,7 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
 // 초기화: 서버 프록시 상태 + 탭 + 자료 잠금
 bindLibraryUi();
 bindAppTabs();
+updateDashboard();
 (async ()=>{
   await checkPayAuthStatus();
   try{
