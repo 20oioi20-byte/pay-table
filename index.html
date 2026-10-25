@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>깡비서 급여조견표 생성기</title>
+<title>급여조견표 관리시스템</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -548,7 +548,7 @@
   .kpi .d{ font-size:12px; color:var(--muted); min-height:1.3em; }
 
   .stepper{ list-style:none; margin:0 28px 18px; padding:12px 14px; background:var(--card); border:1px solid var(--line);
-    border-radius:12px; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+    border-radius:12px; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
   .stepper li{ display:flex; align-items:center; gap:8px; min-width:0; font-size:13px; }
   .stepper .n{ width:24px; height:24px; border-radius:50%; border:1.5px solid #cbd2dc; color:var(--muted);
     display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
@@ -589,13 +589,102 @@
     .page-head, .kpis, .main .wrap, .main footer{ padding-left:16px; padding-right:16px; }
     .stepper{ margin-left:16px; margin-right:16px; grid-template-columns:1fr 1fr; }
   }
+
+  /* ============================================================
+     급여 데이터 · 통계 · 보고서 · 기준정보 화면
+     ============================================================ */
+  .kpis.inpane{ padding:0; margin-bottom:16px; }
+  .ph{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .ph h2{ margin:0; }
+  .btn-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .btn-row .sep{ width:1px; height:24px; background:var(--line); margin:0 4px; }
+  .btn-sm{ padding:5px 10px; font-size:12px; }
+  .file-btn{ display:inline-flex; align-items:center; padding:8px 14px; font-size:13px; font-weight:700; border-radius:8px; cursor:pointer; }
+  .hint.ok{ color:var(--ok); font-weight:700; } .hint.err{ color:var(--bad); font-weight:700; }
+  .tblwrap{ overflow-x:auto; } .tblwrap.scroll{ max-height:460px; overflow-y:auto; }
+  table.grid{ width:100%; border-collapse:collapse; font-size:13px; }
+  table.grid th{ text-align:left; font-size:11.5px; color:var(--muted); font-weight:700; padding:8px 10px; border-bottom:1px solid var(--line); background:#fff; position:sticky; top:0; }
+  table.grid td{ padding:8px 10px; border-bottom:1px solid #eef1f5; vertical-align:middle; }
+  table.grid .r{ text-align:right; } table.grid .num{ font-variant-numeric:tabular-nums; }
+  table.grid td.muted{ color:var(--muted); font-size:12px; }
+  table.grid td.empty{ text-align:center; color:var(--muted); padding:24px; }
+  table.grid tr.go{ cursor:pointer; } table.grid tr.go:hover td{ background:#f6f8fb; }
+  table.grid td.up{ color:#c2410c; } table.grid td.down{ color:#1d4ed8; }
+  table.grid input, table.grid select{ width:100%; padding:5px 7px; border:1px solid #d5dbe4; border-radius:6px; font:inherit; font-size:13px; }
+  .tag{ font-size:11px; padding:1px 7px; border-radius:4px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .tag.demo{ border-color:#f1c27d; color:#9a5b00; background:#fdf3e1; }
+  .pill{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; }
+  .pill.ok{ color:var(--ok); border:1px solid var(--ok); } .pill.warn{ color:var(--warn); background:var(--warn-soft); }
+  input[type=search], .filterbar select, .rep-form input, .rep-form select, .set-form input, .set-form select{
+    padding:7px 10px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:13px; background:#fff; }
+  .filterbar{ display:flex; gap:10px 18px; align-items:center; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin-bottom:12px; font-size:13px; }
+  .filterbar label{ display:flex; gap:8px; align-items:center; font-weight:600; }
+  .flabel{ font-size:12px; font-weight:700; color:var(--muted); }
+  .seg{ display:inline-flex; border:1px solid #d5dbe4; border-radius:8px; overflow:hidden; }
+  .seg button{ border:0; border-right:1px solid #d5dbe4; border-radius:0; background:#fff; color:var(--muted); padding:6px 12px; font:inherit; font-size:12.5px; cursor:pointer; }
+  .seg button:last-child{ border-right:0; }
+  .seg button[aria-pressed="true"]{ background:var(--pri-soft); color:var(--pri); font-weight:700; }
+  .crumb2{ font-size:14px; margin:4px 2px 12px; color:var(--muted); }
+  .crumb2 b{ color:var(--ink2); }
+  .crumb2 button{ border:0; background:none; color:var(--pri); font:inherit; cursor:pointer; padding:2px 4px; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+  .legend i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  svg.chart{ width:100%; height:auto; display:block; }
+  svg.chart text{ fill:#6b7280; font-size:11px; font-family:inherit; }
+  svg.chart text.ink{ fill:#111827; font-weight:600; }
+  svg.chart .gl{ stroke:#e5e7eb; stroke-dasharray:2 3; } svg.chart .axis{ stroke:#9ca3af; }
+  svg.chart .hit{ cursor:pointer; } svg.chart .hit .bg{ fill:transparent; } svg.chart .hit:hover .bg{ fill:#f3f6fb; }
+  .rankbox{ max-height:560px; overflow-y:auto; border-top:1px solid var(--line); }
+  .rep-form, .set-form{ display:flex; gap:12px 18px; flex-wrap:wrap; align-items:flex-end; font-size:13px; }
+  .rep-form label, .set-form label{ display:flex; flex-direction:column; gap:5px; font-weight:600; }
+  .rep-form #repCenter{ min-width:220px; }
+  .rep-heads{ margin-top:14px; display:flex; flex-direction:column; gap:6px; }
+  .rep-heads #repHeads{ display:flex; gap:14px; flex-wrap:wrap; font-size:13px; }
+  .rep-heads input{ width:80px; padding:5px 8px; border:1px solid #d5dbe4; border-radius:6px; font:inherit; }
+  .set-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .set-grid .panel{ margin-bottom:0; }
+  .set-grid + .panel{ margin-top:16px; }
+  .set-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .set-list li{ display:flex; gap:8px; }
+  .set-list input{ flex:1; padding:6px 9px; border:1px solid #d5dbe4; border-radius:6px; font:inherit; font-size:13px; }
+  .set-form.inline{ margin-bottom:12px; }
+
+  /* 보고서 본문 (A4 문서처럼) */
+  .report-doc{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:44px 52px; max-width:900px; margin:0 auto 20px; line-height:1.65; font-size:14px; }
+  .report-doc header.rp-head{ background:none; color:inherit; display:block; padding:0; }
+  .report-doc .rp-kicker{ color:var(--pri); font-weight:800; font-size:12.5px; letter-spacing:.04em; }
+  .report-doc h1{ font-size:24px; margin:4px 0 6px; }
+  .report-doc .rp-meta{ color:var(--muted); font-size:12.5px; }
+  .report-doc h2{ font-size:16px; margin:28px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--pri); }
+  .report-doc ul{ margin:8px 0; padding-left:20px; }
+  .rp-kpis{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
+  .rp-kpis div{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .rp-kpis span{ display:block; font-size:12px; color:var(--muted); }
+  .rp-kpis b{ display:block; font-size:20px; margin:2px 0; }
+  .rp-kpis em{ display:block; font-style:normal; font-size:11.5px; color:var(--muted); }
+  .rp-verdict{ font-weight:700; background:var(--pri-soft); border-radius:8px; padding:10px 12px; }
+  .rp-table{ width:100%; border-collapse:collapse; margin:8px 0; font-size:13px; }
+  .rp-table th, .rp-table td{ border:1px solid #dfe3ea; padding:6px 9px; }
+  .rp-table th{ background:#f5f7fa; text-align:left; font-size:12px; }
+  .rp-table .r{ text-align:right; font-variant-numeric:tabular-nums; }
+  .rp-table tr.sel td{ background:#eef2ff; font-weight:700; }
+  .rp-chart svg{ width:100%; height:auto; max-width:680px; display:block; margin:6px 0; }
+  .rp-note{ font-size:12px; color:var(--muted); }
+  @media (max-width: 860px){ .set-grid{ grid-template-columns:1fr; } .report-doc{ padding:24px 18px; } .rp-kpis{ grid-template-columns:1fr; } }
+  @media print{
+    body{ background:#fff; }
+    .sidebar, .topbar, .page-head, .kpis, .stepper, .no-print, .main footer, .tab-pane:not(#tabReport){ display:none !important; }
+    .app-shell{ display:block; } .main .wrap{ padding:0; }
+    .report-doc{ border:0; padding:0; max-width:none; }
+    .report-doc h2{ break-after:avoid; } .rp-table, .rp-chart{ break-inside:avoid; }
+  }
 </style>
 </head>
 <body class="gated">
 
 <div id="siteGate">
   <div class="gate-box">
-    <h2>🔒 깡비서 급여조견표 생성기</h2>
+    <h2>🔒 급여조견표 관리시스템</h2>
     <p>비밀번호를 입력해야 이용할 수 있습니다.</p>
     <input type="password" id="gatePwInput" placeholder="비밀번호" autocomplete="current-password" maxlength="64">
     <div class="gate-err" id="gatePwErr"></div>
@@ -605,27 +694,37 @@
 
 <div class="app-shell">
   <aside class="sidebar" aria-label="메뉴">
-    <div class="brand"><span class="brand-mark">K</span><div><strong>KKANGBI PAY</strong><small>급여조견표 관리시스템</small></div></div>
+    <div class="brand"><span class="brand-mark">급</span><div><strong>급여관리 시스템</strong><small>조견표 · 통계 · 인건비 분석</small></div></div>
     <nav class="side-nav" role="tablist" aria-label="화면 전환">
       <div class="side-group">업무</div>
       <button type="button" class="app-tab on" role="tab" id="tabBtnCreate" data-tab="create" aria-selected="true">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>조견표 생성</span>
       </button>
-      <button type="button" class="app-tab" role="tab" id="tabBtnLibrary" data-tab="library" aria-selected="false">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>저장된 자료</span> <span class="tab-count" id="libTabCount">0</span>
+            <button type="button" class="app-tab" role="tab" id="tabBtnData" data-tab="data" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>급여 데이터</span> <span class="tab-count" id="navDataCount">0</span>
       </button>
       <div class="side-group">분석</div>
-      <span class="side-item soon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>급여 종합관리</span><em>준비 중</em></span>
-      <span class="side-item soon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 15h8"/></svg><span>인건비 보고서</span><em>준비 중</em></span>
+      <button type="button" class="app-tab" role="tab" id="tabBtnStats" data-tab="stats" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>급여 통계</span>
+      </button>
+      <button type="button" class="app-tab" role="tab" id="tabBtnReport" data-tab="report" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>인건비 분석 보고서</span>
+      </button>
       <div class="side-group">기준</div>
-      <span class="side-item soon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>기준정보 관리</span><em>준비 중</em></span>
+      <button type="button" class="app-tab" role="tab" id="tabBtnSettings" data-tab="settings" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg><span>기준정보 관리</span>
+      </button>
+      <div class="side-group">기타</div>
+      <button type="button" class="app-tab" role="tab" id="tabBtnLibrary" data-tab="library" aria-selected="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>서버 보관함</span> <span class="tab-count" id="libTabCount">0</span>
+      </button>
     </nav>
     <div class="side-foot"><span class="side-dot" id="sideLinkDot"></span><span id="sideLinkState">연동 폴더 미연결</span><small>v3.0 · 이 PC에서 실행</small></div>
   </aside>
 
   <div class="main">
     <div class="topbar">
-      <div class="crumb">급여관리 / 조견표 / <b id="crumbCur">생성</b></div>
+      <div class="crumb">급여관리 / <b id="crumbCur">조견표 / 생성</b></div>
       <div class="user-chip"><span class="avatar">PM</span><span><b>급여 담당</b><small>운영기획</small></span></div>
     </div>
 
@@ -653,6 +752,7 @@
       <li data-step="list"><span class="n">3</span><span class="t">체크리스트</span><span class="s" id="stepList">대기</span></li>
       <li data-step="gen"><span class="n">4</span><span class="t">조견표 생성</span><span class="s" id="stepGen">대기</span></li>
       <li data-step="zip"><span class="n">5</span><span class="t">ZIP 다운로드</span><span class="s" id="stepZip">대기</span></li>
+      <li data-step="save"><span class="n">6</span><span class="t">통계 저장</span><span class="s" id="stepSave">대기</span></li>
     </ol>
 
 <div class="wrap">
@@ -804,6 +904,18 @@
     <div id="results"></div>
   </div>
 
+  <div class="panel" id="snapPanel" style="display:none;">
+    <div class="ph"><h2>⑥ 통계에 저장</h2><span class="hint">저장하면 [급여 통계]와 [인건비 분석 보고서]에 반영됩니다</span></div>
+    <div class="rep-form">
+      <label>센터명 <input type="text" id="snapCenter"></label>
+      <label>센터유형 <select id="snapType"></select></label>
+      <label>적용 시점 <input type="month" id="snapPeriod"></label>
+      <button type="button" class="btn-primary" id="snapSaveBtn">통계에 저장</button>
+    </div>
+    <div class="tblwrap" style="margin-top:12px;"><table class="grid"><thead><tr><th>직무</th><th>상담유형 (자동 분류, 바꿀 수 있음)</th><th class="r">월총액</th></tr></thead><tbody id="snapJobs"></tbody></table></div>
+    <p class="hint" id="snapStatus"></p>
+  </div>
+
   </div><!-- /#tabCreate -->
 
   <!-- ===== 탭2: 저장된 자료 관리 ===== -->
@@ -874,6 +986,147 @@
       </div>
     </div>
   </div><!-- /#tabLibrary -->
+
+  <!-- ===== 급여 데이터 (스냅샷 저장소) ===== -->
+  <div class="tab-pane" id="tabData" role="tabpanel">
+    <section class="kpis inpane" id="dataKpis"></section>
+    <div class="panel">
+      <div class="ph">
+        <h2>저장소 관리</h2>
+        <span class="hint" id="dataMsg"></span>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="snapFolderBtn">OneDrive 저장 폴더 연결</button>
+        <button type="button" class="btn-ghost" id="snapReloadBtn">폴더에서 다시 읽기</button>
+        <button type="button" class="btn-ghost" id="backupExportBtn">백업 파일 내보내기</button>
+        <label class="btn-ghost file-btn">백업 파일 불러오기<input type="file" id="backupImportInput" accept=".json" hidden></label>
+        <span class="sep"></span>
+        <button type="button" class="btn-ghost" id="demoLoadBtn">가상 데이터 불러오기</button>
+        <button type="button" class="btn-ghost" id="demoClearBtn">가상 데이터 지우기</button>
+      </div>
+      <p class="hint">조견표를 만든 뒤 [통계에 저장]을 누르면 센터·시점별 급여가 1건씩 쌓입니다. 이 PC 브라우저에 저장되며, OneDrive의 '급여스냅샷' 폴더를 연결하면 같은 내용이 파일로도 남아 다른 PC에서 다시 읽을 수 있습니다.</p>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>저장된 급여 데이터</h2><div class="btn-row"><input type="search" id="dataSearch" placeholder="센터명·유형 검색"><span class="hint" id="dataCount"></span></div></div>
+      <div class="tblwrap"><table class="grid"><thead><tr><th>센터</th><th>유형</th><th>적용 시점</th><th>버전</th><th class="r">직무</th><th>저장일</th><th>원본</th><th></th></tr></thead><tbody id="dataBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ===== 급여 통계 ===== -->
+  <div class="tab-pane" id="tabStats" role="tabpanel">
+    <div class="panel" id="statsEmpty" hidden>
+      <h2>아직 통계를 낼 데이터가 없습니다</h2>
+      <p class="hint">조견표를 만든 뒤 [통계에 저장]을 누르거나, [급여 데이터] 화면에서 가상 데이터를 불러와 화면을 확인할 수 있습니다.</p>
+    </div>
+    <div id="statsBody" hidden>
+      <div class="filterbar">
+        <label>기준 시점 <select id="statsPeriod"></select></label>
+        <span class="flabel">비교 상담유형</span><div class="seg" id="statsLabor"></div>
+        <input type="search" id="statsSearch" placeholder="센터명 검색">
+      </div>
+      <div class="crumb2" id="statsCrumb"></div>
+      <section class="kpis inpane" id="statsKpis"></section>
+      <div class="panel" id="statsViewAll">
+        <div class="ph"><h2>센터유형별 평균 시급</h2><div class="legend" id="statsTypeLegend"></div></div>
+        <p class="hint">B등급 월 급여 ÷ 월소정근로시간. 막대를 누르면 그 유형의 센터 순위로 이동합니다.</p>
+        <div id="statsTypeChart"></div>
+      </div>
+      <div class="panel" id="statsViewType" hidden>
+        <div class="ph"><h2 id="statsRankTitle">센터 순위</h2></div>
+        <p class="hint">유형 중위수 대비 편차입니다. ⚠는 최저임금 여유 2% 미만. 막대를 누르면 센터 상세로 이동합니다.</p>
+        <div class="rankbox" id="statsRank"></div>
+      </div>
+      <div class="panel" id="statsViewCenter" hidden>
+        <div class="ph"><h2 id="statsCenterTitle">센터 추이</h2><button type="button" class="btn-primary" id="statsToReport">이 센터 보고서 만들기</button></div>
+        <div class="legend" id="statsCenterLegend"></div>
+        <div id="statsCenterChart"></div>
+        <div class="tblwrap"><table class="grid" id="statsCenterJobs"></table></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>센터 목록</h2><span class="hint">행을 누르면 센터 상세로 이동</span></div>
+        <div class="tblwrap scroll"><table class="grid"><thead><tr><th>센터</th><th>유형</th><th>적용 시점</th><th class="r">시급</th><th class="r">유형 중위수 대비</th><th class="r">유형 내 백분위</th><th class="r">최저임금 여유</th></tr></thead><tbody id="statsBodyRows"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 인건비 분석 보고서 ===== -->
+  <div class="tab-pane" id="tabReport" role="tabpanel">
+    <div class="panel" id="reportEmpty" hidden>
+      <h2>보고서를 만들 데이터가 없습니다</h2>
+      <p class="hint">[통계에 저장]으로 급여 데이터가 쌓이면 센터별 보고서를 만들 수 있습니다.</p>
+    </div>
+    <div id="reportBody" hidden>
+      <div class="panel no-print">
+        <div class="ph"><h2>보고서 설정</h2>
+          <div class="btn-row">
+            <button type="button" class="btn-primary" id="repWordBtn">Word로 내려받기</button>
+            <button type="button" class="btn-ghost" id="repPrintBtn">인쇄 · PDF 저장</button>
+            <button type="button" class="btn-ghost" id="repHtmlBtn">HTML로 내려받기</button>
+          </div>
+        </div>
+        <div class="rep-form">
+          <label>센터 <input type="text" id="repCenter" list="repCenterList" autocomplete="off"><datalist id="repCenterList"></datalist></label>
+          <label>기준 시점 <select id="repPeriod"></select></label>
+          <label>목표 기준 <select id="repPolicy">
+            <option value="max">유형 중위수·시장 중위수 중 높은 값</option>
+            <option value="median">동일 유형 중위수</option>
+            <option value="p60">동일 유형 상위 40%</option>
+            <option value="market">채용시장 중위수</option>
+          </select></label>
+        </div>
+        <div class="rep-heads"><span class="flabel">상담유형별 인원 (연간 비용 계산용)</span><div id="repHeads"></div></div>
+      </div>
+      <article class="report-doc" id="reportDoc"></article>
+    </div>
+  </div>
+
+  <!-- ===== 기준정보 관리 ===== -->
+  <div class="tab-pane" id="tabSettings" role="tabpanel">
+    <div class="set-grid">
+      <div class="panel">
+        <div class="ph"><h2>센터유형</h2><button type="button" class="btn-ghost btn-sm" id="setTypeAdd">+ 추가</button></div>
+        <p class="hint">저장할 때 고르는 분류입니다. 쓰고 있는 유형은 이름만 바꿀 수 있습니다.</p>
+        <ul class="set-list" id="setTypes"></ul>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>상담유형과 월소정근로시간</h2><button type="button" class="btn-ghost btn-sm" id="setLaborAdd">+ 추가</button></div>
+        <p class="hint">시급 환산(비교 기준)에 쓰입니다.</p>
+        <table class="grid"><thead><tr><th>상담유형</th><th>시간/월</th><th></th></tr></thead><tbody id="setLabor"></tbody></table>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>직무명 자동 분류 규칙</h2><button type="button" class="btn-ghost btn-sm" id="setRuleAdd">+ 추가</button></div>
+        <p class="hint">엑셀 직무명에 단어가 들어 있으면 해당 상담유형으로 자동 선택합니다. 여러 단어는 | 로 구분. 어디에도 해당하지 않으면 '상담사'.</p>
+        <table class="grid"><thead><tr><th>포함 단어</th><th>상담유형</th><th></th></tr></thead><tbody id="setRules"></tbody></table>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>분석 기준값</h2><span class="hint" id="setMsg"></span></div>
+        <div class="set-form">
+          <label>최저임금 (시급, 원) <input type="number" id="setMinWage"></label>
+          <label>법정부담률 (%) <input type="number" step="0.1" id="setBurden"></label>
+          <label>기본 목표 기준 <select id="setPolicy">
+            <option value="max">유형 중위수·시장 중위수 중 높은 값</option>
+            <option value="median">동일 유형 중위수</option>
+            <option value="p60">동일 유형 상위 40%</option>
+            <option value="market">채용시장 중위수</option>
+          </select></label>
+        </div>
+        <p class="hint">법정부담률은 4대보험 사업주 부담분과 퇴직급여 충당분(약 8.33%)의 합입니다. 회사 기준값을 확인해 넣어 주세요.</p>
+        <button type="button" class="btn-ghost btn-sm" id="setReset">처음 값으로 되돌리기</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>채용시장 임금 표본</h2><span class="hint">채용공고·공공통계에서 직접 확인한 값만 입력 (자동 수집 안 함)</span></div>
+      <div class="set-form inline">
+        <label>확인일 <input type="date" id="setMarketDate"></label>
+        <label>지역 <input type="text" id="setMarketRegion" placeholder="예: 부산"></label>
+        <label>상담유형 <select id="setMarketType"></select></label>
+        <label>월 급여 (원) <input type="number" id="setMarketMonthly" placeholder="2450000"></label>
+        <label>출처 <input type="text" id="setMarketSource" placeholder="예: 고용24 공고"></label>
+        <button type="button" class="btn-primary btn-sm" id="setMarketAdd">추가</button>
+      </div>
+      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>확인일</th><th>지역</th><th>상담유형</th><th class="r">월 급여</th><th class="r">시급 환산</th><th>출처</th><th></th></tr></thead><tbody id="setMarket"></tbody></table></div>
+    </div>
+  </div>
 
 </div><!-- /.wrap -->
 
@@ -2167,32 +2420,37 @@ async function changeLibraryPassword(){
   }
 }
 
-/** 탭 전환: 조견표 생성 | 저장된 자료 */
+/** 화면 전환 (사이드바 메뉴) */
+const PAGES = {
+  create:{ title:'급여조견표 생성', sub:'급여테이블(변경후) 시트를 읽어 검사한 뒤 직무별 조견표를 만듭니다', crumb:'조견표 / 생성', pane:'tabCreate' },
+  data:{ title:'급여 데이터', sub:'조견표를 저장할 때마다 쌓이는 센터·시점별 급여 스냅샷입니다', crumb:'데이터 / 급여 데이터', pane:'tabData' },
+  stats:{ title:'급여 통계', sub:'저장된 급여 데이터로 센터유형·상담유형별 급여 수준을 비교합니다', crumb:'분석 / 급여 통계', pane:'tabStats' },
+  report:{ title:'인건비 분석 보고서', sub:'센터의 직접인건비 경쟁력을 분석하고 인상 시나리오 보고서를 만듭니다', crumb:'분석 / 인건비 분석 보고서', pane:'tabReport' },
+  settings:{ title:'기준정보 관리', sub:'센터유형, 상담유형, 분류 규칙, 분석 기준값, 채용시장 표본을 관리합니다', crumb:'기준 / 기준정보 관리', pane:'tabSettings' },
+  library:{ title:'서버 보관함', sub:'이전 방식(엑셀 직접 업로드)으로 서버에 저장된 자료입니다', crumb:'기타 / 서버 보관함', pane:'tabLibrary' }
+};
 function switchAppTab(tabId){
-  const isLib = tabId === 'library';
-  document.getElementById('pageTitle').textContent = isLib ? '저장된 자료' : '급여조견표 생성';
-  document.getElementById('pageSub').textContent = isLib ? '이전에 올린 급여테이블과 조견표 ZIP을 센터별로 찾아 다시 받습니다' : '급여테이블(변경후) 시트를 읽어 검사한 뒤 직무별 조견표를 만듭니다';
-  document.getElementById('crumbCur').textContent = isLib ? '저장된 자료' : '생성';
-  ['pageActions','kpiRow','stepper'].forEach(id => document.getElementById(id).hidden = isLib);
+  const page = PAGES[tabId] || PAGES.create;
   document.querySelectorAll('.app-tab').forEach(btn=>{
     const on = btn.dataset.tab === tabId;
     btn.classList.toggle('on', on);
     btn.setAttribute('aria-selected', on ? 'true' : 'false');
   });
-  document.getElementById('tabCreate')?.classList.toggle('on', !isLib);
-  document.getElementById('tabLibrary')?.classList.toggle('on', isLib);
-  if(isLib){
-    wrapEl?.classList.remove('wide');
+  Object.entries(PAGES).forEach(([k, p]) => document.getElementById(p.pane)?.classList.toggle('on', k === tabId));
+  document.getElementById('pageTitle').textContent = page.title;
+  document.getElementById('pageSub').textContent = page.sub;
+  document.getElementById('crumbCur').textContent = page.crumb;
+  ['pageActions', 'kpiRow', 'stepper'].forEach(id => document.getElementById(id).hidden = tabId !== 'create');
+  if(tabId === 'library'){
     updateLibraryLockUi();
     if(libraryUnlocked) loadArchives();
-    else {
-      // 탭 건수는 잠금 상태에서도 표시 (민감 목록은 숨김)
-      // loadArchives 없이 카운트만 갱신 가능하면 유지
-      setTimeout(()=> document.getElementById('libPwInput')?.focus(), 50);
-    }
-  } else if(workspace?.classList.contains('on')){
-    wrapEl?.classList.add('wide');
+    else setTimeout(()=> document.getElementById('libPwInput')?.focus(), 50);
   }
+  else if(tabId === 'data') renderData();
+  else if(tabId === 'stats') renderStats();
+  else if(tabId === 'report') renderReportControls();
+  else if(tabId === 'settings') renderSettings();
+  window.scrollTo(0, 0);
 }
 
 function bindAppTabs(){
@@ -2305,6 +2563,8 @@ function showParsed(parsed, sourceLabel){
   showWorkspace(true);
   applyWidthsFromControls();
   zipDone = false;
+  snapSaved = false;
+  document.getElementById('snapPanel').style.display = 'none';
   runChecks();
 }
 
@@ -2380,6 +2640,7 @@ function handlePastedText(text){
    상단 요약(KPI) · 처리 단계 표시
    ============================================================ */
 let zipDone = false;
+let snapSaved = false;
 function setStep(id, cls, text){
   const s = document.getElementById(id);
   if(!s) return;
@@ -2409,7 +2670,7 @@ function updateDashboard(){
   else setKpi('kpiCheck', '이상 없음', 'ok', '검사 항목 모두 통과');
   setKpi('kpiCards', `${cards}장`, '', cards ? (zipDone ? 'ZIP 다운로드 완료' : 'ZIP으로 한 번에 받을 수 있습니다') : '');
 
-  if(!has){ ['stepLoad','stepCheck','stepList','stepGen','stepZip'].forEach((id, i)=> setStep(id, i === 0 ? 'cur' : '', i === 0 ? '진행 전' : '대기')); return; }
+  if(!has){ ['stepLoad','stepCheck','stepList','stepGen','stepZip','stepSave'].forEach((id, i)=> setStep(id, i === 0 ? 'cur' : '', i === 0 ? '진행 전' : '대기')); return; }
   setStep('stepLoad', 'done', '완료');
   setStep('stepCheck', nBlock ? 'stop' : 'done', nBlock ? `차단 ${nBlock}건` : '완료');
   if(nBlock) setStep('stepList', '', '대기');
@@ -2417,6 +2678,7 @@ function updateDashboard(){
   else setStep('stepList', open ? 'done' : 'cur', open ? '확인 완료' : `${nAcked}/${nConfirm} 확인`);
   setStep('stepGen', cards ? 'done' : (open ? 'cur' : ''), cards ? `${cards}장` : (open ? '진행 가능' : '대기'));
   setStep('stepZip', zipDone ? 'done' : (cards ? 'cur' : ''), zipDone ? '완료' : (cards ? '진행 가능' : '대기'));
+  setStep('stepSave', snapSaved ? 'done' : (cards ? 'cur' : ''), snapSaved ? '저장됨' : (cards ? '진행 가능' : '대기'));
 }
 function setSideLink(name){
   document.getElementById('sideLinkState').textContent = name ? `연동 폴더: ${name}` : '연동 폴더 미연결';
@@ -3111,6 +3373,7 @@ function regenerateResults(){
   }
   zipDone = false;
   updateDashboard();
+  renderSnapPanel();
 }
 
 /** 선택된 직무 중 초과근무수당 비고 자동 매칭이 불확실한 것들을 모아 반환 */
@@ -3252,10 +3515,722 @@ document.getElementById('zipBtn').addEventListener('click', async ()=>{
   }
 });
 
+/* ============================================================
+   급여 데이터 저장소 · 통계 · 인건비 분석 보고서
+   저장 위치: 이 PC 브라우저(IndexedDB) + 선택 시 OneDrive 동기화 폴더(.json 파일)
+   ============================================================ */
+const sysStore = {
+  db: null,
+  async open(){
+    if(this.db) return this.db;
+    this.db = await new Promise((res, rej)=>{
+      const r = indexedDB.open('paytable-system', 1);
+      r.onupgradeneeded = ()=>{ const d = r.result; d.createObjectStore('snapshots', { keyPath:'id' }); d.createObjectStore('kv'); };
+      r.onsuccess = ()=> res(r.result);
+      r.onerror = ()=> rej(r.error);
+    });
+    return this.db;
+  },
+  async tx(store, mode, fn){
+    const db = await this.open();
+    return new Promise((res, rej)=>{
+      const t = db.transaction(store, mode);
+      const out = fn(t.objectStore(store));
+      t.oncomplete = ()=> res(out && 'result' in out ? out.result : undefined);
+      t.onerror = ()=> rej(t.error);
+    });
+  },
+  all(){ return this.tx('snapshots', 'readonly', s => s.getAll()); },
+  put(rec){ return this.tx('snapshots', 'readwrite', s => s.put(rec)); },
+  del(id){ return this.tx('snapshots', 'readwrite', s => s.delete(id)); },
+  getKV(k){ return this.tx('kv', 'readonly', s => s.get(k)); },
+  setKV(k, v){ return this.tx('kv', 'readwrite', s => s.put(v, k)); }
+};
+
+const DEFAULT_SETTINGS = {
+  centerTypes: ['금융', '공공', '유통', '통신', '기타'],
+  laborTypes: [
+    { name:'관리자', hours:209 }, { name:'상담사', hours:209 }, { name:'신입상담사', hours:209 },
+    { name:'심야', hours:209 }, { name:'단시간', hours:130 }
+  ],
+  rules: [
+    { pattern:'팀장|센터장|매니저|관리|리더|Leader|실장|파트장|Staff|스텝', type:'관리자' },
+    { pattern:'신입|수습|교육생|인턴', type:'신입상담사' },
+    { pattern:'심야|야간', type:'심야' },
+    { pattern:'단시간|파트타임|시간제|PT', type:'단시간' }
+  ],
+  minWageHourly: 10320,
+  burdenRate: 18.5,
+  targetPolicy: 'max',
+  centers: {},
+  market: []
+};
+let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+let SNAPS = [];
+let snapDir = null;
+const POLICY_LABEL = { median:'동일 유형 중위수', p60:'동일 유형 상위 40%', market:'채용시장 중위수', max:'유형 중위수·시장 중위수 중 높은 값' };
+
+async function loadSystem(){
+  try{
+    const s = await sysStore.getKV('settings');
+    if(s) SETTINGS = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s);
+    SNAPS = (await sysStore.all()) || [];
+    snapDir = (await sysStore.getKV('snapDir')) || null;
+  }catch(e){ console.error(e); }
+}
+function saveSettings(){ return sysStore.setKV('settings', SETTINGS).catch(console.error); }
+
+const hoursOf = lt => (SETTINGS.laborTypes.find(t => t.name === lt) || { hours:209 }).hours || 209;
+function guessLaborType(job){
+  const name = `${job.groupLabel || ''} ${job.jobName || ''} ${job.displayName || ''}`;
+  for(const r of SETTINGS.rules){
+    try{ if(new RegExp(r.pattern, 'i').test(name)) return r.type; }catch(e){ /* 잘못된 규칙은 건너뜀 */ }
+  }
+  if(job.block === '리더그룹') return '관리자';
+  return '상담사';
+}
+const man = v => (v / 10000).toFixed(1);
+const pctTxt = (v, d = 1) => (v > 0 ? '+' : '') + (v * 100).toFixed(d) + '%';
+const median = a => { const v = a.filter(x => x != null).sort((x, y) => x - y); if(!v.length) return null; const m = Math.floor(v.length / 2); return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+const quantile = (a, q) => { const v = a.filter(x => x != null).sort((x, y) => x - y); if(!v.length) return null; const pos = (v.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos); return v[lo] + (v[hi] - v[lo]) * (pos - lo); };
+const mean = a => { const v = a.filter(x => x != null); return v.length ? v.reduce((p, q) => p + q, 0) / v.length : null; };
+const esc = s => escapeHtml(String(s ?? ''));
+
+/* ---------- 스냅샷 만들기 (조견표 생성 직후) ---------- */
+function buildSnapshot(meta){
+  const prev = SNAPS.filter(s => s.center === meta.center && s.period === meta.period);
+  const version = prev.length ? Math.max(...prev.map(s => s.version)) + 1 : 1;
+  const jobs = parsedData.jobs.map((j, i)=>{
+    const items = {};
+    (j.items || []).forEach(([l, v]) => { items[l] = v; });
+    const gB = (j.grades || []).find(([g]) => /B/i.test(String(g)));
+    const gradeB = gB && typeof gB[1] === 'number' ? gB[1] : null;
+    const laborType = meta.labor[i];
+    const hours = hoursOf(laborType);
+    const compareMonthly = gradeB ?? j.monthlyTotal ?? null;
+    const fixedPay = Object.values(items).reduce((a, v) => a + (typeof v === 'number' ? v : 0), 0);
+    return {
+      name: jobLabel(j), block: j.block, laborType, items,
+      stdPaySum: j.stdPaySum, overtime: j.overtime, night: j.night, telecom: j.telecom,
+      monthlyTotal: j.monthlyTotal, gradeB, compareMonthly, hours, fixedPay,
+      hourly: compareMonthly && hours ? compareMonthly / hours : null
+    };
+  });
+  const acked = checkState.issues.filter(i => i.level === 'confirm').map(i => ({ job:i.job, msg:i.msg, reason: checkState.reasons[i.key] || '' }));
+  return {
+    kind:'PAYSNAP', v:1,
+    id: `${meta.center}|${meta.period}|v${version}|${Date.now()}`,
+    center: meta.center, centerType: meta.centerType, period: meta.period, version,
+    savedAt: new Date().toISOString(), sourceFile: meta.sourceFile || '',
+    jobs, checks: { confirmed: acked }, headcount: {}
+  };
+}
+
+async function writeSnapToFolder(rec){
+  if(!snapDir) return false;
+  try{
+    if(await snapDir.queryPermission({ mode:'readwrite' }) !== 'granted') return false;
+    const name = safeName(`스냅샷_${rec.center}_${rec.period.replace('-', '')}_v${rec.version}`) + '.json';
+    const fh = await snapDir.getFileHandle(name, { create:true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(rec));
+    await w.close();
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+
+async function saveSnapshot(rec){
+  await sysStore.put(rec);
+  SNAPS.push(rec);
+  SETTINGS.centers[rec.center] = rec.centerType;
+  await saveSettings();
+  return writeSnapToFolder(rec);
+}
+
+/* ---------- 조견표 화면의 '통계 저장' 패널 ---------- */
+function renderSnapPanel(){
+  const panel = document.getElementById('snapPanel');
+  if(!parsedData || !cardRegistry.length){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const center = parsedData.centerName || '';
+  document.getElementById('snapCenter').value = center;
+  const typeSel = document.getElementById('snapType');
+  typeSel.innerHTML = SETTINGS.centerTypes.map(t => `<option>${esc(t)}</option>`).join('');
+  if(SETTINGS.centers[center]) typeSel.value = SETTINGS.centers[center];
+  const per = document.getElementById('snapPeriod');
+  if(!per.value){ const d = new Date(); per.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+  const opts = SETTINGS.laborTypes.map(t => t.name);
+  document.getElementById('snapJobs').innerHTML = parsedData.jobs.map((j, i)=>{
+    const g = guessLaborType(j);
+    return `<tr><td>${esc(jobLabel(j))}</td><td><select data-snapjob="${i}">${opts.map(o => `<option${o === g ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></td><td class="r num">${won(j.monthlyTotal) || '-'}</td></tr>`;
+  }).join('');
+  const st = document.getElementById('snapStatus');
+  st.textContent = snapDir ? `저장하면 이 PC와 '${snapDir.name}' 폴더에 함께 보관됩니다.` : '저장하면 이 PC(브라우저)에 보관됩니다. [급여 데이터] 화면에서 OneDrive 폴더를 연결하면 파일로도 남습니다.';
+  st.className = 'hint';
+  updateDashboard();
+}
+
+document.getElementById('snapSaveBtn').addEventListener('click', async ()=>{
+  const st = document.getElementById('snapStatus');
+  if(!checkGateOpen()){ st.textContent = '체크리스트를 먼저 완료해 주세요.'; st.className = 'hint err'; return; }
+  const center = document.getElementById('snapCenter').value.trim();
+  const period = document.getElementById('snapPeriod').value;
+  if(!center || !period){ st.textContent = '센터명과 적용 시점을 입력해 주세요.'; st.className = 'hint err'; return; }
+  const labor = parsedData.jobs.map((_, i) => document.querySelector(`[data-snapjob="${i}"]`).value);
+  const rec = buildSnapshot({ center, centerType: document.getElementById('snapType').value, period, labor, sourceFile: (fileMeta.textContent.match(/✔ (.+?)  ·/) || [])[1] || '' });
+  const filed = await saveSnapshot(rec);
+  snapSaved = true;
+  st.textContent = `저장 완료: ${center} · ${period} · v${rec.version}${filed ? ' · 폴더에도 저장됨' : ''}`;
+  st.className = 'hint ok';
+  updateDashboard(); refreshNavCounts();
+});
+
+/* ---------- 공통: 기준 시점별 최신 스냅샷 ---------- */
+const realSnaps = () => SNAPS;
+function periodsOf(){ return [...new Set(SNAPS.map(s => s.period))].sort(); }
+function latestAt(period){
+  const by = new Map();
+  for(const s of SNAPS){
+    if(s.period > period) continue;
+    const cur = by.get(s.center);
+    if(!cur || s.period > cur.period || (s.period === cur.period && s.version > cur.version)) by.set(s.center, s);
+  }
+  return [...by.values()];
+}
+function centerValue(snap, lt){
+  return mean(snap.jobs.filter(j => j.laborType === lt).map(j => j.hourly));
+}
+function minWageMargin(snap){
+  const minFixed = Math.min(...snap.jobs.map(j => j.fixedPay || Infinity));
+  if(!isFinite(minFixed)) return null;
+  return minFixed / (SETTINGS.minWageHourly * 209) - 1;
+}
+
+/* ---------- 급여 데이터(스냅샷 목록) 화면 ---------- */
+function renderData(){
+  const centers = new Set(SNAPS.map(s => s.center));
+  const per = periodsOf();
+  document.getElementById('dataKpis').innerHTML = [
+    ['저장된 스냅샷', `${SNAPS.length}건`, SNAPS.some(s => s.demo) ? '가상 데이터 포함' : '조견표 저장 시 1건씩 쌓임'],
+    ['센터', `${centers.size}곳`, `유형 ${new Set(SNAPS.map(s => s.centerType)).size}개`],
+    ['기간', per.length ? `${per[0]} ~ ${per.at(-1)}` : '—', `${per.length}개 시점`],
+    ['저장 폴더', snapDir ? '연결됨' : '미연결', snapDir ? snapDir.name : 'OneDrive 폴더를 연결하면 파일로도 저장']
+  ].map(([k, v, d]) => `<div class="kpi"><span class="k">${k}</span><span class="v">${esc(v)}</span><span class="d">${esc(d)}</span></div>`).join('');
+  const q = (document.getElementById('dataSearch').value || '').trim();
+  const rows = SNAPS.filter(s => !q || s.center.includes(q) || s.centerType.includes(q))
+    .sort((a, b) => b.period.localeCompare(a.period) || a.center.localeCompare(b.center) || b.version - a.version);
+  const shown = rows.slice(0, 300);
+  document.getElementById('dataBody').innerHTML = shown.map(s => `<tr>
+    <td>${esc(s.center)}${s.demo ? ' <span class="tag demo">가상</span>' : ''}</td><td><span class="tag">${esc(s.centerType)}</span></td>
+    <td class="num">${esc(s.period)}</td><td class="num">v${s.version}</td><td class="r num">${s.jobs.length}</td>
+    <td class="num">${esc(s.savedAt.slice(0, 10))}</td><td class="muted">${esc(s.sourceFile || '-')}</td>
+    <td><button type="button" class="btn-ghost btn-sm" data-delsnap="${esc(s.id)}">삭제</button></td></tr>`).join('') ||
+    '<tr><td colspan="8" class="empty">저장된 급여 데이터가 없습니다. 조견표를 만든 뒤 [통계에 저장]을 누르거나, 가상 데이터를 불러와 화면을 확인해 보세요.</td></tr>';
+  document.getElementById('dataCount').textContent = rows.length > 300 ? `${rows.length}건 중 최근 300건 표시` : `${rows.length}건`;
+}
+document.getElementById('dataSearch').addEventListener('input', renderData);
+document.getElementById('dataBody').addEventListener('click', async e=>{
+  const id = e.target.dataset.delsnap;
+  if(!id) return;
+  const s = SNAPS.find(x => x.id === id);
+  if(!confirm(`${s.center} ${s.period} v${s.version} 스냅샷을 삭제할까요? (OneDrive 폴더의 파일은 그대로 남습니다)`)) return;
+  await sysStore.del(id);
+  SNAPS = SNAPS.filter(x => x.id !== id);
+  renderData(); refreshNavCounts();
+});
+
+document.getElementById('snapFolderBtn').addEventListener('click', async ()=>{
+  if(typeof window.showDirectoryPicker !== 'function'){ alert('이 브라우저는 폴더 연결을 지원하지 않습니다. 크롬이나 엣지에서 열어 주세요.'); return; }
+  try{
+    snapDir = await window.showDirectoryPicker({ id:'paytable-snap', mode:'readwrite' });
+    await sysStore.setKV('snapDir', snapDir);
+    await importFromFolder();
+  }catch(e){ /* 취소 */ }
+});
+async function importFromFolder(){
+  if(!snapDir) return;
+  if(await snapDir.queryPermission({ mode:'readwrite' }) !== 'granted' &&
+     await snapDir.requestPermission({ mode:'readwrite' }) !== 'granted') return;
+  let added = 0;
+  for await (const entry of snapDir.values()){
+    if(entry.kind !== 'file' || !/\.json$/i.test(entry.name)) continue;
+    try{
+      const rec = JSON.parse(await (await entry.getFile()).text());
+      if(rec.kind === 'PAYSNAP' && !SNAPS.some(s => s.id === rec.id)){ await sysStore.put(rec); SNAPS.push(rec); added++; }
+    }catch(e){ /* 다른 파일은 무시 */ }
+  }
+  document.getElementById('dataMsg').textContent = `폴더에서 새 스냅샷 ${added}건을 읽었습니다.`;
+  renderData(); refreshNavCounts();
+}
+document.getElementById('snapReloadBtn').addEventListener('click', ()=> snapDir ? importFromFolder() : document.getElementById('snapFolderBtn').click());
+
+document.getElementById('backupExportBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify({ kind:'PAYBACKUP', v:1, exportedAt:new Date().toISOString(), settings:SETTINGS, snapshots:SNAPS.filter(s => !s.demo) })], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `급여데이터_백업_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+});
+document.getElementById('backupImportInput').addEventListener('change', async e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    if(data.kind !== 'PAYBACKUP') throw new Error('백업 파일 형식이 아닙니다.');
+    let added = 0;
+    for(const rec of data.snapshots || []){ if(!SNAPS.some(s => s.id === rec.id)){ await sysStore.put(rec); SNAPS.push(rec); added++; } }
+    if(data.settings){ SETTINGS = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), data.settings); await saveSettings(); }
+    document.getElementById('dataMsg').textContent = `백업에서 스냅샷 ${added}건과 기준정보를 불러왔습니다.`;
+  }catch(err){ document.getElementById('dataMsg').textContent = `불러오지 못했습니다: ${err.message}`; }
+  e.target.value = '';
+  renderData(); refreshNavCounts();
+});
+
+/* ---------- 가상 데이터 (화면 확인용, '가상' 표시) ---------- */
+document.getElementById('demoLoadBtn').addEventListener('click', async ()=>{
+  if(SNAPS.some(s => s.demo)){ document.getElementById('dataMsg').textContent = '가상 데이터가 이미 있습니다.'; return; }
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const REG = ['서울','부산','대구','인천','광주','대전','울산','세종','수원','성남','고양','용인','창원','청주','천안','전주','포항','김해','제주','원주'];
+  const COUNT = { '공공':42, '금융':51, '유통':44, '통신':33 };
+  const BASE = { '공공':{ new:2060740, gen:2280000, mgr:2950000 }, '금융':{ new:2120000, gen:2410000, mgr:3180000 }, '유통':{ new:2060740, gen:2230000, mgr:2880000 }, '통신':{ new:2080000, gen:2320000, mgr:3020000 } };
+  const PER = ['2024-01','2024-07','2025-01','2025-07','2026-01','2026-07'];
+  const MW = { 2024:9860, 2025:10030, 2026:10320 };
+  const cnt = {};
+  const recs = [];
+  Object.entries(COUNT).forEach(([type, n])=>{
+    for(let i = 0; i < n; i++){
+      const rg = REG[Math.floor(rnd() * REG.length)], key = rg + type; cnt[key] = (cnt[key] || 0) + 1;
+      const center = `${rg} ${type}${cnt[key]}센터`;
+      const off = 0.93 + rnd() * 0.14, tight = rnd() < 0.05;
+      const cur = { new: BASE[type].new, gen: Math.round(BASE[type].gen * off / 1000) * 1000, mgr: Math.round(BASE[type].mgr * off / 1000) * 1000 };
+      PER.forEach((p, pi)=>{
+        const jan = p.endsWith('-01');
+        if(!(pi === 0 || jan || rnd() < 0.35)) return;
+        if(pi > 0) Object.keys(cur).forEach(k => { if(!(tight && k === 'new')) cur[k] = Math.round(cur[k] * (1 + (jan ? 0.018 + rnd() * 0.03 : 0.01 + rnd() * 0.02)) / 1000) * 1000; });
+        const floor = MW[+p.slice(0, 4)] * 209;
+        if(cur.new + 260000 < floor) cur.new = floor - 260000 + Math.round(rnd() * 40) * 1000;
+        if(tight && (jan || pi === 0)) cur.new = Math.round((floor * 1.008 - 260000) / 1000) * 1000;
+        const mk = (name, lt, basic, pos) => {
+          const items = { '기본급':basic, '직책수당':pos, '직무수당':60000, '근속수당':0, '급식비':200000, '통근비':0 };
+          const fixedPay = basic + pos + 260000, gradeB = fixedPay + 40000;
+          return { name, block: lt === '관리자' ? '리더그룹' : '일반', laborType:lt, items, stdPaySum:fixedPay, overtime:0, night:0, telecom:30000, monthlyTotal:fixedPay + 30000, gradeB, compareMonthly:gradeB, hours:209, fixedPay, hourly:gradeB / 209 };
+        };
+        recs.push({ kind:'PAYSNAP', v:1, demo:true, id:`demo|${center}|${p}`, center, centerType:type, period:p, version:1,
+          savedAt:`${p}-05T09:00:00.000Z`, sourceFile:'가상 데이터',
+          jobs:[ mk('상담 · 신입', '신입상담사', cur.new, 0), mk('상담 · 사원', '상담사', cur.gen - 260000, 0), mk('상담 · 선임', '상담사', cur.gen - 200000, 0), mk('팀장', '관리자', cur.mgr - 510000, 250000) ],
+          checks:{ confirmed:[] }, headcount:{ '신입상담사':Math.round(5 + rnd() * 15), '상담사':Math.round(30 + rnd() * 90), '관리자':Math.round(3 + rnd() * 8) } });
+      });
+    }
+  });
+  for(const r of recs) await sysStore.put(r);
+  SNAPS = SNAPS.concat(recs);
+  REG.slice(0, 8).forEach((rg, i)=>{
+    ['상담사', '신입상담사'].forEach(lt => SETTINGS.market.push({ id:`demo-m-${rg}-${lt}`, demo:true, date:'2026-07-15', region:rg, laborType:lt, monthly:(lt === '상담사' ? 2450000 : 2250000) + i * 15000, source:'가상 표본' }));
+  });
+  await saveSettings();
+  document.getElementById('dataMsg').textContent = `가상 데이터 ${recs.length}건(센터 170곳)과 시장 표본 16건을 불러왔습니다. 화면 확인용이며 언제든 지울 수 있습니다.`;
+  renderData(); refreshNavCounts();
+});
+document.getElementById('demoClearBtn').addEventListener('click', async ()=>{
+  const demo = SNAPS.filter(s => s.demo);
+  for(const s of demo) await sysStore.del(s.id);
+  SNAPS = SNAPS.filter(s => !s.demo);
+  SETTINGS.market = SETTINGS.market.filter(m => !m.demo);
+  await saveSettings();
+  document.getElementById('dataMsg').textContent = `가상 데이터 ${demo.length}건을 지웠습니다.`;
+  renderData(); refreshNavCounts();
+});
+
+/* ---------- 급여 통계 화면 ---------- */
+const statsState = { period:null, labor:'상담사', type:null, center:null };
+function renderStats(){
+  const periods = periodsOf();
+  const empty = document.getElementById('statsEmpty'), body = document.getElementById('statsBody');
+  if(!periods.length){ empty.hidden = false; body.hidden = true; return; }
+  empty.hidden = true; body.hidden = false;
+  if(!statsState.period || !periods.includes(statsState.period)) statsState.period = periods.at(-1);
+  const perSel = document.getElementById('statsPeriod');
+  perSel.innerHTML = periods.map(p => `<option${p === statsState.period ? ' selected' : ''}>${p}</option>`).join('');
+  document.getElementById('statsLabor').innerHTML = SETTINGS.laborTypes.map(t => `<button type="button" data-labor="${esc(t.name)}" aria-pressed="${t.name === statsState.labor}">${esc(t.name)}</button>`).join('');
+
+  const snaps = latestAt(statsState.period);
+  const lt = statsState.labor;
+  const rows = snaps.map(s => ({ s, v: centerValue(s, lt), m: minWageMargin(s) })).filter(r => r.v != null);
+  const types = [...new Set(rows.map(r => r.s.centerType))];
+  const typeMed = Object.fromEntries(types.map(t => [t, median(rows.filter(r => r.s.centerType === t).map(r => r.v))]));
+  rows.forEach(r => { r.dv = r.v / typeMed[r.s.centerType] - 1; });
+  const scope = statsState.type ? rows.filter(r => r.s.centerType === statsState.type) : rows;
+
+  // 경로
+  document.getElementById('statsCrumb').innerHTML = statsState.center
+    ? `<button type="button" data-go="all">전사</button> › <button type="button" data-go="type" data-t="${esc(statsState.type)}">${esc(statsState.type)}</button> › <b>${esc(statsState.center)}</b>`
+    : statsState.type ? `<button type="button" data-go="all">전사</button> › <b>${esc(statsState.type)} (${scope.length}곳)</b>` : '<b>전사</b> · 유형을 누르면 소속 센터 비교로 이동합니다';
+
+  // KPI
+  const vals = scope.map(r => r.v).sort((a, b) => a - b);
+  const tight = scope.filter(r => r.m != null && r.m < 0.02).length;
+  const prevP = periods.filter(p => p < statsState.period).at(-1);
+  const prevAvg = prevP ? mean(latestAt(prevP).filter(s => !statsState.type || s.centerType === statsState.type).map(s => centerValue(s, lt))) : null;
+  const avg = mean(vals);
+  document.getElementById('statsKpis').innerHTML = [
+    ['분석 센터', `${scope.length}곳`, statsState.type ? `${statsState.type} 유형` : `유형 ${types.length}개`],
+    [`${lt} 평균 시급`, vals.length ? `${won(avg)}원` : '—', vals.length ? `월 환산 ${man(avg * 209)}만원${prevAvg ? ` · 직전 시점 대비 ${pctTxt(avg / prevAvg - 1)}` : ''}` : ''],
+    ['최고 ~ 최저 격차', vals.length ? `${won(vals.at(-1) - vals[0])}원` : '—', '시급 기준'],
+    ['최저임금 여유 2% 미만', `${tight}곳`, `${statsState.period.slice(0, 4)}년 시급 ${won(SETTINGS.minWageHourly)}원 기준`]
+  ].map(([k, v, d], i) => `<div class="kpi"><span class="k">${esc(k)}</span><span class="v${i === 3 && tight ? ' warn' : ''}">${esc(v)}</span><span class="d">${esc(d)}</span></div>`).join('');
+
+  document.getElementById('statsViewAll').hidden = !!statsState.type;
+  document.getElementById('statsViewType').hidden = !statsState.type || !!statsState.center;
+  document.getElementById('statsViewCenter').hidden = !statsState.center;
+  if(!statsState.type) drawTypeBars(snaps);
+  else if(!statsState.center) drawRank(scope, typeMed[statsState.type]);
+  else drawCenter();
+  drawStatsTable(scope);
+}
+
+function drawTypeBars(snaps){
+  const lts = SETTINGS.laborTypes.map(t => t.name).filter(lt => snaps.some(s => centerValue(s, lt) != null));
+  const types = SETTINGS.centerTypes.filter(t => snaps.some(s => s.centerType === t));
+  const data = types.map(t => ({ t, n: snaps.filter(s => s.centerType === t).length, v: lts.map(lt => mean(snaps.filter(s => s.centerType === t).map(s => centerValue(s, lt)))) }));
+  const all = data.flatMap(d => d.v).filter(v => v != null);
+  if(!all.length){ document.getElementById('statsTypeChart').innerHTML = '<p class="hint">표시할 데이터가 없습니다.</p>'; return; }
+  const W = 760, H = 300, L = 54, R = 12, T = 20, B = 46, iw = W - L - R, ih = H - T - B;
+  const step = 1000, min = Math.floor(Math.min(...all) * 0.9 / step) * step, max = Math.ceil(Math.max(...all) * 1.04 / step) * step;
+  const y = v => T + ih - (v - min) / (max - min) * ih;
+  const colors = ['#1d4ed8', '#0f9d8a', '#c27a12', '#7c3aed', '#be185d'];
+  const gw = iw / Math.max(1, types.length), bw = Math.min(26, (gw - 24) / Math.max(1, lts.length));
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="센터유형별 상담유형 평균 시급">`;
+  for(let v = min; v <= max; v += (max - min) / 4){ s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${won(v)}</text>`; }
+  data.forEach((d, gi)=>{
+    const gx = L + gi * gw, x0 = gx + (gw - lts.length * (bw + 4)) / 2;
+    s += `<g class="hit" data-type="${esc(d.t)}"><rect class="bg" x="${gx + 4}" y="${T - 10}" width="${gw - 8}" height="${H - T}" rx="6"/>`;
+    d.v.forEach((v, i)=>{ if(v == null) return; const yy = y(v); s += `<rect x="${x0 + i * (bw + 4)}" y="${yy}" width="${bw}" height="${T + ih - yy}" rx="2" fill="${colors[i % 5]}"><title>${esc(d.t)} · ${esc(lts[i])}: ${won(v)}원</title></rect>`; });
+    s += `<text x="${gx + gw / 2}" y="${H - 24}" text-anchor="middle" class="ink">${esc(d.t)} ›</text><text x="${gx + gw / 2}" y="${H - 9}" text-anchor="middle">${d.n}곳</text></g>`;
+  });
+  s += '</svg>';
+  document.getElementById('statsTypeChart').innerHTML = s;
+  document.getElementById('statsTypeLegend').innerHTML = lts.map((lt, i) => `<span><i style="background:${colors[i % 5]}"></i>${esc(lt)}</span>`).join('');
+}
+
+function drawRank(scope, med){
+  const rows = [...scope].sort((a, b) => b.dv - a.dv);
+  document.getElementById('statsRankTitle').textContent = `${statsState.type} 센터 순위 · ${statsState.labor} (유형 중위수 ${won(med)}원 대비)`;
+  const W = 760, L = 190, R = 110, rowH = 22, T = 26, H = T + rowH * rows.length + 6, iw = W - L - R, cx = L + iw / 2;
+  const lim = Math.max(0.05, Math.ceil(Math.max(...rows.map(r => Math.abs(r.dv))) * 50) / 50);
+  const x = v => cx + v / lim * (iw / 2);
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="유형 내 센터 순위">`;
+  [-lim, -lim / 2, 0, lim / 2, lim].forEach(v => { s += `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 6}" y2="${H}" class="${v === 0 ? 'axis' : 'gl'}"/><text x="${x(v)}" y="${T - 10}" text-anchor="middle">${v === 0 ? '중위수' : pctTxt(v, 0)}</text>`; });
+  rows.forEach((r, i)=>{
+    const yy = T + i * rowH, x1 = Math.min(x(0), x(r.dv)), w = Math.max(1, Math.abs(x(r.dv) - x(0)));
+    s += `<g class="hit" data-center="${esc(r.s.center)}"><rect class="bg" x="0" y="${yy}" width="${W}" height="${rowH}" rx="4"/>`;
+    s += `<text x="4" y="${yy + 15}">${i + 1}</text><text x="30" y="${yy + 15}" class="ink">${esc(r.s.center)}${r.m != null && r.m < 0.02 ? ' ⚠' : ''}</text>`;
+    s += `<rect x="${x1}" y="${yy + 5}" width="${w}" height="${rowH - 10}" rx="2" fill="${r.dv >= 0 ? '#c2410c' : '#1d4ed8'}" opacity=".8"/>`;
+    s += `<text x="${W - R + 8}" y="${yy + 15}" class="ink">${won(r.v)} <tspan fill="${r.dv >= 0 ? '#c2410c' : '#1d4ed8'}">${pctTxt(r.dv)}</tspan></text></g>`;
+  });
+  document.getElementById('statsRank').innerHTML = s + '</svg>';
+}
+
+function drawCenter(){
+  const center = statsState.center, lt = statsState.labor;
+  const own = SNAPS.filter(s => s.center === center);
+  const type = own[0]?.centerType;
+  const periods = periodsOf().filter(p => p >= own.map(s => s.period).sort()[0]);
+  const series = [
+    { name:center, color:'#1d4ed8', v: periods.map(p => { const s = latestAt(p).find(x => x.center === center); return s ? centerValue(s, lt) : null; }) },
+    { name:`${type} 유형 중위수`, color:'#0f9d8a', v: periods.map(p => median(latestAt(p).filter(s => s.centerType === type).map(s => centerValue(s, lt)))) },
+    { name:'전사 중위수', color:'#94a3b8', v: periods.map(p => median(latestAt(p).map(s => centerValue(s, lt)))) }
+  ];
+  const all = series.flatMap(s => s.v).filter(v => v != null);
+  document.getElementById('statsCenterTitle').textContent = `${center} · ${lt} 시급 추이`;
+  document.getElementById('statsCenterLegend').innerHTML = series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('');
+  if(!all.length){ document.getElementById('statsCenterChart').innerHTML = '<p class="hint">이 센터에는 선택한 상담유형 데이터가 없습니다.</p>'; }
+  else{
+    const W = 760, H = 280, L = 60, R = 70, T = 16, B = 30, iw = W - L - R, ih = H - T - B;
+    const min = Math.floor(Math.min(...all) * 0.97 / 100) * 100, max = Math.ceil(Math.max(...all) * 1.03 / 100) * 100;
+    const x = i => L + (periods.length < 2 ? iw / 2 : i * iw / (periods.length - 1)), y = v => T + ih - (v - min) / (max - min) * ih;
+    let s = `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="센터 시급 추이">`;
+    for(let k = 0; k <= 4; k++){ const v = min + (max - min) * k / 4; s += `<line x1="${L}" x2="${L + iw}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${won(v)}</text>`; }
+    periods.forEach((p, i) => { s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${p.slice(2).replace('-', '.')}</text>`; });
+    [...series].reverse().forEach(se => { const pts = se.v.map((v, i) => v == null ? null : `${x(i)},${y(v)}`).filter(Boolean).join(' '); s += `<polyline points="${pts}" fill="none" stroke="${se.color}" stroke-width="${se.color === '#1d4ed8' ? 3 : 2}"/>`; });
+    const lastI = series[0].v.map((v, i) => v == null ? -1 : i).filter(i => i >= 0).at(-1);
+    if(lastI != null && lastI >= 0) s += `<text x="${x(lastI) + 8}" y="${y(series[0].v[lastI]) + 4}" class="ink">${won(series[0].v[lastI])}</text>`;
+    document.getElementById('statsCenterChart').innerHTML = s + '</svg>';
+  }
+  const latest = latestAt(statsState.period).find(s => s.center === center);
+  document.getElementById('statsCenterJobs').innerHTML = latest ? `<thead><tr><th>직무</th><th>상담유형</th><th class="r">기본급</th><th class="r">월 고정급</th><th class="r">비교 월액(B등급)</th><th class="r">시급 환산</th></tr></thead><tbody>${latest.jobs.map(j => `<tr><td>${esc(j.name)}</td><td>${esc(j.laborType)}</td><td class="r num">${won(j.items['기본급'])}</td><td class="r num">${won(j.fixedPay)}</td><td class="r num">${won(j.compareMonthly)}</td><td class="r num">${won(j.hourly)}</td></tr>`).join('')}</tbody>` : '';
+}
+
+function drawStatsTable(scope){
+  const q = (document.getElementById('statsSearch').value || '').trim();
+  const byType = {};
+  scope.forEach(r => (byType[r.s.centerType] ||= []).push(r.v));
+  const rows = scope.filter(r => !q || r.s.center.includes(q)).sort((a, b) => b.v - a.v);
+  document.getElementById('statsBodyRows').innerHTML = rows.slice(0, 200).map(r => {
+    const arr = byType[r.s.centerType].slice().sort((a, b) => a - b);
+    const pr = Math.round(arr.filter(v => v <= r.v).length / arr.length * 100);
+    return `<tr class="go" data-center="${esc(r.s.center)}"><td>${esc(r.s.center)}${r.s.demo ? ' <span class="tag demo">가상</span>' : ''}</td><td><span class="tag">${esc(r.s.centerType)}</span></td><td class="num">${esc(r.s.period)}</td>
+      <td class="r num">${won(r.v)}</td><td class="r num ${r.dv >= 0 ? 'up' : 'down'}">${pctTxt(r.dv)}</td><td class="r num">${pr}%</td>
+      <td class="r">${r.m == null ? '-' : `<span class="pill ${r.m < 0.02 ? 'warn' : 'ok'}">${pctTxt(r.m)}</span>`}</td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">조건에 맞는 센터가 없습니다.</td></tr>';
+}
+
+document.getElementById('tabStats').addEventListener('click', e=>{
+  const go = e.target.closest('[data-go]');
+  if(go){ statsState.center = null; statsState.type = go.dataset.go === 'all' ? null : go.dataset.t; renderStats(); return; }
+  const lab = e.target.closest('[data-labor]');
+  if(lab){ statsState.labor = lab.dataset.labor; renderStats(); return; }
+  const t = e.target.closest('[data-type]');
+  if(t){ statsState.type = t.dataset.type; statsState.center = null; renderStats(); return; }
+  const c = e.target.closest('[data-center]');
+  if(c){ const s = SNAPS.find(x => x.center === c.dataset.center); statsState.type = s.centerType; statsState.center = s.center; renderStats(); window.scrollTo({ top:0, behavior:'smooth' }); }
+});
+document.getElementById('statsPeriod').addEventListener('change', e => { statsState.period = e.target.value; renderStats(); });
+document.getElementById('statsSearch').addEventListener('input', ()=> renderStats());
+document.getElementById('statsToReport').addEventListener('click', ()=>{ reportState.center = statsState.center; switchAppTab('report'); });
+
+/* ---------- 기준정보 화면 ---------- */
+function renderSettings(){
+  document.getElementById('setTypes').innerHTML = SETTINGS.centerTypes.map((t, i) => `<li><input type="text" value="${esc(t)}" data-ctype="${i}" aria-label="센터유형 이름"><button type="button" class="btn-ghost btn-sm" data-ctypedel="${i}">삭제</button></li>`).join('');
+  document.getElementById('setLabor').innerHTML = SETTINGS.laborTypes.map((t, i) => `<tr><td><input type="text" value="${esc(t.name)}" data-lname="${i}"></td><td><input type="number" min="40" max="300" value="${t.hours}" data-lhours="${i}"></td><td><button type="button" class="btn-ghost btn-sm" data-ldel="${i}">삭제</button></td></tr>`).join('');
+  document.getElementById('setRules').innerHTML = SETTINGS.rules.map((r, i) => `<tr><td><input type="text" value="${esc(r.pattern)}" data-rpat="${i}"></td><td><select data-rtype="${i}">${SETTINGS.laborTypes.map(t => `<option${t.name === r.type ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></td><td><button type="button" class="btn-ghost btn-sm" data-rdel="${i}">삭제</button></td></tr>`).join('');
+  document.getElementById('setMinWage').value = SETTINGS.minWageHourly;
+  document.getElementById('setBurden').value = SETTINGS.burdenRate;
+  document.getElementById('setPolicy').value = SETTINGS.targetPolicy;
+  document.getElementById('setMarketType').innerHTML = SETTINGS.laborTypes.map(t => `<option>${esc(t.name)}</option>`).join('');
+  document.getElementById('setMarket').innerHTML = SETTINGS.market.slice().sort((a, b) => b.date.localeCompare(a.date)).map(m => `<tr><td class="num">${esc(m.date)}</td><td>${esc(m.region)}</td><td>${esc(m.laborType)}</td><td class="r num">${won(m.monthly)}</td><td class="r num">${won(m.monthly / hoursOf(m.laborType))}</td><td>${esc(m.source)}${m.demo ? ' <span class="tag demo">가상</span>' : ''}</td><td><button type="button" class="btn-ghost btn-sm" data-mdel="${esc(m.id)}">삭제</button></td></tr>`).join('') || '<tr><td colspan="7" class="empty">채용공고나 공공통계에서 본 급여를 한 줄씩 입력하세요.</td></tr>';
+}
+document.getElementById('tabSettings').addEventListener('change', e=>{
+  const d = e.target.dataset;
+  if(d.ctype !== undefined){ const v = e.target.value.trim(); if(v) SETTINGS.centerTypes[+d.ctype] = v; }
+  else if(d.lname !== undefined){ const v = e.target.value.trim(); if(v) SETTINGS.laborTypes[+d.lname].name = v; }
+  else if(d.lhours !== undefined){ SETTINGS.laborTypes[+d.lhours].hours = Math.max(40, +e.target.value || 209); }
+  else if(d.rpat !== undefined){ SETTINGS.rules[+d.rpat].pattern = e.target.value; }
+  else if(d.rtype !== undefined){ SETTINGS.rules[+d.rtype].type = e.target.value; }
+  else if(e.target.id === 'setMinWage'){ SETTINGS.minWageHourly = +e.target.value || SETTINGS.minWageHourly; }
+  else if(e.target.id === 'setBurden'){ SETTINGS.burdenRate = +e.target.value; }
+  else if(e.target.id === 'setPolicy'){ SETTINGS.targetPolicy = e.target.value; }
+  else return;
+  saveSettings(); renderSettings();
+  document.getElementById('setMsg').textContent = '저장됨';
+});
+document.getElementById('tabSettings').addEventListener('click', e=>{
+  const d = e.target.dataset;
+  if(d.ctypedel !== undefined){
+    const t = SETTINGS.centerTypes[+d.ctypedel];
+    if(SNAPS.some(s => s.centerType === t)){ alert(`'${t}' 유형으로 저장된 데이터가 있어 삭제할 수 없습니다. 이름만 바꿀 수 있습니다.`); return; }
+    SETTINGS.centerTypes.splice(+d.ctypedel, 1);
+  } else if(d.ldel !== undefined){ SETTINGS.laborTypes.splice(+d.ldel, 1); }
+  else if(d.rdel !== undefined){ SETTINGS.rules.splice(+d.rdel, 1); }
+  else if(d.mdel !== undefined){ SETTINGS.market = SETTINGS.market.filter(m => m.id !== d.mdel); }
+  else if(e.target.id === 'setTypeAdd'){ SETTINGS.centerTypes.push('새 유형'); }
+  else if(e.target.id === 'setLaborAdd'){ SETTINGS.laborTypes.push({ name:'새 상담유형', hours:209 }); }
+  else if(e.target.id === 'setRuleAdd'){ SETTINGS.rules.push({ pattern:'', type:SETTINGS.laborTypes[0].name }); }
+  else if(e.target.id === 'setMarketAdd'){
+    const monthly = +document.getElementById('setMarketMonthly').value;
+    if(!monthly){ alert('월 급여를 입력해 주세요.'); return; }
+    SETTINGS.market.push({ id:`m-${Date.now()}`, date:document.getElementById('setMarketDate').value || new Date().toISOString().slice(0, 10),
+      region:document.getElementById('setMarketRegion').value.trim() || '-', laborType:document.getElementById('setMarketType').value,
+      monthly, source:document.getElementById('setMarketSource').value.trim() || '-' });
+    document.getElementById('setMarketMonthly').value = '';
+  } else if(e.target.id === 'setReset'){
+    if(!confirm('기준정보를 처음 값으로 되돌릴까요? (시장 표본과 센터별 유형은 유지됩니다)')) return;
+    const keep = { centers:SETTINGS.centers, market:SETTINGS.market };
+    SETTINGS = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), keep);
+  } else return;
+  saveSettings(); renderSettings();
+});
+
+/* ---------- 인건비 분석 보고서 ---------- */
+const reportState = { center:null, period:null };
+function analyzeCenter(center, period, policy){
+  const snaps = latestAt(period);
+  const snap = snaps.find(s => s.center === center);
+  if(!snap) return null;
+  const peers = snaps.filter(s => s.centerType === snap.centerType);
+  const lts = SETTINGS.laborTypes.map(t => t.name).filter(lt => snap.jobs.some(j => j.laborType === lt));
+  const rows = lts.map(lt=>{
+    const cur = centerValue(snap, lt), hours = hoursOf(lt);
+    const peerVals = peers.map(s => centerValue(s, lt)).filter(v => v != null);
+    const allVals = snaps.map(s => centerValue(s, lt)).filter(v => v != null);
+    const mkt = SETTINGS.market.filter(m => m.laborType === lt).map(m => m.monthly / hoursOf(m.laborType));
+    const typeMed = median(peerVals), typeP60 = quantile(peerVals, 0.6), allMed = median(allVals), mktMed = median(mkt);
+    const rank = peerVals.filter(v => v > cur).length + 1;
+    const pr = peerVals.length ? peerVals.filter(v => v <= cur).length / peerVals.length : null;
+    const targets = { median:typeMed, p60:typeP60, market:mktMed ?? typeMed, max:Math.max(typeMed ?? 0, mktMed ?? 0) || typeMed };
+    const heads = +(snap.headcount?.[lt] ?? 0);
+    const scen = Object.fromEntries(Object.entries(targets).map(([k, t])=>{
+      const gap = t != null ? Math.max(0, t - cur) : 0;
+      return [k, { target:t, gap, rate: cur ? gap / cur : 0, annual: gap * hours * heads * 12 * (1 + SETTINGS.burdenRate / 100) }];
+    }));
+    return { lt, cur, hours, typeMed, typeP60, allMed, mktMed, mktN:mkt.length, peerN:peerVals.length, rank, pr, heads, scen, sel: scen[policy] };
+  });
+  return { snap, peers, rows, policy, margin: minWageMargin(snap) };
+}
+
+function renderReportControls(){
+  const centers = [...new Set(SNAPS.map(s => s.center))].sort();
+  const empty = document.getElementById('reportEmpty'), body = document.getElementById('reportBody');
+  if(!centers.length){ empty.hidden = false; body.hidden = true; return; }
+  empty.hidden = true; body.hidden = false;
+  if(!reportState.center || !centers.includes(reportState.center)) reportState.center = centers[0];
+  document.getElementById('repCenterList').innerHTML = centers.map(c => `<option value="${esc(c)}">`).join('');
+  document.getElementById('repCenter').value = reportState.center;
+  const periods = [...new Set(SNAPS.filter(s => s.center === reportState.center).map(s => s.period))].sort();
+  const allP = periodsOf();
+  if(!reportState.period || !allP.includes(reportState.period)) reportState.period = allP.at(-1);
+  document.getElementById('repPeriod').innerHTML = allP.filter(p => p >= periods[0]).map(p => `<option${p === reportState.period ? ' selected' : ''}>${p}</option>`).join('');
+  document.getElementById('repPolicy').value = document.getElementById('repPolicy').value || SETTINGS.targetPolicy;
+  const a = analyzeCenter(reportState.center, reportState.period, document.getElementById('repPolicy').value || SETTINGS.targetPolicy);
+  document.getElementById('repHeads').innerHTML = a ? a.rows.map(r => `<label>${esc(r.lt)} <input type="number" min="0" value="${r.heads}" data-heads="${esc(r.lt)}"> 명</label>`).join('') : '';
+  renderReport();
+}
+
+function reportChartSvg(a){
+  const rows = a.rows.filter(r => r.cur != null);
+  const W = 680, H = 260, L = 70, R = 12, T = 30, B = 40, iw = W - L - R, ih = H - T - B;
+  const vals = rows.flatMap(r => [r.cur, r.typeMed, r.sel.target]).filter(v => v != null);
+  if(!vals.length) return '';
+  const min = Math.floor(Math.min(...vals) * 0.9 / 500) * 500, max = Math.ceil(Math.max(...vals) * 1.03 / 500) * 500;
+  const y = v => T + ih - (v - min) / (max - min) * ih;
+  const ser = [['현재', '#1d4ed8', 'cur'], ['유형 중위수', '#0f9d8a', 'typeMed'], ['목표', '#c2410c', 'target']];
+  const gw = iw / rows.length, bw = Math.min(34, (gw - 30) / 3);
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Malgun Gothic, Noto Sans KR, sans-serif" font-size="11">`;
+  s += `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+  ser.forEach(([n, c], i) => { s += `<rect x="${L + i * 110}" y="8" width="10" height="10" fill="${c}"/><text x="${L + i * 110 + 14}" y="17" fill="#374151">${n}</text>`; });
+  for(let k = 0; k <= 4; k++){ const v = min + (max - min) * k / 4; s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e5e7eb"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" fill="#6b7280">${won(v)}</text>`; }
+  rows.forEach((r, gi)=>{
+    const x0 = L + gi * gw + (gw - 3 * (bw + 6)) / 2;
+    [r.cur, r.typeMed, r.sel.target].forEach((v, i)=>{ if(v == null) return; const yy = y(v); s += `<rect x="${x0 + i * (bw + 6)}" y="${yy}" width="${bw}" height="${T + ih - yy}" fill="${ser[i][1]}"/><text x="${x0 + i * (bw + 6) + bw / 2}" y="${yy - 4}" text-anchor="middle" fill="#111827" font-size="10">${won(v)}</text>`; });
+    s += `<text x="${L + gi * gw + gw / 2}" y="${H - 16}" text-anchor="middle" fill="#111827" font-weight="bold">${esc(r.lt)}</text>`;
+  });
+  return s + `<line x1="${L}" x2="${W - R}" y1="${T + ih}" y2="${T + ih}" stroke="#9ca3af"/></svg>`;
+}
+
+function renderReport(){
+  const policy = document.getElementById('repPolicy').value || SETTINGS.targetPolicy;
+  const a = analyzeCenter(reportState.center, reportState.period, policy);
+  const doc = document.getElementById('reportDoc');
+  if(!a){ doc.innerHTML = '<p class="hint">이 시점에 해당 센터의 데이터가 없습니다.</p>'; return; }
+  const { snap, rows } = a;
+  const tot = rows.reduce((p, r) => p + r.sel.annual, 0);
+  const totHeads = rows.reduce((p, r) => p + r.heads, 0);
+  const avgRate = mean(rows.filter(r => r.heads > 0).map(r => r.sel.rate)) ?? mean(rows.map(r => r.sel.rate)) ?? 0;
+  const main = rows.find(r => r.lt === '상담사') || rows[0];
+  const findings = [];
+  rows.forEach(r=>{
+    if(r.cur == null || r.typeMed == null) return;
+    const d = r.cur / r.typeMed - 1;
+    findings.push(`${r.lt} 시급 ${won(r.cur)}원은 ${snap.centerType} 유형 중위수(${won(r.typeMed)}원) 대비 ${pctTxt(d)}이며, 같은 유형 ${r.peerN}곳 중 ${r.rank}위입니다.`);
+    if(r.mktMed) findings.push(`${r.lt}은 채용시장 중위수(${won(r.mktMed)}원, 표본 ${r.mktN}건) 대비 ${pctTxt(r.cur / r.mktMed - 1)}입니다.`);
+  });
+  const level = main && main.typeMed ? main.cur / main.typeMed - 1 : 0;
+  const verdict = level <= -0.05 ? '동일 유형 대비 열위로, 인력 수급 경쟁력을 위해 단가 인상이 필요합니다.'
+    : level < 0 ? '동일 유형 대비 소폭 낮아, 목표 기준에 맞춘 조정을 검토할 수준입니다.'
+    : '동일 유형 대비 같거나 높은 수준으로, 현 단가 유지가 가능합니다.';
+  const warns = [];
+  if(a.margin != null && a.margin < 0.03) warns.push(`최저임금 대비 월 고정급 여유가 ${pctTxt(a.margin)}로 3% 미만입니다. 내년 최저임금 인상 시 미달 위험이 있습니다.`);
+  if(rows.some(r => r.peerN < 5)) warns.push('동일 유형 비교 센터가 5곳 미만인 상담유형이 있어 비교 결과 해석에 주의가 필요합니다.');
+  if(rows.some(r => r.mktN < 10)) warns.push('채용시장 표본이 10건 미만인 상담유형이 있어 시장 비교는 참고용입니다.');
+  if(!totHeads) warns.push('인원이 입력되지 않아 연간 추가 직접인건비가 0원으로 계산되었습니다. 위 입력란에 상담유형별 인원을 넣어 주세요.');
+  if(snap.demo) warns.push('이 보고서는 가상 데이터로 만들어졌습니다.');
+  const today = new Date().toISOString().slice(0, 10);
+  const scenRows = ['median', 'p60', 'market', 'max'].map(k => {
+    const ann = rows.reduce((p, r) => p + r.scen[k].annual, 0);
+    const rate = mean(rows.map(r => r.scen[k].rate)) ?? 0;
+    return `<tr${k === policy ? ' class="sel"' : ''}><td>${POLICY_LABEL[k]}${k === policy ? ' (권고안)' : ''}</td><td class="r">${pctTxt(rate)}</td><td class="r">${won(ann / 10000)}만원</td></tr>`;
+  }).join('');
+  doc.innerHTML = `
+  <header class="rp-head">
+    <div class="rp-kicker">인건비 분석 보고서</div>
+    <h1>${esc(snap.center)} 직접인건비 경쟁력 분석</h1>
+    <div class="rp-meta">센터유형 ${esc(snap.centerType)} · 기준 시점 ${esc(reportState.period)} (급여테이블 ${esc(snap.period)} v${snap.version}) · 작성일 ${today}</div>
+  </header>
+  <section><h2>1. 요약</h2>
+    <div class="rp-kpis">
+      <div><span>${esc(main?.lt || '')} 시급</span><b>${won(main?.cur)}원</b><em>유형 중위수 대비 ${main?.typeMed ? pctTxt(main.cur / main.typeMed - 1) : '-'}</em></div>
+      <div><span>권고 평균 인상률</span><b>${pctTxt(avgRate)}</b><em>${esc(POLICY_LABEL[policy])} 기준</em></div>
+      <div><span>연간 추가 직접인건비</span><b>${won(tot / 10000)}만원</b><em>인원 ${totHeads}명 · 법정부담률 ${SETTINGS.burdenRate}% 가정</em></div>
+    </div>
+    <p class="rp-verdict">${esc(snap.center)}의 인건비 수준은 ${esc(verdict)}</p>
+    <ul>${findings.map(f => `<li>${esc(f)}</li>`).join('')}</ul>
+  </section>
+  <section><h2>2. 현재 인건비 구조</h2>
+    <table class="rp-table"><thead><tr><th>직무</th><th>상담유형</th><th class="r">기본급</th><th class="r">수당 합</th><th class="r">월 고정급</th><th class="r">비교 월액(B등급)</th><th class="r">시급 환산</th></tr></thead>
+    <tbody>${snap.jobs.map(j => `<tr><td>${esc(j.name)}</td><td>${esc(j.laborType)}</td><td class="r">${won(j.items['기본급'])}</td><td class="r">${won((j.fixedPay || 0) - (j.items['기본급'] || 0))}</td><td class="r">${won(j.fixedPay)}</td><td class="r">${won(j.compareMonthly)}</td><td class="r">${won(j.hourly)}</td></tr>`).join('')}</tbody></table>
+  </section>
+  <section><h2>3. 동일 유형·채용시장 비교 (시급, 원)</h2>
+    <div class="rp-chart">${reportChartSvg(a)}</div>
+    <table class="rp-table"><thead><tr><th>상담유형</th><th class="r">현재</th><th class="r">유형 중위수</th><th class="r">유형 상위 40%</th><th class="r">전사 중위수</th><th class="r">시장 중위수</th><th class="r">유형 내 순위</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc(r.lt)}</td><td class="r">${won(r.cur)}</td><td class="r">${won(r.typeMed)}</td><td class="r">${won(r.typeP60)}</td><td class="r">${won(r.allMed)}</td><td class="r">${r.mktMed ? won(r.mktMed) : '-'}</td><td class="r">${r.rank} / ${r.peerN}</td></tr>`).join('')}</tbody></table>
+  </section>
+  <section><h2>4. 인상 시나리오</h2>
+    <table class="rp-table"><thead><tr><th>목표 기준</th><th class="r">평균 인상률</th><th class="r">연간 추가 직접인건비</th></tr></thead><tbody>${scenRows}</tbody></table>
+    <table class="rp-table"><thead><tr><th>상담유형 (권고안)</th><th class="r">목표 시급</th><th class="r">시급 인상액</th><th class="r">인상률</th><th class="r">인원</th><th class="r">연간 추가 비용</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc(r.lt)}</td><td class="r">${won(r.sel.target)}</td><td class="r">${won(r.sel.gap)}</td><td class="r">${pctTxt(r.sel.rate)}</td><td class="r">${r.heads}</td><td class="r">${won(r.sel.annual / 10000)}만원</td></tr>`).join('')}</tbody></table>
+    <p class="rp-note">연간 추가 비용 = 시급 인상액 × 월소정근로시간 × 인원 × 12개월 × (1 + 법정부담률 ${SETTINGS.burdenRate}%)</p>
+  </section>
+  <section><h2>5. 유의사항</h2>
+    <ul>${warns.map(w => `<li>${esc(w)}</li>`).join('')}<li>비교 기준은 B등급 월 급여를 상담유형별 월소정근로시간으로 나눈 시급입니다. B등급이 없는 직무는 월총액을 사용했습니다.</li><li>비교 대상: 기준 시점에 유효한 ${esc(snap.centerType)} 유형 ${a.peers.length}곳의 최신 급여테이블.</li><li>이 보고서의 숫자는 시스템이 계산했으며, 최종 판단은 담당자가 합니다.</li></ul>
+  </section>`;
+}
+
+document.getElementById('tabReport').addEventListener('change', e=>{
+  if(e.target.id === 'repCenter'){ reportState.center = e.target.value; reportState.period = null; renderReportControls(); }
+  else if(e.target.id === 'repPeriod'){ reportState.period = e.target.value; renderReportControls(); }
+  else if(e.target.id === 'repPolicy'){ renderReport(); }
+  else if(e.target.dataset.heads){
+    const snap = latestAt(reportState.period).find(s => s.center === reportState.center);
+    snap.headcount = Object.assign({}, snap.headcount, { [e.target.dataset.heads]: Math.max(0, +e.target.value || 0) });
+    sysStore.put(snap); renderReport();
+  }
+});
+
+function reportFileBase(){ return safeName(`인건비분석보고서_${reportState.center}_${reportState.period}`); }
+function downloadBlob(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(()=> URL.revokeObjectURL(a.href), 1500); }
+async function svgToPng(svgText){
+  return new Promise(res=>{
+    const img = new Image();
+    img.onload = ()=>{ const c = document.createElement('canvas'); c.width = img.width * 2; c.height = img.height * 2; const g = c.getContext('2d'); g.scale(2, 2); g.drawImage(img, 0, 0); res(c.toDataURL('image/png')); };
+    img.onerror = ()=> res(null);
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+  });
+}
+const REPORT_CSS = `body{font-family:'Malgun Gothic','Noto Sans KR',sans-serif;color:#111827;font-size:10.5pt;line-height:1.6}
+h1{font-size:18pt;margin:4pt 0}h2{font-size:13pt;border-bottom:1.5pt solid #1d4ed8;padding-bottom:3pt;margin:18pt 0 8pt}
+.rp-kicker{color:#1d4ed8;font-weight:bold;font-size:10pt}.rp-meta{color:#6b7280;font-size:9pt}
+table{border-collapse:collapse;width:100%;margin:6pt 0}th,td{border:1pt solid #d1d5db;padding:4pt 6pt;font-size:9.5pt}th{background:#f3f4f6;text-align:left}
+.r{text-align:right}tr.sel td{background:#eef2ff;font-weight:bold}.rp-kpis{display:flex;gap:8pt}.rp-kpis div{border:1pt solid #d1d5db;padding:6pt 8pt;flex:1}
+.rp-kpis span,.rp-kpis em{display:block;font-size:9pt;color:#6b7280;font-style:normal}.rp-kpis b{font-size:14pt}.rp-verdict{font-weight:bold}.rp-note{font-size:9pt;color:#6b7280}`;
+document.getElementById('repWordBtn').addEventListener('click', async ()=>{
+  const clone = document.getElementById('reportDoc').cloneNode(true);
+  const chart = clone.querySelector('.rp-chart');
+  if(chart && chart.querySelector('svg')){
+    const png = await svgToPng(chart.innerHTML);
+    chart.innerHTML = png ? `<img src="${png}" width="680" height="260" alt="비교 차트">` : '';
+  }
+  clone.querySelectorAll('.rp-kpis').forEach(k => { k.outerHTML = `<table><tr>${[...k.children].map(d => `<td>${d.innerHTML}</td>`).join('')}</tr></table>`; });
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(reportFileBase())}</title><style>${REPORT_CSS}</style></head><body>${clone.innerHTML}</body></html>`;
+  downloadBlob(new Blob(['﻿' + html], { type:'application/msword' }), reportFileBase() + '.doc');
+});
+document.getElementById('repHtmlBtn').addEventListener('click', ()=>{
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(reportFileBase())}</title><style>${REPORT_CSS} body{max-width:780px;margin:24px auto;padding:0 16px}</style></head><body>${document.getElementById('reportDoc').innerHTML}</body></html>`;
+  downloadBlob(new Blob([html], { type:'text/html' }), reportFileBase() + '.html');
+});
+document.getElementById('repPrintBtn').addEventListener('click', ()=> window.print());
+
+/* ---------- 메뉴 숫자 ---------- */
+function refreshNavCounts(){
+  const n = document.getElementById('navDataCount');
+  if(n) n.textContent = SNAPS.length;
+}
+
 // 초기화: 서버 프록시 상태 + 탭 + 자료 잠금
 bindLibraryUi();
 bindAppTabs();
 updateDashboard();
+loadSystem().then(()=>{ refreshNavCounts(); });
 (async ()=>{
   await checkPayAuthStatus();
   try{
