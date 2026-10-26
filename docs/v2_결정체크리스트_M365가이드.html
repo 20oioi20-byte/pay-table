@@ -150,7 +150,7 @@ code{font-family:var(--f-mono); font-size:.92em; background:var(--code-bg); padd
     <p class="lead">이 설정은 관리자가 처음 한 번만 합니다. 일반 사용자는 팀에 추가된 뒤 급여관리 시스템을 처음 열 때 안내 화면에서 2~3번 클릭하면 끝납니다. 왼쪽은 무엇을 왜 하는지 설명, 오른쪽은 Claude in Chrome에 그대로 붙여넣을 프롬프트입니다. <b>0단계 공통 안전 규칙</b>을 먼저 붙여넣은 뒤 1단계부터 차례로 진행하십시오. <span class="chip ai">Claude+Chrome</span> 단계는 맡기시고, <span class="chip me">본인</span> 단계는 직접 클릭하셔야 합니다(로그인·파일 업로드·PC 앱).</p>
     <ul class="flow" id="flow"></ul>
     <div class="bar">
-      <span class="note">필요한 파일: <code>samples/테스트용_가상급여테이블.xlsx</code> (가상 데이터), <code>office-scripts/급여테이블_자동연동_v2.ts</code> (5단계 프롬프트에 코드 포함)</span>
+      <span class="note">필요한 파일: <code>samples/테스트용_가상급여테이블.xlsx</code> (가상 데이터), <code>dist/급여조견표_관리시스템_v2.html</code>·<code>dist/version.json</code> (12단계), 5단계 스크립트는 프롬프트에 포함</span>
       <div class="lang" role="group" aria-label="프롬프트 언어 전체 바꾸기"><button type="button" data-all="ko" aria-pressed="true">전체 한글</button><button type="button" data-all="en" aria-pressed="false">All English</button></div>
     </div>
     <div id="guide"></div>
@@ -647,15 +647,35 @@ Do not open any file other than '테스트용_가상급여테이블'.`},
 1. Open https://make.powerautomate.com > [My flows] > the details page of '급여테이블 자동연동 v2'.
 2. Tell me the names listed under [Owners], and the connections listed under [Connections] (SharePoint, Excel Online, Teams) with the account used by each.`},
 
- { n:'12', title:'급여관리 HTML(v2)에 폴더 연결', who:'me', time:'2분',
-   why:'v2 HTML을 처음 한 번만 PC의 동기화 폴더와 연결하면, 이후에는 화면에서 엑셀을 올리면 01_원본에 저장되고 02_연동데이터의 결과를 자동으로 불러옵니다. 브라우저 보안 규칙상 이 허용은 사람이 직접 눌러야 합니다.',
-   todo:['v2 HTML 열기 → [공유 폴더 연결] 클릭','파일 탐색 창에서 OneDrive - 회사명 › 급여조견표 선택 → [폴더 선택] → [파일 보기 허용] / [변경 내용 저장 허용]'],
-   check:['화면에 "공유 폴더 연결됨: 급여조견표" 표시','가상 파일을 화면에서 올리면 5분 안에 조견표가 열림'],
-   warn:'v2 HTML은 체크리스트 결정을 반영해 따로 만들어 드립니다. 그 전까지는 이 단계를 건너뛰셔도 됩니다.',
-   ko:'(이 단계는 브라우저 보안 허용 창을 사람이 직접 눌러야 하므로 프롬프트가 없습니다.)',
-   en:'(No prompt for this step: the browser security permission must be granted by a person.)'},
+ { n:'12', title:'v2 시스템 파일 공유 폴더에 올리기', who:'me', time:'3분',
+   why:'시스템 HTML 파일을 공유 폴더(99_설정)에 두면 모든 사용자 PC에 자동으로 내려가고, 새 버전을 올리면 모두에게 같이 바뀝니다. 사용자에게 파일을 따로 보낼 필요가 없습니다.',
+   todo:['본인: dist/급여조견표_관리시스템_v2.html 과 dist/version.json 두 파일을 SharePoint 문서 › 급여조견표 › 99_설정에 끌어다 놓기','(선택) 2단계에서 확인한 "급여조견표" 폴더 주소를 Claude에게 알려 주면, 첫 실행 안내의 [공유 폴더 열기] 버튼이 그 주소로 바로 연결되게 다시 만들어 드림','본인 PC에서 동기화 폴더의 v2 파일을 열고 안내 3단계 진행 → 가상 파일로 업로드 시험'],
+   check:['99_설정에 두 파일이 보임','본인 PC에서 v2를 열면 "공유 폴더 연결됨" 표시'],
+   warn:'새 버전을 올릴 때는 <b>두 파일을 함께 덮어쓰기</b> 하십시오. version.json 덕분에 예전 파일을 연 사용자에게 "새 버전이 있습니다" 안내가 뜹니다.',
+   ko:'(이 단계는 PC의 파일을 SharePoint에 끌어다 놓아야 하므로 본인이 직접 합니다. 업로드 뒤 확인만 맡기려면 아래 문장을 쓰세요.)\n\nSharePoint \'급여조견표 관리\' 사이트의 문서 › 급여조견표 › 99_설정 폴더에 있는 파일 이름과 수정 시각을 알려 주세요. 파일은 열지 마세요.',
+   en:'(Uploading a file from the PC must be done by a person. To have the upload checked afterwards, use the text below.)\n\nTell me the file names and modified times in Documents > 급여조견표 > 99_설정 on the SharePoint site \'급여조견표 관리\'. Do not open the files.'},
 
- { n:'13', title:'채용시장 임금 조사(Copilot, 선택)', who:'ai', time:'10분',
+ { n:'13', title:'새 사용자 추가 (사용자 1명당 1분)', who:'me', time:'1분/명',
+   why:'관리자는 팀에 이름만 추가하고 안내 메시지를 보냅니다. 사용자는 시스템을 처음 열 때 나오는 안내 화면에서 이름 입력 → 폴더 받기 → 폴더 연결 3단계만 하면 되고, M365 설정은 몰라도 됩니다.',
+   todo:['본인: Teams \'급여조견표 관리\' 팀 → … → 구성원 추가 → 이름 입력','본인: 오른쪽 안내 메시지를 복사해 그 사용자에게 Teams 채팅으로 보내기(받는 사람용 문구)'],
+   check:['사용자 PC 화면 오른쪽 위에 "공유 폴더 연결됨"이 보임','사용자가 처음 올린 파일 이름이 01_원본에 요청번호와 함께 보임'],
+   warn:'사용자 PC에서 OneDrive 앱이 꺼져 있으면 안내 2단계에서 멈춥니다. 이 경우만 작업 표시줄의 OneDrive(구름) 아이콘을 켜 달라고 안내하십시오.',
+   ko:`[급여관리 시스템 사용 안내]
+
+1. Teams → '급여조견표 관리' 팀 → [파일] 탭 → 급여조견표 › 99_설정 폴더에서 '급여조견표_관리시스템_v2.html'을 내려받아 크롬(또는 엣지)으로 엽니다.
+2. 처음 한 번 안내 화면이 나옵니다. 이름 입력 → [공유 폴더 열기]에서 '급여조견표' 폴더의 … → [OneDrive에 바로 가기 추가] → [공유 폴더 연결] 순서로 누르면 끝납니다(2~3분).
+3. 다음부터는 PC 파일 탐색기의 'OneDrive - 회사명 › 급여조견표 › 99_설정 › 급여조견표_관리시스템_v2.html'을 열어 엑셀만 올리시면 됩니다. 보안 파일도 자동으로 처리됩니다.
+
+막히면 화면을 캡처해서 저에게 보내 주세요.`,
+   en:`[Payroll system: how to start]
+
+1. In Teams, open the '급여조견표 관리' team > [Files] tab > 급여조견표 > 99_설정, download '급여조견표_관리시스템_v2.html' and open it in Chrome (or Edge).
+2. A one-time welcome screen appears. Enter your name, use [Open shared folder] to click ... > [Add shortcut to OneDrive] on the '급여조견표' folder, then click [Connect shared folder]. That's all (2-3 minutes).
+3. From then on, open 'OneDrive - <company> > 급여조견표 > 99_설정 > 급여조견표_관리시스템_v2.html' in File Explorer and just upload the Excel file. Protected (DRM) files are handled automatically.
+
+If you get stuck, send me a screenshot.`},
+
+ { n:'14', title:'채용시장 임금 조사(Copilot, 선택)', who:'ai', time:'10분',
    why:'고용24 API를 연결하기 전까지 시장 비교에 쓸 표본을 모읍니다. 회사 자료는 넣지 않고 공개된 채용공고만 검색합니다. 결과는 v2 설정 화면의 "채용시장 임금 표본"에 입력합니다.',
    todo:['M365 Copilot 채팅(웹 검색 켜짐)에 아래 프롬프트 입력 — Claude in Chrome이 대신 입력해도 됨','결과 표에서 출처 링크가 있는 행만 사용'],
    check:['지역·상담유형별 5건 이상, 출처 URL·게시일 포함'],
@@ -667,7 +687,7 @@ Do not open any file other than '테스트용_가상급여테이블'.`},
 
 "From public job postings published in the last 3 months, research the monthly pay for 'call center agent (inbound)'. At least 5 postings each for Seoul, Gyeonggi, Busan, Daegu and Gwangju. Table columns: Region | Role (inbound/outbound/chat) | Work pattern (5-day, 4-day, part-time) | Monthly pay (KRW, before tax) | Hourly equivalent (based on 209 hours/month) | Posting date | Source URL. Exclude postings where pay is 'negotiable after interview', and do not include any row without a source URL."`},
 
- { n:'14', title:'Copilot Studio는 지금 쓰지 않음', who:'me', time:'—',
+ { n:'15', title:'Copilot Studio는 지금 쓰지 않음', who:'me', time:'—',
    why:'필요한 자동화(감지 → 추출 → 저장 → 알림)는 Power Automate 표준 커넥터만으로 충분합니다. Copilot Studio는 별도 라이선스나 관리자 승인이 필요한 경우가 많아 IT 요청 없이 진행한다는 원칙과 맞지 않습니다. 고용24 API 단계에서 다시 검토합니다.',
    todo:['사용 가능 여부만 확인(오른쪽 프롬프트)'],
    check:['"만들기"가 되는지, 라이선스 안내가 뜨는지 기록'],
@@ -677,7 +697,7 @@ Do not open any file other than '테스트용_가상급여테이블'.`},
    en:`Open https://copilotstudio.microsoft.com in a new tab and only check whether I can create an agent. Do not create anything or start a trial.
 Tell me the exact notices shown on screen (for example: license required, start trial, choose environment).`},
 
- { n:'15', title:'월 1회 운영 점검', who:'ai', time:'5분',
+ { n:'16', title:'월 1회 운영 점검', who:'ai', time:'5분',
    why:'연결 만료, 실패 누적, 권한 변경을 일찍 발견하기 위한 점검입니다.',
    todo:['아래 프롬프트로 점검 → 결과를 운영 기록으로 보관'],
    check:['실패 0건, 연결 정상, 외부 공유 없음'],
