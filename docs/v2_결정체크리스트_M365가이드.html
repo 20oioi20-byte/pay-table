@@ -1,0 +1,863 @@
+<title>v2 결정·M365 설정 노트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 상단 고정 탭 + 한 줄 본문 열. 체크리스트는 결재 서식처럼 번호·항목·선택칸, 가이드는 설명|프롬프트 2단 */
+:root{
+  --bg:#f6f7f9; --paper:#ffffff; --ink:#18212e; --ink2:#3a4656; --muted:#6a7584; --line:#dde2e9; --soft:#eef1f5;
+  --accent:#1f5f8b; --accent-soft:#e3eef6; --accent-ink:#ffffff;
+  --block:#b42318; --block-soft:#fdecea; --confirm:#a15c00; --confirm-soft:#fdf2df; --info:#3c6e47; --info-soft:#e7f3ea; --off:#7b8594; --off-soft:#eef0f3;
+  --code-bg:#f2f4f7;
+  --f-body:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,"Malgun Gothic",monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#12161c; --paper:#1a2029; --ink:#e7ebf0; --ink2:#c3cad4; --muted:#8d97a5; --line:#2c3440; --soft:#222a35;
+  --accent:#6fb0dc; --accent-soft:#1d3346; --accent-ink:#0d1620;
+  --block:#ff8a7a; --block-soft:#3a1d1a; --confirm:#f0b45c; --confirm-soft:#36291a; --info:#86c796; --info-soft:#1b3022; --off:#8d97a5; --off-soft:#232a33;
+  --code-bg:#151a21; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#12161c; --paper:#1a2029; --ink:#e7ebf0; --ink2:#c3cad4; --muted:#8d97a5; --line:#2c3440; --soft:#222a35;
+  --accent:#6fb0dc; --accent-soft:#1d3346; --accent-ink:#0d1620;
+  --block:#ff8a7a; --block-soft:#3a1d1a; --confirm:#f0b45c; --confirm-soft:#36291a; --info:#86c796; --info-soft:#1b3022; --off:#8d97a5; --off-soft:#232a33;
+  --code-bg:#151a21; color-scheme:dark; }
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:14.5px; line-height:1.6; margin:0;}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--paper);}
+.wrap{max-width:1180px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));}
+header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--paper); border-bottom:1px solid var(--line);}
+header.top .wrap{display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; padding-block:12px;}
+.brand{display:flex; flex-direction:column; min-width:0}
+.brand small{font-size:11.5px; color:var(--muted); letter-spacing:.06em}
+.brand b{font-size:16px}
+.tabs{display:flex; gap:4px; background:var(--soft); padding:4px; border-radius:10px; margin-left:auto}
+.tabs button{border:0; background:none; font:inherit; font-size:13.5px; font-weight:500; color:var(--ink2); padding:7px 14px; border-radius:7px; cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--paper); color:var(--accent); font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.08)}
+button:focus-visible, input:focus-visible, label:focus-within{outline:2px solid var(--accent); outline-offset:2px}
+main{padding-block:22px 60px}
+h1{font-size:22px; margin:0 0 6px; text-wrap:balance}
+h2{font-size:17px; margin:0; text-wrap:balance}
+p{margin:0}
+.lead{color:var(--ink2); max-width:72ch}
+.bar{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:16px 0}
+.prog{flex:1 1 220px; min-width:0}
+.prog .t{font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between}
+.prog .track{height:6px; background:var(--soft); border-radius:3px; overflow:hidden; margin-top:4px}
+.prog .fill{height:100%; background:var(--accent); width:0}
+.btn{border:1px solid var(--line); background:var(--paper); color:var(--ink); font:inherit; font-size:13px; font-weight:500; padding:7px 12px; border-radius:8px; cursor:pointer; white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700}
+.btn.sm{font-size:12px; padding:4px 9px}
+.toggle{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink2)}
+.legend{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12.5px; color:var(--muted); margin:0 0 6px}
+.chip{display:inline-block; font-size:11.5px; font-weight:700; padding:1px 8px; border-radius:999px; white-space:nowrap}
+.chip.block{color:var(--block); background:var(--block-soft)} .chip.confirm{color:var(--confirm); background:var(--confirm-soft)}
+.chip.info{color:var(--info); background:var(--info-soft)} .chip.off{color:var(--off); background:var(--off-soft)}
+.chip.me{color:var(--ink2); background:var(--soft)} .chip.ai{color:var(--accent); background:var(--accent-soft)}
+
+/* 체크리스트 */
+section.sec{background:var(--paper); border:1px solid var(--line); border-radius:12px; margin:0 0 16px; overflow:hidden}
+.sec-h{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:14px 18px; border-bottom:1px solid var(--line)}
+.sec-h .code{font-family:var(--f-mono); font-weight:500; color:var(--accent); font-size:13px}
+.sec-h p{flex-basis:100%; font-size:13px; color:var(--muted)}
+.sec-h .cnt{margin-left:auto; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+.item{display:grid; grid-template-columns:64px minmax(0,1fr); gap:4px 14px; padding:14px 18px; border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item.done{background:linear-gradient(90deg,var(--accent-soft) 0,var(--accent-soft) 4px,transparent 4px)}
+.item .id{font-family:var(--f-mono); font-size:12.5px; color:var(--muted); padding-top:2px}
+.item.done .id{color:var(--accent); font-weight:500}
+.item .q{font-weight:700; font-size:14.5px}
+.item .why{font-size:12.8px; color:var(--muted); margin-top:2px}
+.item .why b{color:var(--ink2); font-weight:500}
+.opts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.opts label{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px; cursor:pointer; background:var(--paper)}
+.opts input{margin:0; accent-color:var(--accent)}
+.opts label:has(input:checked){border-color:var(--accent); background:var(--accent-soft); font-weight:500}
+.opts label.rec::after{content:"권장"; font-size:10.5px; font-weight:700; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:0 4px; margin-left:2px}
+.opts.rule label:has(input[value="차단"]:checked){border-color:var(--block); background:var(--block-soft); color:var(--block)}
+.opts.rule label:has(input[value="확인"]:checked){border-color:var(--confirm); background:var(--confirm-soft); color:var(--confirm)}
+.opts.rule label:has(input[value="참고"]:checked){border-color:var(--info); background:var(--info-soft); color:var(--info)}
+.opts.rule label:has(input[value="끄기"]:checked){border-color:var(--off); background:var(--off-soft); color:var(--off)}
+.memo{margin-top:8px; width:100%; max-width:560px; border:1px solid var(--line); background:var(--paper); color:var(--ink); border-radius:8px; padding:6px 10px; font:inherit; font-size:13px}
+.textans{max-width:560px}
+.hide-done .item.done{display:none}
+.sub{font-size:12.5px; font-weight:700; color:var(--ink2); padding:10px 18px 6px; background:var(--soft); border-bottom:1px solid var(--line); letter-spacing:.02em}
+
+/* 가이드 */
+.flow{display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 4px; padding:0; list-style:none; counter-reset:f}
+.flow li{font-size:12.5px; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:5px 10px}
+.flow li a{color:inherit; text-decoration:none}
+.flow li b{font-family:var(--f-mono); color:var(--accent); margin-right:4px}
+.step{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.08fr); background:var(--paper); border:1px solid var(--line); border-radius:12px; margin:0 0 16px; overflow:hidden; scroll-margin-top:90px}
+.step .ex{padding:18px 20px; display:flex; flex-direction:column; gap:10px; min-width:0}
+.step .hd{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px}
+.step .no{font-family:var(--f-mono); font-size:13px; font-weight:500; color:var(--accent-ink); background:var(--accent); border-radius:6px; padding:1px 8px}
+.step .meta{font-size:12.5px; color:var(--muted)}
+.step h3{font-size:13px; margin:4px 0 0; color:var(--ink2); letter-spacing:.02em}
+.step ol, .step ul{margin:0; padding-left:20px; font-size:13.5px}
+.step li{margin:2px 0}
+.step .warn{font-size:12.8px; background:var(--confirm-soft); color:var(--ink); border-radius:8px; padding:8px 10px}
+.step .warn b{color:var(--confirm)}
+.pr{background:var(--soft); border-left:1px solid var(--line); padding:14px 16px; display:flex; flex-direction:column; gap:8px; min-width:0}
+.pr-h{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.pr-h .lbl{font-size:12px; font-weight:700; color:var(--muted); letter-spacing:.04em}
+.lang{display:flex; gap:2px; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:2px; margin-left:auto}
+.lang button{border:0; background:none; font:inherit; font-size:12.5px; padding:3px 10px; border-radius:6px; cursor:pointer; color:var(--ink2)}
+.lang button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); font-weight:700}
+pre.prompt{margin:0; background:var(--code-bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-family:var(--f-mono); font-size:12.4px; line-height:1.55; white-space:pre-wrap; word-break:break-word; overflow:auto; max-height:420px; color:var(--ink)}
+.copied{font-size:12px; color:var(--info); font-weight:700}
+code{font-family:var(--f-mono); font-size:.92em; background:var(--code-bg); padding:0 4px; border-radius:4px}
+.note{font-size:12.5px; color:var(--muted)}
+@media (max-width:860px){
+  .step{grid-template-columns:1fr} .pr{border-left:0; border-top:1px solid var(--line)}
+  .item{grid-template-columns:1fr} .tabs{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; scroll-behavior:auto!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><small>급여관리 시스템 v2 준비</small><b>결정 체크리스트 · M365 설정 가이드</b></div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabBtnCheck" aria-selected="true" data-view="checklist">① 결정 체크리스트</button>
+      <button type="button" role="tab" id="tabBtnGuide" aria-selected="false" data-view="m365">② M365 설정 가이드</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ===================== ① 결정 체크리스트 ===================== -->
+  <div id="viewChecklist">
+    <h1>먼저 정해 주셔야 할 사항</h1>
+    <p class="lead">조견표 업로드 중 질문부터 검증, 저장, 통계, 보고서, M365 연계까지 단계별 결정 항목입니다. 항목마다 하나를 고르고, 필요하면 메모를 남겨 주십시오. 모두 정한 뒤 <b>[결정 내용 복사]</b>를 눌러 Claude에게 붙여넣으시면 v2에 그대로 반영합니다.</p>
+    <div class="bar">
+      <div class="prog"><div class="t"><span>전체 진행</span><span id="progTxt">0 / 0</span></div><div class="track"><div class="fill" id="progFill"></div></div></div>
+      <label class="toggle"><input type="checkbox" id="hideDone"> 결정한 항목 숨기기</label>
+      <button type="button" class="btn" id="fillAll">미결정 항목에 권장값 채우기</button>
+      <button type="button" class="btn pri" id="copyDecisions">결정 내용 복사</button>
+      <button type="button" class="btn" id="resetBtn">초기화</button>
+      <span class="copied" id="copyMsg" role="status"></span>
+    </div>
+    <p class="legend"><span><span class="chip block">차단</span> 고칠 때까지 생성·저장 불가</span><span><span class="chip confirm">확인</span> 체크(사유)해야 진행</span><span><span class="chip info">참고</span> 표시만, 진행 가능</span><span><span class="chip off">끄기</span> 검사 안 함</span></p>
+    <div id="checklist"></div>
+    <p class="note">선택한 내용은 이 브라우저에만 저장됩니다. 다른 PC에서 이어서 하려면 [결정 내용 복사] 결과를 보관해 두십시오.</p>
+  </div>
+
+  <!-- ===================== ② M365 설정 가이드 ===================== -->
+  <div id="viewGuide" hidden>
+    <h1>M365 설정 순서</h1>
+    <p class="lead">왼쪽은 무엇을 왜 하는지 설명, 오른쪽은 Claude in Chrome에 그대로 붙여넣을 프롬프트입니다. <b>0단계 공통 안전 규칙</b>을 먼저 붙여넣은 뒤 1단계부터 차례로 진행하십시오. <span class="chip ai">Claude+Chrome</span> 단계는 맡기시고, <span class="chip me">본인</span> 단계는 직접 클릭하셔야 합니다(로그인·파일 업로드·PC 앱).</p>
+    <ul class="flow" id="flow"></ul>
+    <div class="bar">
+      <span class="note">필요한 파일: <code>samples/테스트용_가상급여테이블.xlsx</code> (가상 데이터), <code>office-scripts/급여테이블_자동연동_v2.ts</code> (5단계 프롬프트에 코드 포함)</span>
+      <div class="lang" role="group" aria-label="프롬프트 언어 전체 바꾸기"><button type="button" data-all="ko" aria-pressed="true">전체 한글</button><button type="button" data-all="en" aria-pressed="false">All English</button></div>
+    </div>
+    <div id="guide"></div>
+  </div>
+</main>
+
+<script>
+(function(){
+/* ============================================================
+   ① 결정 체크리스트 데이터
+   type: one(하나 선택) | multi(여러 개) | text(직접 입력) | rule(검증 판정)
+   r: 권장값 (one/rule: 문자열, multi: 배열, text: 예시)
+   ============================================================ */
+const RULE = ['차단','확인','참고','끄기'];
+const SECTIONS = [
+ { code:'A', title:'업로드·처리 대기 중 질문', desc:'DRM 파일 처리(1~5분)를 기다리는 동안 화면에 띄울 질문과 대기 화면 동작입니다.', items:[
+  {id:'A1', t:'대기 중 질문 화면을 띄울 시점', d:'답변은 저장·통계에 그대로 재사용됩니다.', type:'one', o:['모든 업로드에서 띄움','DRM 파일 처리 대기일 때만','띄우지 않음(저장할 때 입력)'], r:'모든 업로드에서 띄움'},
+  {id:'A2', t:'대기 중 물어볼 항목', d:'<b>계약기간</b>은 수습 90% 적용 가능 여부(1년 이상 계약) 판단에, <b>근무형태</b>는 기본급 시간수 검증에 쓰입니다.', type:'multi', o:['센터유형','상담유형(인바운드·아웃바운드·채팅·혼합)','근무형태(주5일·주4일·단시간·교대·야간)','적용 시점(시행일)','변경 사유(최저임금·변경계약·재계약)','계약기간(1년 이상 여부)','지역(시·도)','고객사 업종','담당PM'], r:['센터유형','상담유형(인바운드·아웃바운드·채팅·혼합)','근무형태(주5일·주4일·단시간·교대·야간)','적용 시점(시행일)','변경 사유(최저임금·변경계약·재계약)','계약기간(1년 이상 여부)','지역(시·도)']},
+  {id:'A3', t:'엑셀에서 읽을 수 있는 값(요청사유·관리번호·직군명·직무Group명·담당PM·근무형태 표) 처리', d:'실제 파일 3건 모두 같은 칸에 들어 있습니다(예: 요청사유 D7, 담당PM S4).', type:'one', o:['자동으로 채우고 확인만 받기','매번 직접 입력'], r:'자동으로 채우고 확인만 받기'},
+  {id:'A4', t:'필수 답변을 비워 둔 경우', d:'', type:'one', o:['조견표 생성은 허용, [통계에 저장]만 막기','조견표 생성부터 막기'], r:'조견표 생성은 허용, [통계에 저장]만 막기'},
+  {id:'A5', t:'센터유형 목록 초기값', d:'쉼표로 구분해 적어 주십시오. 기존 시스템은 공공·금융·유통·통신 4개입니다.', type:'text', r:'공공, 금융, 유통, 통신'},
+  {id:'A6', t:'센터유형 추가·삭제 권한', d:'사용자가 여러 명이면 유형이 제각각 늘어나 통계가 흩어질 수 있습니다.', type:'one', o:['누구나 추가·수정·삭제','누구나 추가, 삭제는 관리자만','관리자만'], r:'누구나 추가, 삭제는 관리자만'},
+  {id:'A7', t:'직무명이 자동분류 규칙에 걸리지 않을 때 상담유형', d:'"애매하면 반드시 체크" 원칙에 따른 질문입니다.', type:'one', o:['기본값 상담사로 넣고 표시만','매번 사용자에게 선택 요청'], r:'매번 사용자에게 선택 요청'},
+  {id:'A8', t:'근무형태별 월소정근로시간 표준표', d:'실제 파일 사례: 주40H→<b>209h</b>, 주32H(주4일)→<b>167h</b>, 주16H(주2일)→<b>84h</b>. 계산식 (주 시간 + 주휴) × 4.345.', type:'one', o:['제안표 그대로 사용(209·167·84, 그 외는 계산식)','직접 수정해서 알려줌(메모에 기재)'], r:'제안표 그대로 사용(209·167·84, 그 외는 계산식)'},
+  {id:'A9', t:'처리 완료 알림 방식', d:'Teams 알림은 M365 10단계에서 설정합니다.', type:'one', o:['화면 상단 알림만','화면 알림 + 소리','화면 알림 + Teams 메시지'], r:'화면 알림 + Teams 메시지'},
+  {id:'A10', t:'대기 중 다른 화면 이동', d:'', type:'one', o:['허용(통계·보고서 화면 이용 가능)','대기 화면에 고정'], r:'허용(통계·보고서 화면 이용 가능)'},
+  {id:'A11', t:'처리 지연·실패 기준', d:'Power Automate 감지 주기가 1~5분이라 5분 안팎은 정상 범위입니다.', type:'one', o:['5분 지나면 지연 안내, 15분 지나면 실패 처리','10분 지나면 지연 안내, 30분 지나면 실패 처리'], r:'5분 지나면 지연 안내, 15분 지나면 실패 처리'},
+  {id:'A12', t:'요청ID 규칙(여러 사용자 구분)', d:'파일명 앞에 붙어 같은 이름 파일이 섞이지 않게 합니다.', type:'one', o:['날짜-이니셜-순번 (20261026-ABC-01)','날짜-센터명 (20261026-○○센터)','자동 난수 (R7F3K2)'], r:'날짜-이니셜-순번 (20261026-ABC-01)'}
+ ]},
+ { code:'B', title:'조견표 생성·편집', desc:'출력 형식은 지금과 같게 유지한다는 전제에서 남은 세부 선택입니다.', items:[
+  {id:'B1', t:'조견표에 보여줄 업적 등급', d:'실제 파일은 S·A·B·C.·D·E 6단계, 데모는 A~F입니다.', type:'one', o:['지금과 동일','B등급만','전체 등급'], r:'지금과 동일'},
+  {id:'B2', t:'등급 표기 정리(예: "C." → "C")', d:'원본 엑셀은 바꾸지 않고 조견표 표시만 정리합니다.', type:'one', o:['자동 정리','원문 그대로'], r:'자동 정리'},
+  {id:'B3', t:'초과근무 시간 표기의 출처', d:'실제 파일에서 S열 비고가 없는데 수식에는 시간이 있는 경우가 있었습니다.', type:'one', o:['S열 비고','수식에서 추출','둘 다 읽고 다르면 확인 요청'], r:'둘 다 읽고 다르면 확인 요청'},
+  {id:'B4', t:'예외 및 특례사항 표시 범위', d:'', type:'one', o:['지금과 동일','근무형태·수습·복리후생만','항목별로 켜고 끄기'], r:'지금과 동일'},
+  {id:'B5', t:'문구·간격·폭 편집 결과 기억', d:'다음 버전(재계약 등) 업로드 때 같은 센터면 자동 적용합니다.', type:'one', o:['센터별로 기억','매번 기본값'], r:'센터별로 기억'},
+  {id:'B6', t:'PNG·ZIP 파일 이름 규칙', d:'', type:'one', o:['요청ID_센터명_직무_적용시점.png','센터명_직무_적용시점.png(현행)'], r:'요청ID_센터명_직무_적용시점.png'},
+  {id:'B7', t:'PNG 해상도', d:'', type:'one', o:['지금과 동일','2배','3배(인쇄용)'], r:'지금과 동일'},
+  {id:'B8', t:'원본 값 대조 보기', d:'조견표 미리보기 옆에 원본 엑셀 칸 번호와 값을 같이 보여줍니다.', type:'one', o:['필요','불필요'], r:'필요'}
+ ]},
+ { code:'C', title:'검증 규칙과 판정 등급', desc:'실제 파일 3건 분석에서 나온 항목입니다. 규칙마다 판정 등급을 정해 주십시오. "근거"는 실제 파일에서 발견된 사례입니다(금액·센터명 제외).', items:[
+  {sub:'공통 운영'},
+  {id:'C01', t:'확인 항목을 체크할 때 사유 입력', d:'', type:'one', o:['필수(선택형 사유 + 자유 입력)','선택'], r:'필수(선택형 사유 + 자유 입력)'},
+  {id:'C02', t:'검사 결과·체크 이력 보관', d:'나중에 "왜 통과시켰는지" 확인할 수 있습니다.', type:'one', o:['스냅샷과 함께 저장','저장 안 함'], r:'스냅샷과 함께 저장'},
+  {id:'C03', t:'차단 항목 해제', d:'', type:'one', o:['해제 불가(원본 수정 후 다시 업로드)','관리자만 해제 가능'], r:'해제 불가(원본 수정 후 다시 업로드)'},
+  {id:'C04', t:'합계 재계산 허용 오차', d:'반올림 차이 때문에 1원 단위 차이는 생길 수 있습니다.', type:'one', o:['0원','1원','10원'], r:'1원'},
+  {id:'C05', t:'반올림 표준', d:'근거: 초과근무·연차 수식에 ROUNDUP, ROUNDDOWN, ROUND, 반올림 없음이 섞여 있었습니다.', type:'one', o:['ROUNDUP 10원 단위','ROUND 10원 단위','표준 없음(다르면 참고 표시)'], r:'ROUNDUP 10원 단위'},
+  {id:'C06', t:'예외·특례 문구 표준본', d:'근거: 3개 파일 문구 유사도 97%. "마지막 영업일" ↔ "마지막 일"처럼 의미가 바뀌는 차이만 있었습니다.', type:'one', o:['예시 파일1 문구','예시 파일2 문구','예시 파일3 문구','회사 표준 문서를 따로 제공'], r:'회사 표준 문서를 따로 제공'},
+  {id:'C07', t:'인상률 이상치 기준(변경전 대비 월 총액)', d:'', type:'one', o:['±10% 초과','±15% 초과','±20% 초과'], r:'±15% 초과'},
+  {id:'C08', t:'최저임금 연도표 관리', d:'2026년 시급 10,320원. 기본급 수식 안의 단가를 이 표와 비교합니다.', type:'one', o:['설정 화면에서 연도별 입력','코드에 고정'], r:'설정 화면에서 연도별 입력'},
+  {sub:'1단계 · 구조'},
+  {id:'S1', t:"'급여테이블(변경후)' 시트가 없음", d:'', type:'rule', r:'차단'},
+  {id:'S2', t:'항목명·행 위치가 표준 양식과 다름', d:'근거: 3개 파일 모두 보수테이블 35~61행, 리딩그룹 66~92행으로 같았습니다.', type:'rule', r:'차단'},
+  {id:'S3', t:'직무명이 빈 열에 금액이 있음', d:'', type:'rule', r:'확인'},
+  {sub:'2단계 · 수식 (v2 스크립트가 수식을 함께 읽어야 가능)'},
+  {id:'F1', t:'같은 행에서 수식 모양이 다른 칸', d:'근거: 연간 인건비(88행)가 정원 행이 아닌 다른 행·옆 열을 곱하는 칸이 있었습니다.', type:'rule', r:'확인'},
+  {id:'F2', t:'수식이 있어야 할 칸에 숫자 직접 입력(소계·월 합계·연간)', d:'근거: 리딩그룹 한 열의 소계·월 합계가 숫자로 입력되어 재계산 결과와 달랐습니다.', type:'rule', r:'확인'},
+  {id:'F3', t:'수식 행 전체가 비어 있음', d:'근거: "변경 전 월보수 GAP" 행(61·92행)에 수식이 하나도 없는 파일이 있었습니다.', type:'rule', r:'확인'},
+  {id:'F4', t:'수식 오류값(#REF!, #DIV/0!, #VALUE!)', d:'', type:'rule', r:'차단'},
+  {id:'F5', t:'기본급 수식의 최저임금 단가가 해당 연도와 다름', d:'예: 2026년 적용인데 =10030*209.', type:'rule', r:'차단'},
+  {sub:'3단계 · 재계산'},
+  {id:'K1', t:'통상임금소계 ≠ 항목 합계', d:'', type:'rule', r:'차단'},
+  {id:'K2', t:'월 보수 합계 ≠ 소계 + B등급 + 초과근무 + 야간 + 통신비', d:'', type:'rule', r:'차단'},
+  {id:'K3', t:'등급 금액 순서가 어긋남(S ≥ A ≥ B ≥ C ≥ D ≥ E)', d:'', type:'rule', r:'확인'},
+  {id:'K4', t:'연간 합계 ≠ 월 합계 × 12', d:'', type:'rule', r:'확인'},
+  {sub:'4단계 · 법·기준'},
+  {id:'L1', t:'최저임금 미달', d:'산입 범위 결정 필요: 기본급+직책+직무+근속+급식비(현행 가정). 메모에 회사 기준을 적어 주십시오.', type:'rule', r:'차단'},
+  {id:'L2', t:'근무형태의 주 시간 ↔ 기본급 시간수 불일치', d:'근거: 209·167·84시간 파일이 섞여 있습니다. 주4일(주32H)인데 209h로 계산된 경우 등을 잡습니다.', type:'rule', r:'확인'},
+  {id:'L3', t:'연차·시간외 나눗수 ≠ 기본급 시간수', d:'근거: 같은 표 안에 /146, /167, /209가 섞인 열이 있었습니다.', type:'rule', r:'확인'},
+  {id:'L4', t:'할증률이 다름(시간외·휴일 1.5, 야간 0.5)', d:'', type:'rule', r:'확인'},
+  {id:'L5', t:'수습 90% 적용인데 계약기간 1년 미만', d:'A2 질문의 계약기간 답변을 사용합니다.', type:'rule', r:'확인'},
+  {id:'L6', t:'최저임금 여유 2% 미만', d:'', type:'rule', r:'참고'},
+  {sub:'5단계 · 문구'},
+  {id:'T1', t:'미완성 문구("00등급", "OO", "xx")', d:'근거: 비고 칸에 "00등급 기준"이 그대로 남은 파일이 2건 있었습니다.', type:'rule', r:'확인'},
+  {id:'T2', t:'초과근무 수식 시간 ↔ S열 비고 시간이 다르거나 비고 없음', d:'근거: 수식은 있는데 "○H" 비고가 없는 파일이 있었습니다.', type:'rule', r:'확인'},
+  {id:'T3', t:'근무시간 형식 오류(예: "0930")', d:'', type:'rule', r:'확인'},
+  {id:'T4', t:'복사 흔적(다른 행 내용이 그대로 반복)', d:'근거: 상담사 행의 호봉 칸에 "교육, 팀장 상담사"가 들어 있었습니다.', type:'rule', r:'참고'},
+  {id:'T5', t:'예외·특례 문구가 표준본과 다름', d:'바뀐 부분만 색으로 표시합니다.', type:'rule', r:'확인'},
+  {id:'T6', t:'담당PM·요청일자·관리번호 빈칸', d:'', type:'rule', r:'참고'},
+  {sub:'6단계 · 변경전 대비'},
+  {id:'D1', t:'변경전보다 월 총액이 줄어든 직무', d:'근거: 1개 파일에서 4개 직무가 감소했습니다(열 위치 변경 가능성 포함).', type:'rule', r:'확인'},
+  {id:'D2', t:'인상률이 C07 기준을 넘음', d:'', type:'rule', r:'확인'},
+  {id:'D3', t:'변경전 대비 직무 추가·삭제', d:'', type:'rule', r:'참고'},
+  {id:'D4', t:'같은 센터·같은 적용 시점이 이미 저장되어 있음', d:'', type:'rule', r:'확인'}
+ ]},
+ { code:'E', title:'저장(스냅샷)', desc:'통계의 기초가 되는 저장 규칙입니다. v2는 별도 저장소를 쓰고 기존 저장소는 그대로 둡니다.', items:[
+  {id:'E1', t:'같은 센터·시점을 다시 저장할 때', d:'', type:'one', o:['새 버전으로 추가(통계는 최신만)','덮어쓰기'], r:'새 버전으로 추가(통계는 최신만)'},
+  {id:'E2', t:'저장 시점', d:'', type:'one', o:['검사 통과 후 [통계에 저장] 버튼','조견표 생성과 동시에 자동 저장'], r:'검사 통과 후 [통계에 저장] 버튼'},
+  {id:'E3', t:'추가로 저장할 항목', d:'', type:'multi', o:['정원(27·30행)','근무형태','변경 사유','검사 결과·체크 사유','담당PM·요청ID','변경전 월 총액'], r:['정원(27·30행)','근무형태','변경 사유','검사 결과·체크 사유','담당PM·요청ID','변경전 월 총액']},
+  {id:'E4', t:'센터명 표기 통일(별칭 사전)', d:'예: "○○시 민원콜", "○○시청 민원상담콜센터"를 같은 센터로 묶기.', type:'one', o:['사용','사용 안 함'], r:'사용'},
+  {id:'E5', t:'원본·연동 파일 보관 기간', d:'회사 문서 보존 규정을 확인해 주십시오.', type:'one', o:['1년','3년','5년','영구'], r:'3년'},
+  {id:'E6', t:'저장 데이터 삭제 권한', d:'', type:'one', o:['본인이 저장한 것만','관리자만'], r:'관리자만'},
+  {id:'E7', t:'기존 시스템(v1) 데이터', d:'v1 저장소는 어느 쪽이든 그대로 남습니다.', type:'one', o:['v2로 가져오기 버튼 제공','v2는 새로 시작'], r:'v2로 가져오기 버튼 제공'}
+ ]},
+ { code:'G', title:'통계', desc:'비교 기준을 정하는 항목입니다. 보고서 결론이 이 선택에 따라 달라집니다.', items:[
+  {id:'G1', t:'비교 지표', d:'', type:'one', o:['시급 환산(B등급 월 총액 ÷ 월소정근로시간)','B등급 월 총액','둘 다 표시, 순위는 시급'], r:'둘 다 표시, 순위는 시급'},
+  {id:'G2', t:'월 총액에 포함할 항목', d:'기본 = 통상임금소계 + B등급 업적수당.', type:'multi', o:['초과근무수당','야간근로수당','통신비'], r:['초과근무수당','야간근로수당','통신비']},
+  {id:'G3', t:'직무 묶음', d:'', type:'one', o:['상담사 / 리더(팀장·QA·강사) / 센터장 3분류','직무명 그대로'], r:'상담사 / 리더(팀장·QA·강사) / 센터장 3분류'},
+  {id:'G4', t:'통계 기준 시점', d:'', type:'one', o:['센터별 가장 최근 시행일','연도별(해당 연도 말 기준)','둘 다 선택 가능'], r:'둘 다 선택 가능'},
+  {id:'G5', t:'최소 표본 수', d:'센터유형 안의 센터가 적으면 중위수가 흔들립니다.', type:'one', o:['3곳 미만이면 숨김','3곳 미만이면 경고와 함께 표시'], r:'3곳 미만이면 경고와 함께 표시'},
+  {id:'G6', t:'이상치 처리', d:'', type:'one', o:['그대로 포함','유형 중위수의 ±50% 밖은 제외하고 표시'], r:'그대로 포함'},
+  {id:'G7', t:'전년 대비 인상률 표시', d:'', type:'one', o:['표시','표시 안 함'], r:'표시'},
+  {id:'G8', t:'통계 열람 범위(여러 사용자)', d:'', type:'one', o:['전체 센터','본인 담당 센터만'], r:'전체 센터'}
+ ]},
+ { code:'R', title:'인건비 분석 보고서', desc:'Word로 나가는 최종 문서의 형식입니다.', items:[
+  {id:'R1', t:'보고서 단위', d:'', type:'multi', o:['센터별','센터유형별','전사 요약'], r:['센터별','센터유형별']},
+  {id:'R2', t:'목표 기준 기본값', d:'', type:'one', o:['동일 유형 중위수','동일 유형 상위 40%','채용시장 중위수','유형·시장 중 높은 값'], r:'유형·시장 중 높은 값'},
+  {id:'R3', t:'법정부담률(4대보험 사업주분 + 퇴직급여)', d:'현재 18.5%는 가정값입니다. 회사 기준값을 적어 주십시오.', type:'text', r:'18.5'},
+  {id:'R4', t:'인원 수 출처', d:'', type:'one', o:['정원 행(27·30행) 자동, 화면에서 수정 가능','매번 직접 입력'], r:'정원 행(27·30행) 자동, 화면에서 수정 가능'},
+  {id:'R5', t:'목차', d:'', type:'multi', o:['요약(결론 먼저)','현재 급여 현황','동일 유형 비교','채용시장 비교','필요 인상액·연간 비용','최저임금 여유 등 리스크','제언·실행안','부록(직무별 상세표)'], r:['요약(결론 먼저)','현재 급여 현황','동일 유형 비교','채용시장 비교','필요 인상액·연간 비용','최저임금 여유 등 리스크','제언·실행안']},
+  {id:'R6', t:'결론 문장 톤', d:'', type:'one', o:['권고형("월 ○원 인상이 필요합니다")','중립 서술형("유형 중위수 대비 ○% 낮습니다")'], r:'권고형("월 ○원 인상이 필요합니다")'},
+  {id:'R7', t:'표지·결재란', d:'', type:'one', o:['표지 + 결재란','표지만','없음'], r:'표지만'},
+  {id:'R8', t:'보안 표기(머리말)', d:'', type:'one', o:['"대외비" 표기','"사내 한정" 표기','없음'], r:'"대외비" 표기'},
+  {id:'R9', t:'보고서 파일 이름', d:'', type:'one', o:['인건비분석_센터명_기준시점.doc','요청ID_인건비분석_센터명.doc'], r:'인건비분석_센터명_기준시점.doc'},
+  {id:'R10', t:'채용시장 자료 출처 표기', d:'고용24 API 연결 전까지는 수기 표본을 씁니다.', type:'one', o:['표본마다 출처·확인일 표기','"채용공고 표본 n건"으로 요약'], r:'표본마다 출처·확인일 표기'}
+ ]},
+ { code:'M', title:'M365 연계 전 결정', desc:'② M365 설정 가이드를 시작하기 전에 정해 두면 막히지 않습니다.', items:[
+  {id:'M1', t:'공유 공간 종류', d:'Teams 팀을 만들면 SharePoint 사이트가 자동으로 생기고, 구성원 관리와 알림 채널을 함께 쓸 수 있습니다.', type:'one', o:['Teams 팀(SharePoint 자동 생성)','SharePoint 팀 사이트만','이미 있는 팀의 채널 사용'], r:'Teams 팀(SharePoint 자동 생성)'},
+  {id:'M2', t:'팀(사이트) 이름', d:'', type:'text', r:'급여조견표 관리'},
+  {id:'M3', t:'구성원 명단과 소유자', d:'소유자는 2명 이상을 권장합니다(퇴사·부재 대비).', type:'text', r:'소유자: 본인, ○○○ / 구성원: PM 5명'},
+  {id:'M4', t:'폴더 구조', d:'', type:'one', o:['제안안: 01_원본 · 02_연동데이터 · 03_조견표 · 04_스냅샷 · 05_보고서 · 99_설정','직접 수정(메모)'], r:'제안안: 01_원본 · 02_연동데이터 · 03_조견표 · 04_스냅샷 · 05_보고서 · 99_설정'},
+  {id:'M5', t:'Power Automate 흐름 소유 계정', d:'흐름은 만든 사람 계정으로 실행됩니다.', type:'one', o:['본인 + 공동 소유자 1명','본인만'], r:'본인 + 공동 소유자 1명'},
+  {id:'M6', t:'처리 끝난 원본 파일', d:'', type:'one', o:['01_원본에 그대로 둠','01_원본/처리완료 로 이동'], r:'01_원본/처리완료 로 이동'},
+  {id:'M7', t:'처리 실패 알림 받을 사람', d:'', type:'text', r:'업로드한 본인 + 관리자'},
+  {id:'M8', t:'DRM(민감도 레이블) 테스트 방법', d:'실제 급여 파일 대신 가상 파일에 같은 레이블을 붙여 테스트합니다.', type:'one', o:['가상 파일에 회사 레이블을 붙여 테스트','실제 파일 1건으로 본인이 직접 테스트'], r:'가상 파일에 회사 레이블을 붙여 테스트'}
+ ]}
+];
+
+/* ============================================================
+   ② M365 설정 가이드 데이터
+   ============================================================ */
+const SCRIPT_V2 = `/**
+ * 급여조견표 자동연동 스크립트 v2
+ * 급여테이블(변경후) 값·수식과 변경전 시트 값을 JSON 텍스트로 돌려줍니다. 원본은 바꾸지 않습니다.
+ */
+function main(workbook: ExcelScript.Workbook): string {
+  const sheets = workbook.getWorksheets();
+  const src =
+    sheets.find(s => s.getName().includes("급여테이블") && s.getName().includes("변경후")) ||
+    sheets.find(s => s.getName().includes("급여테이블"));
+  if (!src) {
+    throw new Error("'급여테이블(변경후)' 시트를 찾지 못했습니다.");
+  }
+  const before = sheets.find(s => s.getName().includes("급여테이블") && s.getName().includes("변경전"));
+
+  const used = src.getUsedRange(true);
+  if (!used) {
+    throw new Error("급여테이블 시트가 비어 있습니다.");
+  }
+  const startOf = (r: ExcelScript.Range) =>
+    (r.getAddress().split("!").pop() || "A1").split(":")[0].replace(/\\$/g, "");
+
+  let beforeValues: (string | number | boolean)[][] | null = null;
+  if (before) {
+    beforeValues = before.getRange(used.getAddress().split("!").pop() || "A1").getValues();
+  }
+
+  return JSON.stringify({
+    v: 2,
+    kind: "PAYTABLE",
+    sheet: src.getName(),
+    file: workbook.getName(),
+    sheets: sheets.map(s => s.getName()),
+    start: startOf(used),
+    values: used.getValues(),
+    formulas: used.getFormulas(),
+    before: beforeValues
+  });
+}`;
+
+const STEPS = [
+ { n:'0', title:'공통 안전 규칙 붙여넣기', who:'me', time:'1분',
+   why:'Claude in Chrome이 실제 급여 파일을 열거나, 공유·권한을 바꾸지 않도록 대화 처음에 규칙을 정해 둡니다.',
+   todo:['Chrome에서 회사 M365 계정으로 로그인되어 있는지 확인합니다.','Claude in Chrome 사이드패널을 열고 새 대화를 시작합니다.','오른쪽 프롬프트를 복사해 첫 메시지로 붙여넣습니다.'],
+   check:['Claude가 규칙을 이해했다고 답하면 1단계로 넘어갑니다.'],
+   warn:'로그인·MFA(인증 앱) 화면은 항상 본인이 직접 처리하십시오.',
+   ko:`지금부터 Microsoft 365 설정을 도와주세요. 작업 내내 아래 규칙을 반드시 지켜 주세요.
+
+1. 실제 급여 파일(파일명에 '급여테이블', 센터명, 고객사명이 들어간 엑셀)은 열거나 내용을 읽지 마세요. 테스트에는 '테스트용_가상급여테이블.xlsx'만 사용합니다.
+2. 외부 공유 링크 만들기, 외부 사용자 초대, 권한 변경, 라이선스·결제, 관리 센터 설정은 하지 마세요. 필요해 보이면 멈추고 저에게 물어보세요.
+3. 무언가를 삭제하거나 덮어쓰기 전에는 반드시 저에게 확인을 받으세요.
+4. 화면의 메뉴 이름이 안내와 다르면 추측해서 진행하지 말고, 지금 화면에 보이는 메뉴 이름을 알려 주세요.
+5. 로그인, MFA 인증, 권한 동의(Consent) 화면이 나오면 멈추고 제가 직접 처리하게 해 주세요.
+6. 각 단계를 마치면 한 일과 확인 결과를 3줄 이내로 보고해 주세요.
+
+이해했으면 "규칙 확인"이라고만 답해 주세요.`,
+   en:`Please help me set up Microsoft 365. Follow these rules for the whole session.
+
+1. Do not open or read any real payroll file (Excel files whose names contain '급여테이블', a center name, or a client name). Use only '테스트용_가상급여테이블.xlsx' for testing.
+2. Do not create external sharing links, invite external users, change permissions, buy licenses, or change admin center settings. If one of these seems necessary, stop and ask me.
+3. Always ask me before deleting or overwriting anything.
+4. If a menu name on screen differs from my instructions, do not guess. Tell me the menu names you can see.
+5. If a sign-in, MFA, or permission consent screen appears, stop and let me handle it.
+6. After each step, report what you did and what you verified in three lines or fewer.
+
+If you understand, reply only with "Rules confirmed".`},
+
+ { n:'1', title:'Teams 팀 만들기 (SharePoint 사이트 자동 생성)', who:'ai', time:'5분',
+   why:'여러 PM이 같은 폴더를 쓰려면 개인 OneDrive가 아닌 공유 공간이 필요합니다. Teams 팀을 만들면 같은 이름의 SharePoint 사이트가 자동으로 생기고, 구성원 관리와 알림 채널을 함께 쓸 수 있습니다.',
+   todo:['Teams 웹(teams.microsoft.com) → 팀 → 팀 만들기','처음부터 → 비공개 → 이름 입력(체크리스트 M2)','구성원 추가 화면은 건너뛰기(구성원은 3단계에서 본인이 추가)'],
+   check:['팀 목록에 새 팀이 보임','팀 → 파일 탭이 열림'],
+   warn:'<b>팀 만들기 버튼이 없으면</b> 회사 정책으로 막힌 것입니다. 이미 있는 팀에 "급여조견표" 채널을 만드는 방식(체크리스트 M1 세 번째 선택지)으로 바꾸십시오.',
+   ko:`Teams 웹에서 새 팀을 만들어 주세요.
+
+1. https://teams.microsoft.com 을 새 탭에서 엽니다.
+2. 왼쪽 [팀] → [팀 참가 또는 만들기] 또는 [+] → [팀 만들기]를 누릅니다.
+3. [처음부터] → 공개 범위 [비공개]를 선택합니다.
+4. 팀 이름: 급여조견표 관리 / 설명: 급여테이블 업로드·조견표·통계 자료 공유
+5. [만들기]를 누릅니다. 구성원 추가 화면이 나오면 [건너뛰기]를 누릅니다(사람은 추가하지 마세요).
+6. 만든 팀의 [일반] 채널에서 [파일] 탭이 열리는지 확인합니다.
+
+'팀 만들기' 메뉴가 보이지 않으면 진행하지 말고, 보이는 메뉴를 알려 주세요.`,
+   en:`Create a new team in Teams on the web.
+
+1. Open https://teams.microsoft.com in a new tab.
+2. Go to [Teams] on the left, then [Join or create a team] or [+], then [Create team].
+3. Choose [From scratch], then set privacy to [Private].
+4. Team name: 급여조견표 관리 / Description: Shared space for payroll table uploads, quick-reference tables and statistics
+5. Click [Create]. If the "Add members" screen appears, click [Skip]. Do not add anyone.
+6. In the team's [General] channel, confirm that the [Files] tab opens.
+
+If you cannot find "Create team", stop and tell me which menus you can see.`},
+
+ { n:'2', title:'SharePoint 폴더 만들기', who:'ai', time:'5분',
+   why:'업로드, 연동 결과(JSON), 조견표, 스냅샷, 보고서를 단계별 폴더로 나누면 Power Automate가 "01_원본에 들어온 파일"만 처리하고, 사용자는 결과 폴더만 보면 됩니다.',
+   todo:['팀 → 파일 → [SharePoint에서 열기]','문서 라이브러리에 "급여조견표" 폴더 생성','그 안에 6개 하위 폴더 생성'],
+   check:['문서 › 급여조견표 아래에 01·02·03·04·05·99 폴더가 보임','브라우저 주소창의 사이트 주소를 메모(6단계에서 사용)'],
+   warn:'',
+   ko:`방금 만든 '급여조견표 관리' 팀의 SharePoint 문서 라이브러리에 폴더를 만들어 주세요.
+
+1. 팀의 [파일] 탭 → [SharePoint에서 열기](또는 … → SharePoint에서 열기)를 누릅니다.
+2. [문서] 라이브러리 맨 위(최상위)에서 [+ 새로 만들기] → [폴더] → 이름: 급여조견표
+3. '급여조견표' 폴더 안으로 들어가 아래 6개 폴더를 만듭니다.
+   01_원본
+   02_연동데이터
+   03_조견표
+   04_스냅샷
+   05_보고서
+   99_설정
+4. '01_원본' 안에 '처리완료' 폴더를 하나 더 만듭니다.
+5. 완료 후 브라우저 주소창의 사이트 주소(https://○○.sharepoint.com/sites/○○ 까지)와 폴더 목록을 알려 주세요.
+
+이미 같은 이름 폴더가 있으면 새로 만들지 말고 알려 주세요.`,
+   en:`Create folders in the SharePoint document library of the '급여조견표 관리' team you just created.
+
+1. In the team's [Files] tab, click [Open in SharePoint] (or ... > Open in SharePoint).
+2. At the top level of the [Documents] library, click [+ New] > [Folder] and name it: 급여조견표
+3. Open the '급여조견표' folder and create these six folders:
+   01_원본
+   02_연동데이터
+   03_조견표
+   04_스냅샷
+   05_보고서
+   99_설정
+4. Inside '01_원본', create one more folder named '처리완료'.
+5. When done, tell me the site address from the address bar (up to https://....sharepoint.com/sites/...) and the folder list.
+
+If a folder with the same name already exists, do not create a new one. Tell me instead.`},
+
+ { n:'3', title:'구성원 추가와 공유 상태 확인', who:'me', time:'5분',
+   why:'사람을 추가하는 일은 되돌리기 어렵고 정보보안과 직결되므로 본인이 직접 합니다. Claude에게는 "외부 공유가 없는지" 확인만 맡깁니다.',
+   todo:['본인: Teams 팀 → … → 구성원 추가 → 체크리스트 M3 명단 입력, 소유자 1명 더 지정','Claude: 아래 프롬프트로 사이트 권한·공유 상태 점검(변경 없이 보고만)'],
+   check:['구성원 목록이 M3 명단과 같음','사이트에 "조직 외부 사용자"나 "모든 사람" 링크가 없음'],
+   warn:'<b>외부 공유가 켜져 있다고 나와도</b> 직접 끄려 하지 말고 IT 관리자 정책인지 먼저 확인하십시오. 팀 단위에서 조정할 수 없는 경우가 많습니다.',
+   ko:`SharePoint 사이트 '급여조견표 관리'의 권한과 공유 상태를 확인만 해 주세요. 아무것도 바꾸지 마세요.
+
+1. 사이트 오른쪽 위 [설정(톱니바퀴)] → [사이트 권한]을 엽니다.
+2. 사이트 소유자 / 구성원 / 방문자 그룹에 들어 있는 사람 수와 이름을 알려 주세요.
+3. '문서 › 급여조견표' 폴더를 선택하고 [세부 정보] 또는 [액세스 관리]를 열어, 공유 링크가 있는지(특히 '모든 사람' 또는 외부 사용자) 알려 주세요.
+4. 결과를 표로 정리해 주세요: 구분 | 이름 또는 링크 | 권한 | 외부 여부
+
+변경이 필요해 보이면 직접 하지 말고 무엇을 바꿔야 할지만 알려 주세요.`,
+   en:`Check the permissions and sharing status of the SharePoint site '급여조견표 관리'. Do not change anything.
+
+1. Click [Settings (gear)] at the top right of the site, then [Site permissions].
+2. Tell me how many people are in the Site owners, Site members and Site visitors groups, and their names.
+3. Select the 'Documents > 급여조견표' folder, open [Details] or [Manage access], and tell me whether any sharing links exist, especially "Anyone" links or links for external users.
+4. Summarize the results in a table: Group | Name or link | Permission | External (yes/no)
+
+If something looks like it needs changing, do not change it. Just tell me what should change.`},
+
+ { n:'4', title:'내 PC에 폴더 연결 (OneDrive 바로 가기 + 동기화)', who:'ai', time:'5분',
+   why:'급여관리 HTML은 PC의 폴더를 직접 읽고 씁니다. SharePoint 폴더를 "내 파일"에 바로 가기로 추가하면 OneDrive 앱이 PC에 같은 폴더를 만들어 주고, HTML이 올린 파일이 자동으로 SharePoint에 올라갑니다.',
+   todo:['Claude: SharePoint의 "급여조견표" 폴더에서 [OneDrive에 바로 가기 추가]','본인: PC 작업 표시줄의 OneDrive 구름 아이콘 → 동기화 완료 확인','본인: 파일 탐색기 → OneDrive - 회사명 → 급여조견표 폴더가 보이는지 확인'],
+   check:['PC 파일 탐색기에 급여조견표 폴더와 하위 6개 폴더가 보임'],
+   warn:'<b>[동기화] 버튼</b>을 눌러도 되지만, 사용자가 여러 명이면 [바로 가기 추가] 방식이 관리가 쉽습니다. PC의 OneDrive 앱은 Claude in Chrome이 조작할 수 없으므로 본인이 확인하십시오.',
+   ko:`SharePoint '급여조견표 관리' 사이트의 '문서 › 급여조견표' 폴더를 내 OneDrive에 바로 가기로 추가해 주세요.
+
+1. 사이트의 [문서] 라이브러리로 이동합니다.
+2. '급여조견표' 폴더 행에 마우스를 올리고 [… (자세히)] → [OneDrive에 바로 가기 추가]를 누릅니다.
+   (메뉴가 없으면 상단 도구 모음의 [내 파일에 바로 가기 추가]를 찾아 주세요.)
+3. 새 탭에서 OneDrive 웹(https://www.office.com/launch/onedrive)을 열고 [내 파일]에 '급여조견표' 바로 가기가 생겼는지 확인합니다.
+4. 결과만 알려 주세요. [동기화] 버튼은 누르지 마세요.`,
+   en:`Add the 'Documents > 급여조견표' folder of the SharePoint site '급여조견표 관리' to my OneDrive as a shortcut.
+
+1. Go to the site's [Documents] library.
+2. Hover over the '급여조견표' folder row, click [... (More)], then [Add shortcut to OneDrive].
+   (If that menu is missing, look for [Add shortcut to My files] in the top toolbar.)
+3. In a new tab, open OneDrive on the web (https://www.office.com/launch/onedrive) and confirm that a '급여조견표' shortcut appears in [My files].
+4. Report the result only. Do not click the [Sync] button.`},
+
+ { n:'5', title:'Office Script(v2) 등록', who:'ai', time:'10분',
+   why:'DRM 파일은 PC에서 열지 않아도 Excel 웹 안에서는 읽힙니다. 이 스크립트가 급여테이블(변경후)의 값·수식과 변경전 값을 꺼내 JSON 텍스트로 돌려줍니다. v2 검증(수식 누락·하드코딩·변경전 대비)에 필요합니다. 기존 v1 스크립트는 그대로 둡니다.',
+   todo:['99_설정 폴더에 빈 통합문서 "스크립트등록용.xlsx" 만들기','Excel 웹 → [자동화] 탭 → [새 스크립트] → 코드 전체 교체 → 이름 저장'],
+   check:['자동화 탭 스크립트 목록에 "급여테이블_자동연동_v2"가 보임','저장 시 빨간 오류 표시 없음'],
+   warn:'스크립트는 만든 사람의 OneDrive "문서/Office Scripts" 폴더에 저장됩니다. Power Automate 흐름도 <b>같은 계정</b>으로 만들어야 목록에 나타납니다.',
+   ko:`Excel 웹에 Office Script를 하나 등록해 주세요.
+
+1. SharePoint '급여조견표 관리' → 문서 › 급여조견표 › 99_설정 폴더로 이동합니다.
+2. [+ 새로 만들기] → [Excel 통합 문서]로 빈 파일을 만들고, 이름을 '스크립트등록용'으로 바꿉니다.
+3. 열린 Excel 웹에서 [자동화] 탭 → [새 스크립트](또는 [스크립트 만들기])를 누릅니다.
+4. 코드 편집기의 기존 내용을 모두 지우고, 아래 코드 블록 전체를 그대로 붙여넣습니다. 한 글자도 바꾸지 마세요.
+5. 스크립트 이름을 '급여테이블_자동연동_v2'로 바꾸고 [스크립트 저장]을 누릅니다.
+6. [실행]은 누르지 마세요. 저장 후 오류 표시가 있는지만 알려 주세요.
+
+----- 코드 시작 -----
+${SCRIPT_V2}
+----- 코드 끝 -----`,
+   en:`Register one Office Script in Excel on the web.
+
+1. Go to SharePoint '급여조견표 관리' > Documents > 급여조견표 > 99_설정.
+2. Click [+ New] > [Excel workbook] to create a blank file, and rename it to '스크립트등록용'.
+3. In Excel on the web, open the [Automate] tab and click [New Script] (or [Create script]).
+4. Delete everything in the code editor and paste the entire code block below exactly as is. Do not change a single character.
+5. Rename the script to '급여테이블_자동연동_v2' and click [Save script].
+6. Do not click [Run]. After saving, tell me only whether any error is shown.
+
+----- CODE START -----
+${SCRIPT_V2}
+----- CODE END -----`},
+
+ { n:'6', title:'Power Automate 흐름 만들기', who:'ai', time:'15분',
+   why:'01_원본에 엑셀이 들어오면 자동으로 스크립트를 실행하고, 결과를 02_연동데이터에 같은 이름의 .json으로 저장합니다. 실패하면 .error.json을 남겨 HTML이 "처리 실패"를 바로 알 수 있게 합니다.',
+   todo:['자동화된 클라우드 흐름 생성','트리거: SharePoint – 파일이 만들어지는 경우(속성만)','동작: Excel Online(Business) – 스크립트 실행','동작: SharePoint – 파일 만들기(성공용·실패용 2개)'],
+   check:['흐름 저장 시 오류 없음','흐름 상태 "켜짐"'],
+   warn:'<b>연결(Connection) 동의 창</b>이 뜨면 본인이 직접 [로그인/허용]을 누르십시오. 감지 주기는 1~5분이라 업로드 직후 바로 실행되지 않는 것이 정상입니다.',
+   ko:`Power Automate에서 자동화 흐름을 만들어 주세요. 사이트 주소는 2단계에서 확인한 주소를 씁니다.
+
+1. https://make.powerautomate.com 을 열고 [+ 만들기] → [자동화된 클라우드 흐름]을 누릅니다.
+2. 흐름 이름: 급여테이블 자동연동 v2
+   트리거 검색: SharePoint '파일이 만들어지는 경우(속성만)' 선택 → [만들기]
+3. 트리거 설정
+   - 사이트 주소: 급여조견표 관리 사이트
+   - 라이브러리 이름: 문서
+   - 폴더: /Shared Documents/급여조견표/01_원본 (폴더 아이콘으로 선택)
+4. [+ 새 단계] → Excel Online (Business) '스크립트 실행' 선택
+   - 위치: 급여조견표 관리 사이트
+   - 문서 라이브러리: 문서
+   - 파일: 동적 콘텐츠 '식별자'(트리거 값)
+   - 스크립트: 급여테이블_자동연동_v2
+5. [+ 새 단계] → SharePoint '파일 만들기' (이름을 '연동결과 저장'으로 변경)
+   - 사이트 주소: 같은 사이트
+   - 폴더 경로: /Shared Documents/급여조견표/02_연동데이터
+   - 파일 이름: 동적 콘텐츠 '이름'(확장명 없는 파일 이름) 뒤에 .json 을 붙임
+   - 파일 콘텐츠: 동적 콘텐츠 '스크립트 실행'의 'result'
+6. '스크립트 실행' 단계 아래 [+] → [병렬 분기 추가] → SharePoint '파일 만들기' (이름을 '실패 기록'으로 변경)
+   - 폴더 경로: /Shared Documents/급여조견표/02_연동데이터
+   - 파일 이름: '이름' 뒤에 .error.json
+   - 파일 콘텐츠: {"kind":"PAYTABLE_ERROR","file":"<동적 콘텐츠 '파일 이름(확장명 포함)'>"}
+   - 이 단계의 [… ] → [실행 후 구성] → '실패함', '시간 초과됨'만 체크('성공함' 해제)
+7. [저장]을 누르고, 저장 결과(오류 여부)와 각 단계 이름을 알려 주세요. [테스트]는 아직 누르지 마세요.
+
+연결 로그인·동의 창이 나오면 멈추고 저에게 알려 주세요.`,
+   en:`Create an automated flow in Power Automate. Use the site address confirmed in step 2.
+
+1. Open https://make.powerautomate.com and click [+ Create] > [Automated cloud flow].
+2. Flow name: 급여테이블 자동연동 v2
+   Search for the SharePoint trigger 'When a file is created (properties only)', select it, then click [Create].
+3. Trigger settings
+   - Site Address: the 급여조견표 관리 site
+   - Library Name: Documents
+   - Folder: /Shared Documents/급여조견표/01_원본 (pick it with the folder icon)
+4. [+ New step] > Excel Online (Business) 'Run script'
+   - Location: the 급여조견표 관리 site
+   - Document Library: Documents
+   - File: dynamic content 'Identifier' (from the trigger)
+   - Script: 급여테이블_자동연동_v2
+5. [+ New step] > SharePoint 'Create file' (rename the step to '연동결과 저장')
+   - Site Address: the same site
+   - Folder Path: /Shared Documents/급여조견표/02_연동데이터
+   - File Name: dynamic content 'Name' (file name without extension) followed by .json
+   - File Content: dynamic content 'result' from 'Run script'
+6. Under the 'Run script' step, click [+] > [Add a parallel branch] > SharePoint 'Create file' (rename it to '실패 기록')
+   - Folder Path: /Shared Documents/급여조견표/02_연동데이터
+   - File Name: 'Name' followed by .error.json
+   - File Content: {"kind":"PAYTABLE_ERROR","file":"<dynamic content 'File name with extension'>"}
+   - On this step, click [...] > [Configure run after], check only 'has failed' and 'has timed out', and uncheck 'is successful'.
+7. Click [Save]. Tell me whether saving succeeded and list the step names. Do not click [Test] yet.
+
+If a connection sign-in or consent window appears, stop and tell me.`},
+
+ { n:'7', title:'가상 파일로 흐름 시험', who:'me', time:'10분',
+   why:'실제 급여 파일 없이 전체 연결을 확인합니다. 파일 업로드는 PC의 파일을 골라야 하므로 본인이 하고, 결과 확인은 Claude에게 맡깁니다.',
+   todo:['본인: samples/테스트용_가상급여테이블.xlsx 를 SharePoint 01_원본에 끌어다 놓기(또는 PC의 동기화 폴더에 복사)','3~5분 대기','Claude: 아래 프롬프트로 실행 기록과 결과 파일 확인'],
+   check:['02_연동데이터에 "테스트용_가상급여테이블.json" 생성','파일 내용이 {"v":2,"kind":"PAYTABLE" 로 시작'],
+   warn:'<b>.error.json만 생겼다면</b> 실행 기록에서 빨간 단계의 오류 문구를 Claude에게 그대로 보여 주십시오. 가상 데이터라 오류 화면을 공유해도 괜찮습니다.',
+   ko:`Power Automate 흐름 '급여테이블 자동연동 v2'의 실행 결과를 확인해 주세요. 방금 01_원본 폴더에 '테스트용_가상급여테이블.xlsx'를 올렸습니다.
+
+1. https://make.powerautomate.com → [내 흐름] → '급여테이블 자동연동 v2'를 엽니다.
+2. [28일 실행 기록]에서 가장 최근 실행의 상태(성공/실패)와 시작 시각을 알려 주세요. 실행이 아직 없으면 2분 기다렸다가 새로 고침을 최대 3번 해 주세요.
+3. 실패했다면 빨간 표시가 있는 단계 이름과 오류 메시지 전문을 알려 주세요.
+4. SharePoint 문서 › 급여조견표 › 02_연동데이터 폴더에 생긴 파일 이름을 알려 주세요.
+5. '테스트용_가상급여테이블.json'이 있으면 열어서 맨 앞 80글자만 알려 주세요.
+
+'테스트용_가상급여테이블' 외의 파일은 열지 마세요.`,
+   en:`Check the run results of the Power Automate flow '급여테이블 자동연동 v2'. I just uploaded '테스트용_가상급여테이블.xlsx' to the 01_원본 folder.
+
+1. Open https://make.powerautomate.com > [My flows] > '급여테이블 자동연동 v2'.
+2. In [28-day run history], tell me the status (succeeded/failed) and start time of the latest run. If there is no run yet, wait 2 minutes and refresh, up to 3 times.
+3. If it failed, tell me the name of the step marked in red and the full error message.
+4. Tell me the file names in SharePoint Documents > 급여조견표 > 02_연동데이터.
+5. If '테스트용_가상급여테이블.json' exists, open it and tell me only its first 80 characters.
+
+Do not open any file other than '테스트용_가상급여테이블'.`},
+
+ { n:'8', title:'DRM(민감도 레이블) 파일 시험', who:'me', time:'10분',
+   why:'실제 운영 파일과 같은 보호 상태에서 흐름이 동작하는지 확인합니다. Claude는 이 단계에서 파일을 열지 않습니다.',
+   todo:['본인: 가상 파일 복사본을 PC 엑셀에서 열고 회사 민감도 레이블(또는 DRM) 적용 → 이름 "테스트용_가상급여테이블_DRM.xlsx"로 저장','01_원본에 업로드 → 5분 대기','Claude: 7단계 프롬프트에서 파일 이름만 바꿔 결과 확인'],
+   check:['…_DRM.json이 생성되면 실제 파일도 같은 방식으로 처리 가능'],
+   warn:'<b>.error.json이 생기면</b> 레이블 종류에 따라 흐름 계정의 권한이 부족한 것입니다. 오류 메시지를 확인한 뒤 v2 화면의 "붙여넣기 연동" 방식을 대체 경로로 씁니다.',
+   ko:`Power Automate 흐름 '급여테이블 자동연동 v2'의 최근 실행 결과를 확인해 주세요. 01_원본 폴더에 '테스트용_가상급여테이블_DRM.xlsx'를 올렸습니다.
+
+1. 흐름의 [28일 실행 기록]에서 가장 최근 실행 상태와 시작 시각을 알려 주세요(없으면 2분 간격으로 최대 3번 새로 고침).
+2. 실패했다면 빨간 단계 이름과 오류 메시지 전문을 알려 주세요.
+3. 02_연동데이터 폴더에 '테스트용_가상급여테이블_DRM.json' 또는 '.error.json'이 생겼는지만 알려 주세요. 파일은 열지 마세요.`,
+   en:`Check the latest run of the Power Automate flow '급여테이블 자동연동 v2'. I uploaded '테스트용_가상급여테이블_DRM.xlsx' to the 01_원본 folder.
+
+1. In the flow's [28-day run history], tell me the status and start time of the latest run (if none, refresh every 2 minutes, up to 3 times).
+2. If it failed, tell me the name of the red step and the full error message.
+3. Tell me only whether '테스트용_가상급여테이블_DRM.json' or '.error.json' appeared in the 02_연동데이터 folder. Do not open the file.`},
+
+ { n:'9', title:'처리 끝난 원본 정리(선택)', who:'ai', time:'5분',
+   why:'체크리스트 M6에서 "처리완료로 이동"을 고른 경우입니다. 01_원본에 파일이 쌓이지 않아 다음 업로드가 헷갈리지 않습니다.',
+   todo:['흐름 마지막에 SharePoint "파일 이동" 동작 추가'],
+   check:['시험 업로드 후 원본이 01_원본/처리완료 로 옮겨짐'],
+   warn:'',
+   ko:`Power Automate 흐름 '급여테이블 자동연동 v2'에 단계 하나를 추가해 주세요.
+
+1. 흐름을 [편집]으로 엽니다.
+2. '연동결과 저장' 단계 아래에 [+ 새 단계] → SharePoint '파일 이동'을 추가합니다.
+   - 현재 사이트 주소: 급여조견표 관리 사이트
+   - 이동할 파일: 동적 콘텐츠 '식별자'(트리거 값)
+   - 대상 사이트 주소: 같은 사이트
+   - 대상 폴더: /Shared Documents/급여조견표/01_원본/처리완료
+   - 같은 이름 파일이 있으면: 새 이름으로 복사(덮어쓰기 아님)
+3. [저장] 후 오류 여부를 알려 주세요.`,
+   en:`Add one step to the Power Automate flow '급여테이블 자동연동 v2'.
+
+1. Open the flow in [Edit].
+2. Under the '연동결과 저장' step, click [+ New step] and add SharePoint 'Move file'.
+   - Current Site Address: the 급여조견표 관리 site
+   - File to Move: dynamic content 'Identifier' (from the trigger)
+   - Destination Site Address: the same site
+   - Destination Folder: /Shared Documents/급여조견표/01_원본/처리완료
+   - If another file is already there: Copy with a new name (not Replace)
+3. Click [Save] and tell me whether there were errors.`},
+
+ { n:'10', title:'Teams 완료 알림(선택)', who:'ai', time:'5분',
+   why:'처리가 끝나면 팀 채널에 알림을 남겨, 사용자가 화면을 계속 보고 있지 않아도 됩니다. 메시지에는 파일 이름만 넣고 금액은 넣지 않습니다.',
+   todo:['흐름에 Microsoft Teams "채팅 또는 채널에서 메시지 게시" 동작 추가(성공·실패 각각)'],
+   check:['시험 업로드 후 "일반" 채널에 알림 표시'],
+   warn:'',
+   ko:`Power Automate 흐름 '급여테이블 자동연동 v2'에 Teams 알림을 추가해 주세요.
+
+1. 흐름을 [편집]으로 엽니다.
+2. '연동결과 저장' 단계 아래에 [+ 새 단계] → Microsoft Teams '채팅 또는 채널에서 메시지 게시'
+   - 게시자: 흐름 봇 / 게시 위치: 채널 / 팀: 급여조견표 관리 / 채널: 일반
+   - 메시지: [급여테이블 처리 완료] <동적 콘텐츠 '파일 이름(확장명 포함)'> — 급여관리 시스템에서 확인하세요.
+3. '실패 기록' 단계 아래에도 같은 동작을 추가하고 메시지만 바꿉니다.
+   - 메시지: [급여테이블 처리 실패] <동적 콘텐츠 '파일 이름(확장명 포함)'> — 원본 파일을 확인한 뒤 다시 올려 주세요.
+4. 메시지에 금액이나 다른 동적 콘텐츠는 넣지 마세요.
+5. [저장] 후 오류 여부를 알려 주세요.`,
+   en:`Add Teams notifications to the Power Automate flow '급여테이블 자동연동 v2'.
+
+1. Open the flow in [Edit].
+2. Under the '연동결과 저장' step, click [+ New step] > Microsoft Teams 'Post message in a chat or channel'
+   - Post as: Flow bot / Post in: Channel / Team: 급여조견표 관리 / Channel: General
+   - Message: [급여테이블 처리 완료] <dynamic content 'File name with extension'> — 급여관리 시스템에서 확인하세요.
+3. Add the same action under the '실패 기록' step, changing only the message.
+   - Message: [급여테이블 처리 실패] <dynamic content 'File name with extension'> — 원본 파일을 확인한 뒤 다시 올려 주세요.
+4. Do not put amounts or any other dynamic content in the messages.
+5. Click [Save] and tell me whether there were errors.`},
+
+ { n:'11', title:'흐름 공동 소유자 추가', who:'me', time:'3분',
+   why:'흐름은 만든 사람 계정으로 돌아갑니다. 퇴사·휴가에 대비해 공동 소유자를 둡니다(체크리스트 M5). 사람에게 권한을 주는 일이므로 본인이 직접 합니다.',
+   todo:['Power Automate → 내 흐름 → 흐름 선택 → [공유] → 공동 소유자 입력'],
+   check:['흐름 세부 정보의 "소유자"에 2명 표시'],
+   warn:'공동 소유자는 흐름의 연결(본인 계정)을 함께 쓰게 됩니다. 신뢰할 수 있는 담당자만 지정하십시오.',
+   ko:`Power Automate 흐름 '급여테이블 자동연동 v2'의 소유자 정보만 확인해 주세요. 공유나 사람 추가는 하지 마세요.
+
+1. https://make.powerautomate.com → [내 흐름] → '급여테이블 자동연동 v2'의 세부 정보 화면을 엽니다.
+2. [소유자] 항목에 표시된 이름과, [연결] 항목에 표시된 연결(SharePoint, Excel Online, Teams)과 각 연결의 계정을 알려 주세요.`,
+   en:`Check only the owner information of the Power Automate flow '급여테이블 자동연동 v2'. Do not share it or add anyone.
+
+1. Open https://make.powerautomate.com > [My flows] > the details page of '급여테이블 자동연동 v2'.
+2. Tell me the names listed under [Owners], and the connections listed under [Connections] (SharePoint, Excel Online, Teams) with the account used by each.`},
+
+ { n:'12', title:'급여관리 HTML(v2)에 폴더 연결', who:'me', time:'2분',
+   why:'v2 HTML을 처음 한 번만 PC의 동기화 폴더와 연결하면, 이후에는 화면에서 엑셀을 올리면 01_원본에 저장되고 02_연동데이터의 결과를 자동으로 불러옵니다. 브라우저 보안 규칙상 이 허용은 사람이 직접 눌러야 합니다.',
+   todo:['v2 HTML 열기 → [공유 폴더 연결] 클릭','파일 탐색 창에서 OneDrive - 회사명 › 급여조견표 선택 → [폴더 선택] → [파일 보기 허용] / [변경 내용 저장 허용]'],
+   check:['화면에 "공유 폴더 연결됨: 급여조견표" 표시','가상 파일을 화면에서 올리면 5분 안에 조견표가 열림'],
+   warn:'v2 HTML은 체크리스트 결정을 반영해 따로 만들어 드립니다. 그 전까지는 이 단계를 건너뛰셔도 됩니다.',
+   ko:'(이 단계는 브라우저 보안 허용 창을 사람이 직접 눌러야 하므로 프롬프트가 없습니다.)',
+   en:'(No prompt for this step: the browser security permission must be granted by a person.)'},
+
+ { n:'13', title:'채용시장 임금 조사(Copilot, 선택)', who:'ai', time:'10분',
+   why:'고용24 API를 연결하기 전까지 시장 비교에 쓸 표본을 모읍니다. 회사 자료는 넣지 않고 공개된 채용공고만 검색합니다. 결과는 v2 설정 화면의 "채용시장 임금 표본"에 입력합니다.',
+   todo:['M365 Copilot 채팅(웹 검색 켜짐)에 아래 프롬프트 입력 — Claude in Chrome이 대신 입력해도 됨','결과 표에서 출처 링크가 있는 행만 사용'],
+   check:['지역·상담유형별 5건 이상, 출처 URL·게시일 포함'],
+   warn:'Copilot에 <b>회사 급여 금액, 센터명, 고객사명을 입력하지 마십시오.</b> 아래 프롬프트는 공개 정보 검색만 요청합니다.',
+   ko:`(Claude in Chrome에게) M365 Copilot 채팅을 새 탭에서 열고(https://m365.cloud.microsoft/chat), 웹 검색이 켜져 있는지 확인한 뒤 아래 따옴표 안 문장을 그대로 입력하고 답변 표를 저에게 옮겨 주세요. 다른 내용은 입력하지 마세요.
+
+"최근 3개월 안에 게시된 공개 채용공고에서 '콜센터 상담사(인바운드)' 월 급여를 조사해 줘. 지역은 서울, 경기, 부산, 대구, 광주 각각 5건 이상. 표 열: 지역 | 직무(인바운드/아웃바운드/채팅) | 근무형태(주5일·주4일·단시간) | 월 급여(원, 세전) | 시급 환산(월 209시간 기준) | 게시일 | 출처 URL. 급여가 '면접 후 결정'인 공고는 빼고, 출처 URL이 없는 행은 만들지 마."`,
+   en:`(To Claude in Chrome) Open M365 Copilot Chat in a new tab (https://m365.cloud.microsoft/chat), confirm that web search is on, type the quoted text below exactly as written, and copy the answer table back to me. Do not type anything else.
+
+"From public job postings published in the last 3 months, research the monthly pay for 'call center agent (inbound)'. At least 5 postings each for Seoul, Gyeonggi, Busan, Daegu and Gwangju. Table columns: Region | Role (inbound/outbound/chat) | Work pattern (5-day, 4-day, part-time) | Monthly pay (KRW, before tax) | Hourly equivalent (based on 209 hours/month) | Posting date | Source URL. Exclude postings where pay is 'negotiable after interview', and do not include any row without a source URL."`},
+
+ { n:'14', title:'Copilot Studio는 지금 쓰지 않음', who:'me', time:'—',
+   why:'필요한 자동화(감지 → 추출 → 저장 → 알림)는 Power Automate 표준 커넥터만으로 충분합니다. Copilot Studio는 별도 라이선스나 관리자 승인이 필요한 경우가 많아 IT 요청 없이 진행한다는 원칙과 맞지 않습니다. 고용24 API 단계에서 다시 검토합니다.',
+   todo:['사용 가능 여부만 확인(오른쪽 프롬프트)'],
+   check:['"만들기"가 되는지, 라이선스 안내가 뜨는지 기록'],
+   warn:'',
+   ko:`https://copilotstudio.microsoft.com 을 새 탭에서 열어, 에이전트를 만들 수 있는 상태인지 확인만 해 주세요. 아무것도 만들거나 체험판을 시작하지 마세요.
+화면에 보이는 안내 문구(예: 라이선스 필요, 체험판 시작, 환경 선택)를 그대로 알려 주세요.`,
+   en:`Open https://copilotstudio.microsoft.com in a new tab and only check whether I can create an agent. Do not create anything or start a trial.
+Tell me the exact notices shown on screen (for example: license required, start trial, choose environment).`},
+
+ { n:'15', title:'월 1회 운영 점검', who:'ai', time:'5분',
+   why:'연결 만료, 실패 누적, 권한 변경을 일찍 발견하기 위한 점검입니다.',
+   todo:['아래 프롬프트로 점검 → 결과를 운영 기록으로 보관'],
+   check:['실패 0건, 연결 정상, 외부 공유 없음'],
+   warn:'연결(SharePoint·Excel)이 "다시 인증 필요"로 바뀌면 흐름이 멈춥니다. 본인이 직접 다시 로그인하십시오.',
+   ko:`급여조견표 자동화 월간 점검을 해 주세요. 아무것도 바꾸지 말고 확인만 합니다.
+
+1. Power Automate '급여테이블 자동연동 v2'의 최근 28일 실행 기록에서 성공/실패 건수와, 실패가 있으면 각 실패의 날짜·단계·오류 메시지 첫 줄을 알려 주세요.
+2. https://make.powerautomate.com → [데이터] → [연결]에서 SharePoint, Excel Online (Business), Microsoft Teams 연결 상태가 '연결됨'인지 알려 주세요.
+3. SharePoint '급여조견표 관리' 사이트의 [사이트 권한]에서 소유자·구성원 수가 지난번과 같은지, 외부 사용자나 '모든 사람' 링크가 있는지 알려 주세요.
+4. 02_연동데이터 폴더에 '.error.json'으로 끝나는 파일 이름 목록을 알려 주세요(열지 마세요).
+5. 결과를 표로 정리해 주세요: 점검 항목 | 결과 | 조치 필요 여부`,
+   en:`Run the monthly check for the payroll table automation. Do not change anything. Only check.
+
+1. In the last 28 days of run history for the Power Automate flow '급여테이블 자동연동 v2', tell me the number of successful and failed runs. For each failure, give the date, the step and the first line of the error message.
+2. In https://make.powerautomate.com > [Data] > [Connections], tell me whether the SharePoint, Excel Online (Business) and Microsoft Teams connections show 'Connected'.
+3. In [Site permissions] of the SharePoint site '급여조견표 관리', tell me whether the numbers of owners and members are unchanged, and whether any external users or 'Anyone' links exist.
+4. List the file names ending in '.error.json' in the 02_연동데이터 folder (do not open them).
+5. Summarize in a table: Check item | Result | Action needed (yes/no)`}
+];
+
+/* ============================================================
+   화면 그리기
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY = 'paytable-v2-decisions';
+let ans = {};
+try{ ans = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ ans = {}; }
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(ans)); }catch(e){} };
+const ITEMS = SECTIONS.flatMap(s => s.items.filter(i => i.id).map(i => Object.assign(i, { sec:s.code })));
+const isDone = it => { const a = ans[it.id]; if(!a) return false; const v = a.v;
+  return Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim()); };
+
+function optsHtml(it){
+  if(it.type === 'text'){
+    return `<input type="text" class="memo textans" id="t_${it.id}" data-id="${it.id}" data-k="v" placeholder="예: ${esc(it.r)}" value="${esc((ans[it.id]||{}).v||'')}">`;
+  }
+  const list = it.type === 'rule' ? RULE : it.o;
+  const multi = it.type === 'multi';
+  const cur = (ans[it.id]||{}).v;
+  const rec = it.r;
+  return `<div class="opts${it.type==='rule'?' rule':''}" role="${multi?'group':'radiogroup'}" aria-label="${esc(it.t)}">` + list.map((o,k) => {
+    const on = multi ? (cur||[]).includes(o) : cur === o;
+    const isRec = multi ? (rec||[]).includes(o) : rec === o;
+    return `<label class="${isRec?'rec':''}"><input type="${multi?'checkbox':'radio'}" name="o_${it.id}" id="o_${it.id}_${k}" value="${esc(o)}" data-id="${it.id}"${on?' checked':''}>${esc(o)}</label>`;
+  }).join('') + `</div>`;
+}
+function renderChecklist(){
+  $('checklist').innerHTML = SECTIONS.map(s => `
+    <section class="sec" id="sec_${s.code}">
+      <div class="sec-h"><span class="code">${s.code}</span><h2>${esc(s.title)}</h2><span class="cnt" id="cnt_${s.code}"></span>
+        <button type="button" class="btn sm" data-fill="${s.code}">이 단계 권장값 채우기</button><p>${esc(s.desc)}</p></div>
+      ${s.items.map(it => it.sub ? `<div class="sub">${esc(it.sub)}</div>` : `
+        <div class="item" id="it_${it.id}">
+          <div class="id">${it.id}</div>
+          <div>
+            <div class="q">${esc(it.t)}</div>
+            ${it.d ? `<div class="why">${it.d}</div>` : ''}
+            ${optsHtml(it)}
+            ${it.type === 'text' ? '' : `<input type="text" class="memo" id="m_${it.id}" data-id="${it.id}" data-k="memo" placeholder="메모 (선택)" value="${esc((ans[it.id]||{}).memo||'')}">`}
+          </div>
+        </div>`).join('')}
+    </section>`).join('');
+  refresh();
+}
+function refresh(){
+  let d = 0;
+  ITEMS.forEach(it => { const ok = isDone(it); if(ok) d++; const el = $('it_' + it.id); if(el) el.classList.toggle('done', ok); });
+  SECTIONS.forEach(s => { const its = ITEMS.filter(i => i.sec === s.code);
+    $('cnt_' + s.code).textContent = `${its.filter(isDone).length} / ${its.length}`; });
+  $('progTxt').textContent = `${d} / ${ITEMS.length}`;
+  $('progFill').style.width = (d / ITEMS.length * 100) + '%';
+}
+function setFromInput(inp){
+  const id = inp.dataset.id; ans[id] = ans[id] || {};
+  if(inp.dataset.k){ ans[id][inp.dataset.k] = inp.value; }
+  else if(inp.type === 'checkbox'){
+    ans[id].v = [...document.querySelectorAll(`input[name="o_${id}"]:checked`)].map(x => x.value);
+  } else { ans[id].v = inp.value; }
+  save(); refresh();
+}
+function fillRec(code){
+  ITEMS.filter(i => !code || i.sec === code).forEach(it => {
+    if(isDone(it)) return;
+    ans[it.id] = Object.assign(ans[it.id] || {}, { v: Array.isArray(it.r) ? it.r.slice() : it.r, rec:true });
+  });
+  save(); renderChecklist();
+}
+function decisionsText(){
+  const lines = ['[급여관리 시스템 v2 결정 내용]', `작성: ${new Date().toLocaleString('ko-KR')}`, ''];
+  SECTIONS.forEach(s => {
+    lines.push(`■ ${s.code}. ${s.title}`);
+    s.items.filter(i => i.id).forEach(it => {
+      const a = ans[it.id] || {}; const v = Array.isArray(a.v) ? a.v.join(', ') : (a.v || '(미결정)');
+      lines.push(`- ${it.id} ${it.t}: ${v}${a.memo ? ` / 메모: ${a.memo}` : ''}`);
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+async function copyText(text, msgEl, fallbackEl){
+  try{ await navigator.clipboard.writeText(text); msgEl.textContent = '복사했습니다'; }
+  catch(e){
+    if(fallbackEl){ const r = document.createRange(); r.selectNodeContents(fallbackEl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    msgEl.textContent = '자동 복사가 막혀 있습니다. 선택된 내용을 Ctrl+C로 복사하세요';
+  }
+  setTimeout(() => { msgEl.textContent = ''; }, 3500);
+}
+
+/* 체크리스트 이벤트 */
+$('checklist').addEventListener('change', e => { if(e.target.matches('input[data-id]')) setFromInput(e.target); });
+$('checklist').addEventListener('input', e => { if(e.target.matches('input[type=text][data-id]')) setFromInput(e.target); });
+$('checklist').addEventListener('click', e => { const b = e.target.closest('[data-fill]'); if(b) fillRec(b.dataset.fill); });
+$('fillAll').addEventListener('click', () => fillRec(null));
+$('hideDone').addEventListener('change', e => $('checklist').classList.toggle('hide-done', e.target.checked));
+let resetArmed = false;
+$('resetBtn').addEventListener('click', () => {
+  if(!resetArmed){ resetArmed = true; $('resetBtn').textContent = '한 번 더 누르면 모두 지웁니다'; setTimeout(() => { resetArmed = false; $('resetBtn').textContent = '초기화'; }, 4000); return; }
+  resetArmed = false; $('resetBtn').textContent = '초기화'; ans = {}; save(); renderChecklist();
+});
+$('copyDecisions').addEventListener('click', () => {
+  const txt = decisionsText();
+  let pre = $('decisionsPre');
+  if(!pre){ pre = document.createElement('pre'); pre.id = 'decisionsPre'; pre.className = 'prompt'; pre.hidden = true; $('checklist').after(pre); }
+  pre.textContent = txt;
+  navigator.clipboard ? copyText(txt, $('copyMsg'), null).then(() => { if($('copyMsg').textContent.startsWith('자동')){ pre.hidden = false; copyText(txt, $('copyMsg'), pre); } })
+                      : (pre.hidden = false, copyText(txt, $('copyMsg'), pre));
+});
+
+/* 가이드 */
+function renderGuide(){
+  $('flow').innerHTML = STEPS.map(s => `<li><a href="#step${s.n}"><b>${s.n}</b>${esc(s.title.replace(/\s*\(.*\)$/, ''))}</a></li>`).join('');
+  $('guide').innerHTML = STEPS.map(s => `
+    <article class="step" id="step${s.n}">
+      <div class="ex">
+        <div class="hd"><span class="no">${s.n}단계</span><h2>${esc(s.title)}</h2></div>
+        <div class="hd"><span class="chip ${s.who}">${s.who === 'ai' ? 'Claude+Chrome' : '본인'}</span><span class="meta">소요 ${s.time}</span></div>
+        <p>${esc(s.why)}</p>
+        <h3>할 일</h3><ol>${s.todo.map(t => `<li>${esc(t)}</li>`).join('')}</ol>
+        <h3>완료 확인</h3><ul>${s.check.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        ${s.warn ? `<p class="warn">${s.warn}</p>` : ''}
+      </div>
+      <div class="pr">
+        <div class="pr-h"><span class="lbl">프롬프트</span>
+          <div class="lang" role="group" aria-label="${s.n}단계 프롬프트 언어"><button type="button" data-lang="ko" aria-pressed="true">한글</button><button type="button" data-lang="en" aria-pressed="false">English</button></div>
+          <button type="button" class="btn sm pri" data-copy="${s.n}">복사</button><span class="copied" role="status"></span></div>
+        <pre class="prompt" id="pr_${s.n}" data-lang="ko">${esc(s.ko)}</pre>
+      </div>
+    </article>`).join('');
+}
+function setLang(stepEl, lang){
+  const s = STEPS.find(x => 'step' + x.n === stepEl.id);
+  const pre = stepEl.querySelector('pre.prompt');
+  pre.textContent = s[lang]; pre.dataset.lang = lang;
+  stepEl.querySelectorAll('[data-lang]').forEach(b => b.matches('button') && b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+}
+$('guide').addEventListener('click', e => {
+  const lb = e.target.closest('button[data-lang]');
+  if(lb){ setLang(lb.closest('.step'), lb.dataset.lang); return; }
+  const cb = e.target.closest('[data-copy]');
+  if(cb){ const pre = $('pr_' + cb.dataset.copy); copyText(pre.textContent, cb.nextElementSibling, pre); }
+});
+document.querySelectorAll('[data-all]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-all]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  document.querySelectorAll('#guide .step').forEach(st => setLang(st, b.dataset.all));
+}));
+
+/* 탭 */
+function showView(v){
+  const g = v === 'm365';
+  $('viewChecklist').hidden = g; $('viewGuide').hidden = !g;
+  $('tabBtnCheck').setAttribute('aria-selected', String(!g)); $('tabBtnGuide').setAttribute('aria-selected', String(g));
+  try{ localStorage.setItem(KEY + '-view', v); }catch(e){}
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { showView(b.dataset.view); scrollTo(0, 0); }));
+
+renderChecklist(); renderGuide();
+let first = (location.hash || '').slice(1);
+if(/^step\d+$/.test(first)){ showView('m365'); setTimeout(() => { const el = $(first); el && el.scrollIntoView(); }, 0); }
+else if(first === 'm365' || first === 'checklist') showView(first);
+else { let v = 'checklist'; try{ v = localStorage.getItem(KEY + '-view') || v; }catch(e){} showView(v); }
+})();
+</script>
