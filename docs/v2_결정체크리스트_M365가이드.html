@@ -129,8 +129,8 @@ code{font-family:var(--f-mono); font-size:.92em; background:var(--code-bg); padd
 <main class="wrap">
   <!-- ===================== ① 결정 체크리스트 ===================== -->
   <div id="viewChecklist">
-    <h1>먼저 정해 주셔야 할 사항</h1>
-    <p class="lead">조견표 업로드 중 질문부터 검증, 저장, 통계, 보고서, M365 연계까지 단계별 결정 항목입니다. 항목마다 하나를 고르고, 필요하면 메모를 남겨 주십시오. 모두 정한 뒤 <b>[결정 내용 복사]</b>를 눌러 Claude에게 붙여넣으시면 v2에 그대로 반영합니다.</p>
+    <h1>먼저 정해 주셔야 할 사항 <span class="chip me">관리자 1회</span></h1>
+    <p class="lead">조견표 업로드 중 질문부터 검증, 저장, 통계, 보고서, M365 연계까지 단계별 결정 항목입니다. 항목마다 하나를 고르고, 필요하면 메모를 남겨 주십시오. 모두 정한 뒤 <b>[결정 내용 복사]</b>를 눌러 Claude에게 붙여넣으시면 v2에 그대로 반영합니다. <b>일반 사용자는 이 항목들을 볼 일이 없습니다.</b> 결정값은 공유 폴더의 설정 파일로 들어가 모든 사용자에게 자동 적용됩니다.</p>
     <div class="bar">
       <div class="prog"><div class="t"><span>전체 진행</span><span id="progTxt">0 / 0</span></div><div class="track"><div class="fill" id="progFill"></div></div></div>
       <label class="toggle"><input type="checkbox" id="hideDone"> 결정한 항목 숨기기</label>
@@ -146,8 +146,8 @@ code{font-family:var(--f-mono); font-size:.92em; background:var(--code-bg); padd
 
   <!-- ===================== ② M365 설정 가이드 ===================== -->
   <div id="viewGuide" hidden>
-    <h1>M365 설정 순서</h1>
-    <p class="lead">왼쪽은 무엇을 왜 하는지 설명, 오른쪽은 Claude in Chrome에 그대로 붙여넣을 프롬프트입니다. <b>0단계 공통 안전 규칙</b>을 먼저 붙여넣은 뒤 1단계부터 차례로 진행하십시오. <span class="chip ai">Claude+Chrome</span> 단계는 맡기시고, <span class="chip me">본인</span> 단계는 직접 클릭하셔야 합니다(로그인·파일 업로드·PC 앱).</p>
+    <h1>M365 설정 순서 <span class="chip me">관리자 1회</span></h1>
+    <p class="lead">이 설정은 관리자가 처음 한 번만 합니다. 일반 사용자는 팀에 추가된 뒤 급여관리 시스템을 처음 열 때 안내 화면에서 2~3번 클릭하면 끝납니다. 왼쪽은 무엇을 왜 하는지 설명, 오른쪽은 Claude in Chrome에 그대로 붙여넣을 프롬프트입니다. <b>0단계 공통 안전 규칙</b>을 먼저 붙여넣은 뒤 1단계부터 차례로 진행하십시오. <span class="chip ai">Claude+Chrome</span> 단계는 맡기시고, <span class="chip me">본인</span> 단계는 직접 클릭하셔야 합니다(로그인·파일 업로드·PC 앱).</p>
     <ul class="flow" id="flow"></ul>
     <div class="bar">
       <span class="note">필요한 파일: <code>samples/테스트용_가상급여테이블.xlsx</code> (가상 데이터), <code>office-scripts/급여테이블_자동연동_v2.ts</code> (5단계 프롬프트에 코드 포함)</span>
