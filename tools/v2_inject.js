@@ -269,6 +269,10 @@
     if(/\.json$/i.test(file.name)) return origHandleFile(file);
     const plain = (await isZip(file)) || (await readsLocally(file));
     beforeData = plain ? await beforeFromXlsx(file) : null;
+    if(uploadMode() === 'paste'){
+      if(plain){ qPanel.hidden = true; return origHandleFile(file); }
+      return showPasteGuide(file);
+    }
     let ready = false;
     if(shareDir){
       try{ ready = await perm(shareDir, !plain); }catch(e){ ready = false; }
@@ -331,6 +335,54 @@
     });
   }
 
+  /* ---------- 보안 파일 처리 방식: 붙여넣기(기본) / 자동(M365) ----------
+     붙여넣기: 파일을 PC 밖으로 보내지 않음(회사 DLP 반출 차단 대상 아님). PC Excel에서 스크립트 → 복사 → 여기서 Ctrl+V
+     자동: 01_원본에 저장 → Power Automate. 회사 보안 예외(OneDrive 동기화 반출 예외) 승인 후에만 사용 */
+  const uploadMode = () => SETTINGS.uploadMode === 'auto' ? 'auto' : 'paste';
+  const PASTE_SCRIPT = '급여테이블_연동_v2';
+  function showPasteGuide(file){
+    showParseError(new Error(''));
+    fileMeta.textContent = `보안 파일 · ${file.name} · 붙여넣기로 읽습니다`;
+    pending = null; requestId = '';
+    answers = answers || {};
+    qPanel.hidden = false;
+    $('v2JobFile').textContent = file.name;
+    $('v2JobSub').textContent = '보안(DRM) 파일 · 회사 보안 정책에 따라 PC 밖으로 보내지 않고 읽습니다';
+    $('v2Timer').textContent = '';
+    const fill = $('v2Fill'); fill.style.transition = 'none'; fill.style.width = '0';
+    $('v2Prefill').hidden = true;
+    kvGet('lastAnswers').then(a => { answers = Object.assign({}, a || {}, answers); if(!answers.period){ const d = new Date(); answers.period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; } renderQuestions(); });
+    qPanel.querySelector('.v2-qh').hidden = false;
+    setJob('paste', '아래 3단계로 읽습니다. 30초면 끝납니다.',
+      `<ol class="v2-steps">
+        <li>이 파일을 <b>PC의 Excel</b>에서 엽니다 (더블클릭).</li>
+        <li><b>[자동화]</b> 탭 → <b>${PASTE_SCRIPT}</b> 실행 → 선택된 칸을 <b>Ctrl+C</b></li>
+        <li>이 화면으로 돌아와 <b>Ctrl+V</b> (아무 곳에서나, 또는 아래 칸)</li>
+      </ol>
+      <textarea id="v2PasteInput" class="v2-paste" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
+      <p class="hint">다 읽은 뒤 Excel에서 같은 스크립트를 한 번 더 실행하면 임시 시트가 지워집니다. 원본은 저장하지 않고 닫아 주세요. ${helpBtn('paste')}</p>`);
+    const inp = $('v2PasteInput');
+    inp.addEventListener('paste', e => { const t = e.clipboardData && e.clipboardData.getData('text'); if(t){ e.preventDefault(); inp.value = ''; handlePastedText(t); } });
+    inp.addEventListener('change', () => { handlePastedText(inp.value); inp.value = ''; });
+  }
+  /* 화면 어디서나 Ctrl+V: 입력칸이 아닌 곳에 연동 데이터를 붙여넣으면 바로 읽음 */
+  document.addEventListener('paste', e => {
+    const t = e.target;
+    if(t && (t.closest('input, textarea, [contenteditable="true"]'))) return;
+    const text = e.clipboardData && e.clipboardData.getData('text');
+    if(text && text.indexOf('PAYTABLE-V1') >= 0){ e.preventDefault(); switchAppTab('create'); handlePastedText(text); }
+  });
+  function pastedPayload(text){
+    try{
+      const lines = String(text).split(/\r?\n/).map(x => x.trim().replace(/^"|"$/g, '')).filter(Boolean);
+      const i0 = lines.indexOf('PAYTABLE-V1'), i1 = lines.indexOf('END', i0 + 1);
+      if(i0 < 0 || i1 < 0) return null;
+      const bin = atob(lines.slice(i0 + 1, i1).map(x => x.replace(/^p/, '')).join(''));
+      const bytes = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    }catch(e){ return null; }
+  }
+
   /* 대기 중 질문 */
   const QUESTIONS = () => [
     { k:'centerType', l:'센터유형', o: SETTINGS.centerTypes },
@@ -364,10 +416,14 @@
   function setJob(state, msg, actions){
     const st = $('v2State');
     st.dataset.state = state;
-    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요' }[state];
+    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요', paste:'붙여넣기' }[state];
     $('v2JobMsg').textContent = msg;
     $('v2JobAct').innerHTML = actions || '';
-    if(state !== 'wait' && state !== 'slow'){ clearInterval(tickTimer); $('v2Fill').style.width = state === 'need' ? '0' : '100%'; }
+    if(state !== 'wait' && state !== 'slow'){ clearInterval(tickTimer); $('v2Fill').style.width = state === 'need' || state === 'paste' ? '0' : '100%'; }
+    const act = $('v2JobAct'), qh = qPanel.querySelector('.v2-qh');
+    act.classList.toggle('v2-col', state === 'paste');
+    if(state === 'paste') qPanel.insertBefore(act, qh); else qPanel.appendChild(act);   // 붙여넣기 단계는 질문보다 위에
+    qh.firstChild.textContent = state === 'paste' ? '아래 내용도 골라 주세요 ' : '기다리는 동안 아래 내용을 골라 주세요 ';
     renderNavBadge(state);
   }
   function renderNavBadge(state){
@@ -467,6 +523,12 @@
     <div class="panel v2-admin" id="v2Admin">
       <div class="ph"><h2>관리자 바로가기</h2><div class="btn-row"><button type="button" class="btn-primary btn-sm" id="v2HealthBtn2">상태 점검</button></div></div>
       <div class="v2-links" id="v2Links"></div>
+      <div class="v2-mode">
+        <span class="flabel">보안 파일 처리 방식 ${helpBtn('mode')}</span>
+        <label><input type="radio" name="v2Mode" value="paste" id="v2ModePaste"> <b>붙여넣기</b> · 원본 파일을 PC 밖으로 보내지 않음 (회사 보안 예외 승인 전 기본)</label>
+        <label><input type="radio" name="v2Mode" value="auto" id="v2ModeAuto"> <b>자동(M365)</b> · 01_원본에 올려 자동 처리 (OneDrive 동기화 반출 예외 승인 후)</label>
+        <span class="hint" id="v2ModeMsg"></span>
+      </div>
       <div class="v2-admins">
         <label>관리자 이니셜 <input type="text" id="v2AdminIni" placeholder="예: HGD, ABC"></label>
         <button type="button" class="btn-ghost btn-sm" id="v2AdminSave">저장</button>
@@ -489,7 +551,22 @@
     $('v2Links').innerHTML = L.length ? L.map(([t, u, d]) => `<a class="v2-linkcard" href="${h(u)}" target="_blank" rel="noopener"><b>${h(t)} ↗</b><span>${h(d)}</span></a>`).join('')
       : '<p class="hint">바로가기 주소가 설정되지 않았습니다. 관리자에게 주소가 들어간 시스템 파일을 받아 주세요.</p>';
     $('v2AdminIni').value = (SETTINGS.admins || []).join(', ');
+    $(uploadMode() === 'auto' ? 'v2ModeAuto' : 'v2ModePaste').checked = true;
+    renderDropHint();
   }
+  function renderDropHint(){
+    const hint = document.querySelector('#dropzone .hint'); if(!hint) return;
+    hint.innerHTML = uploadMode() === 'auto'
+      ? '시트 이름이 <strong>급여테이블(변경후)</strong>인 시트를 읽습니다 · 올린 파일은 공유 폴더(01_원본)에 요청번호와 함께 보관되고, 보안 파일은 회사 M365가 자동으로 읽습니다'
+      : '시트 이름이 <strong>급여테이블(변경후)</strong>인 시트를 읽습니다 · 원본 파일은 PC 밖으로 보내지 않으며, 보안 파일은 붙여넣기 안내가 나옵니다';
+  }
+  document.querySelectorAll('input[name="v2Mode"]').forEach(r => r.addEventListener('change', async () => {
+    SETTINGS.uploadMode = r.value; await saveSettings();
+    let shared = false;
+    if(shareDir && await perm(shareDir, false)){ await publishSettings(); shared = true; }
+    renderDropHint();
+    $('v2ModeMsg').textContent = (r.value === 'auto' ? '자동(M365)으로 바꿨습니다. 보안 예외가 승인된 경우에만 사용하세요.' : '붙여넣기로 바꿨습니다. 원본 파일을 PC 밖으로 보내지 않습니다.') + (shared ? ' 모든 사용자에게 적용했습니다.' : '');
+  }));
   $('v2AdminSave').addEventListener('click', async () => {
     const list = $('v2AdminIni').value.toUpperCase().split(/[,\s]+/).filter(x => /^[A-Z]{2,4}$/.test(x));
     if(list.length && profile && !list.includes(profile.ini)) list.unshift(profile.ini);   // 자기 자신은 빠지지 않게
@@ -521,6 +598,7 @@
   async function runHealth(){
     const rows = [];
     const add = (state, label, detail, action) => rows.push({ state, label, detail, action: action || '' });
+    add('ok', '보안 파일 처리 방식', uploadMode() === 'auto' ? '자동(M365) · 01_원본에 올려 처리 (보안 예외 승인 필요)' : '붙여넣기 · 원본 파일을 PC 밖으로 보내지 않음');
     add(typeof window.showDirectoryPicker === 'function' ? 'ok' : 'bad', '브라우저', typeof window.showDirectoryPicker === 'function' ? '폴더 연결 지원(Chrome·Edge)' : '이 브라우저는 폴더 연결을 지원하지 않습니다. Chrome이나 Edge로 열어 주세요.');
     if(!shareDir){
       add('bad', '공유 폴더 연결', '연결되어 있지 않습니다.', '<button type="button" class="btn-primary btn-sm" data-h="wizard">연결하기</button>');
@@ -750,7 +828,15 @@
     });
   };
   const origPasted = handlePastedText;
-  handlePastedText = function(text){ beforeData = null; return origPasted(text); };
+  handlePastedText = function(text){
+    const p = pastedPayload(text);
+    beforeData = p && Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
+    const r = origPasted(text);
+    if(p && $('v2State').dataset.state === 'paste'){
+      setJob('done', '붙여넣기로 읽었습니다. 아래에서 검사 결과와 조견표를 확인하세요. Excel에서 스크립트를 한 번 더 실행해 임시 시트를 지워 주세요.');
+    }
+    return r;
+  };
   function buildCompare(parsed){
     compareRows = [];
     if(!beforeData) return;
@@ -835,6 +921,8 @@
     policy: '보고서가 제안하는 인상 목표를 어디에 맞출지 고릅니다. 유형·시장 중 높은 값이 가장 보수적인 기준입니다.',
     burden: '4대보험 사업주 부담분과 퇴직급여 충당분을 합한 비율입니다. 연간 비용 계산에 쓰입니다.',
     minwage: '해당 연도 최저시급입니다. 최저임금 미달 검사와 여유율 계산에 쓰입니다.',
+    paste: '보안 파일은 회사 보안 정책상 PC 밖으로 보내면 차단됩니다. PC의 Excel이 값을 읽어 주고, 화면에는 숫자 데이터만 붙여넣으므로 파일이 밖으로 나가지 않습니다.',
+    mode: '자동(M365)은 보안 파일을 OneDrive로 올리므로 회사 DLP의 반출 예외 승인이 필요합니다. 승인 전에는 붙여넣기를 쓰세요. 바꾸면 모든 사용자에게 적용됩니다.',
     history: '요청번호별 자동 처리 상태입니다. 처리 중은 15분까지 정상이며, 넘으면 지연으로 표시합니다.'
   };
   const helpPop = document.createElement('div');
@@ -880,5 +968,5 @@
     }catch(e){ shareDir = null; renderConn(); openWizard(3); }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, get pending(){ return pending; }, get shareDir(){ return shareDir; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, get pending(){ return pending; }, get shareDir(){ return shareDir; } };
 })();

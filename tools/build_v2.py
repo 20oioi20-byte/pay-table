@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.1.0'
+APP_VERSION = '2.2.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -97,6 +97,12 @@ V2_CSS = """
   .v2-help{ display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; border:1px solid #c9d1dc; background:#fff; color:var(--muted); font:inherit; font-size:11px; font-weight:800; line-height:1; cursor:pointer; vertical-align:1px; padding:0; margin-left:2px; }
   .v2-help:hover, .v2-help:focus-visible{ border-color:var(--pri); color:var(--pri); }
   .v2-pop{ position:fixed; z-index:70; background:#0f1b30; color:#fff; font-size:12.5px; line-height:1.55; padding:9px 12px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+  .v2-state[data-state="paste"]{ background:var(--pri-soft); color:var(--pri); }
+  .v2-job .v2-act.v2-col{ flex-direction:column; align-items:stretch; gap:8px; }
+  .v2-steps{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.8; }
+  .v2-paste{ width:100%; min-height:70px; padding:10px 12px; border:2px dashed var(--pri); border-radius:10px; font:inherit; font-size:13px; background:var(--pri-soft); resize:vertical; }
+  .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
+  .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   @media (prefers-reduced-motion:reduce){ .v2-fill{ transition:none; } }
   @media (max-width:860px){ .v2-banner{ margin:12px 16px 0; } }
 """

@@ -78,6 +78,7 @@ const seedFolders = p => p.evaluate(async () => {
   ok(parsed.jobs === 7 && parsed.totals === 7, `직무 ${parsed.jobs}개, 월 합계 있는 직무 ${parsed.totals}개 (기대 7·7)`);
   ok(parsed.center === '가상시 민원상담콜센터', `센터명 인식: ${parsed.center}`);
 
+  await p.evaluate(() => { SETTINGS.uploadMode = 'auto'; });   // 2~5번은 자동(M365) 방식 시험
   console.log('2. 폴더 미연결 상태에서 보안 파일 올리기 → 오류 대신 연결 안내 → 연결 후 자동 이어서 처리');
   await seedFolders(p);
   await p.fill('#v2Name', '홍길동'); await p.fill('#v2Ini', 'hgd'); await p.click('#v2Next1');
@@ -156,6 +157,35 @@ const seedFolders = p => p.evaluate(async () => {
   await p.evaluate(() => { SETTINGS.admins = ['ZZZ']; window.__v2.applyRole(); });
   ok(await p.$eval('#v2Admin', e => e.hidden), '관리자가 아니면 관리자 바로가기 숨김');
   await p.evaluate(() => { SETTINGS.admins = []; window.__v2.applyRole(); });
+
+  console.log('7. 붙여넣기 방식(기본): 보안 파일을 PC 밖으로 보내지 않음');
+  await p.evaluate(() => { SETTINGS.uploadMode = 'paste'; });
+  await p.click('#tabBtnCreate');
+  const srcBefore = (await listDir(p, '01_원본')).length;
+  await put(p, '보안_붙여넣기.xlsx', OLE);
+  await p.waitForFunction(() => document.getElementById('v2State').textContent === '붙여넣기');
+  ok((await listDir(p, '01_원본')).length === srcBefore, '보안 파일을 01_원본(OneDrive)에 복사하지 않음');
+  ok(await p.isVisible('#v2PasteInput'), '붙여넣기 안내 3단계와 붙여넣기 칸 표시');
+  if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v2_paste.png') });
+  /* PC Excel의 붙여넣기 스크립트 v2 출력 흉내: 값 + 변경전 값 → Base64 → PAYTABLE-V1 … END */
+  const pasteText = await p.evaluate(b64 => {
+    const bin = atob(b64), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const wb = XLSX.read(u, { type:'array' });
+    const grid = n => XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:'', raw:true });
+    const json = JSON.stringify({ v:2, kind:'PAYTABLE', sheet:'급여테이블(변경후)', file:'보안_붙여넣기.xlsx', start:'A1', values: grid('급여테이블(변경후)'), before: grid('급여테이블(변경전)') });
+    const bytes = new TextEncoder().encode(json); let s = ''; bytes.forEach(b => { s += String.fromCharCode(b); });
+    const enc = btoa(s), rows = ['PAYTABLE-V1']; for(let i = 0; i < enc.length; i += 30000) rows.push('p' + enc.slice(i, i + 30000)); rows.push('END');
+    return rows.join('\r\n');
+  }, fs.readFileSync(FIXTURE).toString('base64'));
+  await p.evaluate(t => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles:true })); }, pasteText);
+  await p.waitForFunction(() => document.getElementById('fileMeta').textContent.includes('붙여넣기'));
+  ok(await p.textContent('#v2State') === '완료', '화면 아무 곳에서 Ctrl+V → 읽기 완료');
+  ok(await p.isVisible('#v2Compare'), '붙여넣기 데이터로도 변경전 대비 비교표 표시');
+  await put(p, 'plain_paste_mode.xlsx', fs.readFileSync(FIXTURE));
+  await p.waitForFunction(() => document.getElementById('fileMeta').textContent.includes('plain_paste_mode'));
+  ok((await listDir(p, '01_원본')).length === srcBefore, '일반 엑셀도 PC 밖으로 복사하지 않음');
+  await p.click('#tabBtnSettings');
+  ok(await p.isChecked('#v2ModePaste'), '기준정보 › 보안 파일 처리 방식: 붙여넣기 선택됨');
 
   console.log('6. 다시 열면 안내 없이 바로 연결');
   await p.reload(); await p.waitForTimeout(1500);
