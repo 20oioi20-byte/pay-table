@@ -139,7 +139,9 @@
     await importFromFolder().catch(console.error);
     await checkVersion();
     renderConn();
+    reconnect.hidden = true;
     if(pending) startPolling();
+    if(heldFile){ const f = heldFile; heldFile = null; qPanel.querySelector('.v2-qh').hidden = false; handleFile(f); }
   }
 
   /* ---------- 공유 설정 ---------- */
@@ -249,18 +251,37 @@
     return pre + String(max + 1).padStart(2, '0');
   }
 
-  /* ---------- 업로드: 보호 여부 판별 → 원본 폴더 저장 → (보호 파일) 자동 처리 대기 ---------- */
-  const isPlainXlsx = async file => { const b = new Uint8Array(await file.slice(0, 2).arrayBuffer()); return b[0] === 0x50 && b[1] === 0x4B; };
+  /* ---------- 업로드: 보호 여부 판별 → 원본 폴더 저장 → (보호 파일) 자동 처리 대기 ----------
+     · 일반 엑셀(zip 형식 'PK')은 바로 읽음
+     · 그 외 형식은 먼저 이 PC에서 읽어 보고(.xls 등), 읽히지 않으면 보안(DRM) 파일로 보고 M365 자동 처리로 넘김
+     · 공유 폴더가 연결되지 않았으면 오류 대신 연결 안내를 띄우고, 연결이 끝나면 같은 파일을 이어서 처리 */
+  const isZip = async file => { const b = new Uint8Array(await file.slice(0, 2).arrayBuffer()); return b[0] === 0x50 && b[1] === 0x4B; };
+  async function readsLocally(file){
+    try{ parsePaytable(XLSX.read(new Uint8Array(await file.arrayBuffer()), { type:'array' })); return true; }
+    catch(e){ return false; }
+  }
   const baseName = n => n.replace(/\.[^.]+$/, '');
+  let heldFile = null;
   const origHandleFile = handleFile;
   handleFile = async function(file){
-    if(/\.json$/i.test(file.name) || !shareDir) return origHandleFile(file);
-    if(!(await perm(shareDir, false))){ reconnect.hidden = false; return origHandleFile(file); }
-    const plain = await isPlainXlsx(file);
+    if(/\.json$/i.test(file.name)) return origHandleFile(file);
+    const plain = (await isZip(file)) || (await readsLocally(file));
+    let ready = false;
+    if(shareDir){
+      try{ ready = await perm(shareDir, !plain); }catch(e){ ready = false; }
+    }
+    if(!ready){
+      if(plain){ if(shareDir) reconnect.hidden = false; return origHandleFile(file); }
+      return holdForConnection(file);
+    }
+    reconnect.hidden = true;
     requestId = await nextRequestId();
     const stored = `${requestId}_${file.name}`;
     try{ await writeFile(await sub(SUB.src), stored, file); }
-    catch(e){ toast('원본 폴더에 저장하지 못했습니다: ' + e.message); }
+    catch(e){
+      if(!plain) return holdForConnection(file, '공유 폴더에 파일을 저장하지 못했습니다(' + e.message + '). PC의 OneDrive가 켜져 있는지 확인한 뒤 다시 연결해 주세요.');
+      toast('원본 폴더에 저장하지 못했습니다: ' + e.message);
+    }
     showParseError(new Error(''));
     fileMeta.textContent = `올리는 중… (${file.name})`;
     answers = Object.assign({}, (await kvGet('lastAnswers')) || {});
@@ -278,6 +299,35 @@
     }
   };
 
+  /* 보안 파일인데 공유 폴더를 쓸 수 없을 때: 오류 대신 안내 + 연결 후 자동으로 이어서 처리 */
+  function holdForConnection(file, why){
+    heldFile = file;
+    showParseError(new Error(''));
+    fileMeta.textContent = `보안 파일 · ${file.name} · 공유 폴더 연결을 기다리는 중`;
+    answers = answers || {};
+    pending = null;
+    qPanel.hidden = false;
+    $('v2JobFile').textContent = file.name;
+    $('v2JobSub').textContent = '보안(DRM)이 걸린 파일입니다';
+    $('v2Timer').textContent = '';
+    $('v2Fill').style.width = '0';
+    $('v2Q').innerHTML = ''; qPanel.querySelector('.v2-qh').hidden = true;
+    const msg = why || (shareDir
+      ? '보안 파일은 회사 M365가 대신 읽어 옵니다. 공유 폴더 연결을 이어가려면 아래 버튼을 한 번 눌러 주세요. 누르면 이 파일을 바로 이어서 처리합니다.'
+      : '보안 파일은 브라우저에서 바로 읽을 수 없어 회사 M365가 대신 읽어 옵니다. 공유 폴더를 한 번 연결하면 이 파일을 바로 이어서 처리합니다.');
+    setJob('need', msg,
+      `<button type="button" class="btn-primary" id="v2NeedConnect">${shareDir ? '공유 폴더 연결 계속' : '공유 폴더 연결하기'}</button>` +
+      `<button type="button" class="btn-ghost" id="v2NeedPaste">예비 방법(붙여넣기) 보기</button>`);
+    $('v2NeedConnect').addEventListener('click', async () => {
+      if(!shareDir) return openWizard(profile ? 2 : 1);
+      try{ if(await perm(shareDir, true)){ await afterConnect(); return; } }catch(e){}
+      openWizard(3);
+    });
+    $('v2NeedPaste').addEventListener('click', () => {
+      const det = document.querySelector('.v2-fallback'); if(det){ det.open = true; det.scrollIntoView({ behavior:'smooth', block:'center' }); }
+    });
+  }
+
   /* 대기 중 질문 */
   const QUESTIONS = () => [
     { k:'centerType', l:'센터유형', o: SETTINGS.centerTypes },
@@ -290,6 +340,7 @@
   ];
   function renderJob(){
     qPanel.hidden = false;
+    qPanel.querySelector('.v2-qh').hidden = false;
     const fill = $('v2Fill'); fill.style.transition = 'none'; fill.style.width = '0'; void fill.offsetWidth; fill.style.transition = '';
     $('v2JobFile').textContent = pending.file;
     $('v2JobSub').textContent = `요청번호 ${pending.requestId}`;
@@ -306,10 +357,10 @@
   function setJob(state, msg, actions){
     const st = $('v2State');
     st.dataset.state = state;
-    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패' }[state];
+    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요' }[state];
     $('v2JobMsg').textContent = msg;
     $('v2JobAct').innerHTML = actions || '';
-    if(state !== 'wait' && state !== 'slow'){ clearInterval(tickTimer); $('v2Fill').style.width = '100%'; }
+    if(state !== 'wait' && state !== 'slow'){ clearInterval(tickTimer); $('v2Fill').style.width = state === 'need' ? '0' : '100%'; }
     renderNavBadge(state);
   }
   function renderNavBadge(state){

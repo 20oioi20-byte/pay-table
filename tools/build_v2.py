@@ -9,6 +9,8 @@ v1 파일과 v1 저장소(paytable-system)는 바꾸지 않는다.
 
 --sharepoint-url 에 SharePoint '급여조견표' 폴더 주소를 넣으면, 첫 실행 안내의
 [공유 폴더 열기] 버튼이 그 주소로 바로 연결된다(M365 설정 2단계 후 확인한 주소).
+회사 주소를 저장소에 남기지 않도록, 인자 대신 tools/v2.local.json(저장소 제외 파일)에
+{"sharepointUrl": "...", "team": "..."} 로 적어 두어도 된다.
 """
 import argparse
 import json
@@ -18,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.0.0'
+APP_VERSION = '2.0.1'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -51,7 +53,7 @@ V2_CSS = """
   .v2-job{ margin-top:14px; }
   .v2-job-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
   .v2-state{ font-size:12px; font-weight:800; padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri); }
-  .v2-state[data-state="slow"]{ background:var(--warn-soft); color:var(--warn); }
+  .v2-state[data-state="slow"], .v2-state[data-state="need"]{ background:var(--warn-soft); color:var(--warn); }
   .v2-state[data-state="done"]{ background:var(--ok-soft); color:var(--ok); }
   .v2-state[data-state="fail"]{ background:var(--bad-soft); color:var(--bad); }
   .v2-timer{ font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink2); }
@@ -80,6 +82,11 @@ def main():
     ap.add_argument('--sharepoint-url', default='')
     ap.add_argument('--team', default='급여조견표 관리')
     a = ap.parse_args()
+    local = ROOT / 'tools' / 'v2.local.json'
+    if local.exists():
+        cfg_local = json.loads(local.read_text(encoding='utf-8'))
+        a.sharepoint_url = a.sharepoint_url or cfg_local.get('sharepointUrl', '')
+        a.team = cfg_local.get('team', a.team)
     s = SRC.read_text(encoding='utf-8')
     s = must_replace(s, '<title>급여조견표 관리시스템</title>', '<title>급여조견표 관리시스템 v2</title>')
     s = must_replace(s, "indexedDB.open('paytable-system', 1)", "indexedDB.open('paytable-system-v2', 1)")
@@ -88,6 +95,10 @@ def main():
     # v2는 서버(비밀번호) 없이 공유 폴더에서 여는 방식이라 접속 게이트를 쓰지 않음
     s = must_replace(s, "if(location.protocol === 'file:'){\n    document.body.classList.remove('gated');",
                      "if(true){\n    document.body.classList.remove('gated');")
+    s = must_replace(s, "처음 한 번 <b>연동 폴더 연결</b>로 OneDrive의 '조견표연동결과' 폴더를 고르면, 이후에는 버튼 하나로 최신 파일을 불러와 바로 검사합니다.",
+                     "공유 폴더(급여조견표)가 연결되어 있으면 올린 파일을 자동으로 처리합니다.")
+    s = must_replace(s, '연동 파일·붙여넣기로 불러온 급여 데이터는 이 화면에서만 처리하며 외부로 저장하지 않습니다 · 엑셀 파일을 직접 올리면 서버 설정에 따라 저장소에 보관될 수 있습니다',
+                     '급여 데이터는 이 PC와 회사 M365(공유 폴더) 안에서만 처리되며 외부 서버로 보내지 않습니다')
     s = must_replace(s, '업로드 시 서버(Supabase)에 자동 저장됩니다', '올린 파일은 팀 공유 폴더(01_원본)에 요청번호와 함께 보관되고, 보안 파일은 자동으로 풀어 읽습니다')
     s = must_replace(s, '<div class="side-group">기타</div>', '<div class="side-group" hidden>기타</div>')
     s = must_replace(s, "setSaveStatus('로컬 전용 모드 (서버 환경변수 미설정 — 클라우드 저장 안 함)', 'warn');",
