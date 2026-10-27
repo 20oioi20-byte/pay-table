@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.0.1'
+APP_VERSION = '2.1.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -67,6 +67,36 @@ V2_CSS = """
   .v2-badge{ margin-left:auto; font-size:10.5px; font-weight:800; padding:1px 7px; border-radius:999px; background:var(--pri); color:#fff; }
   .v2-badge[data-state="fail"]{ background:var(--bad); }
   .v2-share{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  /* 바로가기 · 상태 점검 · 처리 이력 · 변경전 비교 · 도움말 */
+  .v2-link{ text-decoration:none; display:inline-flex; align-items:center; white-space:nowrap; }
+  a.v2-link.btn-ghost{ padding:6px 11px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink2); font-size:12.5px; font-weight:600; }
+  a.v2-link.btn-ghost:hover{ border-color:var(--pri); color:var(--pri); }
+  .v2-links{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; }
+  .v2-linkcard{ display:flex; flex-direction:column; gap:2px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; text-decoration:none; color:var(--ink2); background:#fff; }
+  .v2-linkcard:hover{ border-color:var(--pri); background:var(--pri-soft); }
+  .v2-linkcard b{ font-size:13.5px; color:var(--pri); } .v2-linkcard span{ font-size:12px; color:var(--muted); }
+  .v2-admins{ display:flex; gap:8px 12px; align-items:flex-end; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
+  .v2-admins label{ display:flex; flex-direction:column; gap:4px; font-weight:600; }
+  .v2-admins input{ padding:6px 9px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:13px; width:180px; }
+  .v2-healthbtn{ margin-right:12px; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:5px 11px; font:inherit; font-size:12.5px; font-weight:600; color:var(--ink2); cursor:pointer; }
+  .v2-healthbtn:hover{ border-color:var(--pri); color:var(--pri); }
+  .v2-conn{ margin-right:6px; }
+  .v2-wide{ width:min(720px,100%); }
+  .v2-card .ph h2{ margin:0; font-size:18px; }
+  .v2-checks{ list-style:none; margin:10px 0 14px; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .v2-checks li{ display:grid; grid-template-columns:14px minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px 12px; border:1px solid var(--line); border-radius:10px; }
+  .v2-checks li > div:nth-child(2){ display:flex; flex-direction:column; min-width:0; }
+  .v2-checks li b{ font-size:13.5px; } .v2-checks li span{ font-size:12.5px; color:var(--muted); overflow-wrap:anywhere; }
+  .v2-checks li .v2-act{ justify-content:flex-end; }
+  .v2-dot{ width:10px; height:10px; border-radius:50%; background:var(--ok); }
+  .v2-checks li[data-state="warn"] .v2-dot{ background:var(--warn); } .v2-checks li[data-state="bad"] .v2-dot{ background:var(--bad); }
+  .v2-checks li[data-state="bad"]{ border-color:#f3c2c2; background:var(--bad-soft); }
+  .v2-prefill{ margin:0 0 8px; font-size:12.5px; font-weight:600; color:var(--ok); background:var(--ok-soft); border-radius:8px; padding:6px 10px; }
+  #v2Compare tr.v2-down td{ background:var(--bad-soft); color:var(--bad); font-weight:600; }
+  #v2Compare tr.v2-big td{ background:var(--warn-soft); }
+  .v2-help{ display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; border:1px solid #c9d1dc; background:#fff; color:var(--muted); font:inherit; font-size:11px; font-weight:800; line-height:1; cursor:pointer; vertical-align:1px; padding:0; margin-left:2px; }
+  .v2-help:hover, .v2-help:focus-visible{ border-color:var(--pri); color:var(--pri); }
+  .v2-pop{ position:fixed; z-index:70; background:#0f1b30; color:#fff; font-size:12.5px; line-height:1.55; padding:9px 12px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
   @media (prefers-reduced-motion:reduce){ .v2-fill{ transition:none; } }
   @media (max-width:860px){ .v2-banner{ margin:12px 16px 0; } }
 """
@@ -83,10 +113,18 @@ def main():
     ap.add_argument('--team', default='급여조견표 관리')
     a = ap.parse_args()
     local = ROOT / 'tools' / 'v2.local.json'
+    links = {}
     if local.exists():
         cfg_local = json.loads(local.read_text(encoding='utf-8'))
         a.sharepoint_url = a.sharepoint_url or cfg_local.get('sharepointUrl', '')
         a.team = cfg_local.get('team', a.team)
+        env, flow = cfg_local.get('flowEnv', ''), cfg_local.get('flowId', '')
+        links = {'folder': a.sharepoint_url,
+                 'flowRuns': f'https://make.powerautomate.com/environments/{env}/flows/{flow}/details' if env and flow else '',
+                 'flowEdit': f'https://make.powerautomate.com/environments/{env}/flows/{flow}' if env and flow else '',
+                 'guide': cfg_local.get('guideUrl', '')}
+    elif a.sharepoint_url:
+        links = {'folder': a.sharepoint_url}
     s = SRC.read_text(encoding='utf-8')
     s = must_replace(s, '<title>급여조견표 관리시스템</title>', '<title>급여조견표 관리시스템 v2</title>')
     s = must_replace(s, "indexedDB.open('paytable-system', 1)", "indexedDB.open('paytable-system-v2', 1)")
@@ -105,7 +143,8 @@ def main():
                      "setSaveStatus('이 PC에서 읽었습니다 (외부 서버로 보내지 않음)', 'ok');")
     i = s.index('</style>\n</head>')
     s = s[:i] + V2_CSS + s[i:]
-    cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url}
+    cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
+           'links': links}
     js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8')
     i = s.rindex('</body>')
     s = (s[:i] + '<script>\n/* 관리자 설정: build_v2.py 인자로 바꿉니다 */\nwindow.V2_CONFIG = '

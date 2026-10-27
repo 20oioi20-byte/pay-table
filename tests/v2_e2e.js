@@ -106,12 +106,56 @@ const seedFolders = p => p.evaluate(async () => {
   await put(p, 'plain_fixture.xlsx', fs.readFileSync(FIXTURE));
   await p.waitForFunction(() => document.getElementById('fileMeta').textContent.includes('plain_fixture'));
   ok((await listDir(p, '01_원본')).some(n => n.endsWith('_plain_fixture.xlsx')), '01_원본에 보관');
+  await p.waitForSelector('#v2Compare:not([hidden])');
+  const cmp = await p.$$eval('#v2Compare tbody tr', trs => ({ n: trs.length, down: trs.filter(t => t.classList.contains('v2-down')).length }));
+  ok(cmp.n === 7 && cmp.down === 0, `변경전 대비 비교표 ${cmp.n}행, 감소 ${cmp.down}개 (기대 7·0)`);
 
   console.log('5. 통계 저장 → 04_스냅샷');
   await p.evaluate(() => { checkState.issues.filter(i => i.level === 'confirm').forEach(i => { checkState.acked.add(i.key); checkState.reasons[i.key] = '시험'; }); renderChecklist(); generateTables(); });
   await p.waitForFunction(() => document.getElementById('snapPanel').style.display === 'block');
   await p.click('#snapSaveBtn'); await p.waitForTimeout(500);
   ok((await listDir(p, '04_스냅샷')).length === 1, '스냅샷 파일 1건');
+
+  console.log('5-1. 같은 센터를 다시 올리면 지난 답변으로 자동 채움');
+  await p.evaluate(() => sysStore.setKV('lastAnswers', {}));
+  await put(p, 'plain_again.xlsx', fs.readFileSync(FIXTURE));
+  await p.waitForSelector('#v2Prefill:not([hidden])');
+  ok(await p.inputValue('#v2q_centerType') === '금융', '센터유형 "금융" 자동 채움: ' + await p.textContent('#v2Prefill'));
+
+  console.log('5-2. 결과 자동 보관 (ZIP → 03_조견표)');
+  await p.evaluate(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['zip'])); a.download = '급여조견표_시험.zip'; a.click(); });
+  await p.waitForTimeout(800);
+  ok((await listDir(p, '03_조견표')).some(n => n.endsWith('_급여조견표_시험.zip')), '03_조견표에 저장');
+
+  console.log('5-3. 상태 점검 · 처리 이력');
+  await p.evaluate(async () => { const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('급여조견표')).getDirectoryHandle('02_연동데이터');
+    const w = await (await d.getFileHandle('20990101-ZZZ-01_실패시험.error.json', { create:true })).createWritable(); await w.write('{"kind":"PAYTABLE_ERROR"}'); await w.close(); });
+  await p.click('#v2HealthBtn');
+  await p.waitForFunction(() => !document.querySelector('#v2HealthList .hint'));
+  const health = await p.$$eval('#v2HealthList li', lis => lis.map(l => l.dataset.state + ':' + l.querySelector('b').textContent));
+  ok(health.includes('ok:쓰기·읽기 시험') && health.includes('warn:처리 실패 기록'), '점검 결과 ' + health.join(' / '));
+  if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v2_health.png') });
+  await p.click('#v2HealthClose');
+  await p.click('#tabBtnHistory');
+  await p.waitForFunction(() => !/읽는 중/.test(document.getElementById('v2HistBody').textContent));
+  const hist = await p.$$eval('#v2HistBody tr', trs => trs.map(t => t.cells[4] ? t.cells[4].textContent : ''));
+  ok(hist.includes('완료') && hist.includes('실패') && hist.includes('처리 중'), '처리 이력 상태: ' + hist.join(', '));
+  if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v2_history.png') });
+  await p.click('#v2HistBody [data-open]');
+  await p.waitForFunction(() => document.getElementById('tabCreate').classList.contains('on') && document.getElementById('fileMeta').textContent.includes('자동연동'));
+  ok(true, '이력에서 [열기] → 다시 올리지 않고 조견표 화면');
+
+  console.log('5-4. 도움말 · 관리자 메뉴');
+  await p.locator('.v2-help:visible').first().click();
+  ok(await p.isVisible('.v2-pop'), '도움말: ' + (await p.textContent('.v2-pop')).slice(0, 30));
+  await p.click('#tabBtnSettings');
+  const hasLinks = await p.evaluate(() => !!(window.V2_CONFIG.links && window.V2_CONFIG.links.folder));
+  const cards = await p.$$eval('.v2-linkcard', a => a.length);
+  ok(hasLinks ? cards >= 7 : cards === 0, `관리자 바로가기 ${cards}개 (주소 설정 ${hasLinks ? '있음' : '없음'})`);
+  if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v2_admin.png') });
+  await p.evaluate(() => { SETTINGS.admins = ['ZZZ']; window.__v2.applyRole(); });
+  ok(await p.$eval('#v2Admin', e => e.hidden), '관리자가 아니면 관리자 바로가기 숨김');
+  await p.evaluate(() => { SETTINGS.admins = []; window.__v2.applyRole(); });
 
   console.log('6. 다시 열면 안내 없이 바로 연결');
   await p.reload(); await p.waitForTimeout(1500);
