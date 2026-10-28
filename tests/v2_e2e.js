@@ -187,6 +187,22 @@ const seedFolders = p => p.evaluate(async () => {
   await p.click('#tabBtnSettings');
   ok(await p.isChecked('#v2ModePaste'), '기준정보 › 보안 파일 처리 방식: 붙여넣기 선택됨');
 
+  console.log('8. 웹 업로드 방식: SharePoint에 직접 올리고 결과만 자동 감지');
+  await p.evaluate(() => { SETTINGS.uploadMode = 'web'; });
+  await p.click('#tabBtnCreate');
+  const srcBefore2 = (await listDir(p, '01_원본')).length;
+  await put(p, '보안_웹.xlsx', OLE);
+  await p.waitForFunction(() => document.getElementById('v2State').textContent === '웹 업로드');
+  ok((await listDir(p, '01_원본')).length === srcBefore2, '원본을 동기화 폴더(01_원본)에 복사하지 않음');
+  ok((await p.textContent('#v2JobAct')).includes('끌어다 놓습니다'), '업로드 2단계 안내 표시');
+  if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v2_web.png') });
+  await fakeFlow(p, '보안_웹 (1)');    // SharePoint가 같은 이름이 있으면 ' (1)'을 붙이는 경우
+  await p.waitForFunction(() => document.getElementById('fileMeta').textContent.includes('자동연동'), null, { timeout: 20000 });
+  ok(await p.textContent('#v2State') === '완료', '결과(.json) 자동 감지 → 조견표 화면');
+  await p.click('#tabBtnHistory');
+  await p.waitForFunction(() => /웹/.test(document.getElementById('v2HistBody').textContent));
+  ok(true, '처리 이력에 웹 업로드 결과 표시');
+
   console.log('6. 다시 열면 안내 없이 바로 연결');
   await p.reload(); await p.waitForTimeout(1500);
   ok(await p.$eval('#v2Wizard', e => e.hidden), '첫 실행 안내 안 뜸');

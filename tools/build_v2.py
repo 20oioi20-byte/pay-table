@@ -14,13 +14,14 @@ v1 파일과 v1 저장소(paytable-system)는 바꾸지 않는다.
 """
 import argparse
 import json
+from urllib.parse import quote
 from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.2.1'
+APP_VERSION = '2.3.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -97,6 +98,8 @@ V2_CSS = """
   .v2-help{ display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; border:1px solid #c9d1dc; background:#fff; color:var(--muted); font:inherit; font-size:11px; font-weight:800; line-height:1; cursor:pointer; vertical-align:1px; padding:0; margin-left:2px; }
   .v2-help:hover, .v2-help:focus-visible{ border-color:var(--pri); color:var(--pri); }
   .v2-pop{ position:fixed; z-index:70; background:#0f1b30; color:#fff; font-size:12.5px; line-height:1.55; padding:9px 12px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+  .v2-state[data-state="upload"]{ background:var(--pri-soft); color:var(--pri); }
+  .v2-steps a.btn-primary.v2-link{ padding:7px 14px; border-radius:8px; color:#fff; font-weight:700; }
   .v2-state[data-state="paste"]{ background:var(--pri-soft); color:var(--pri); }
   .v2-job .v2-act.v2-col{ flex-direction:column; align-items:stretch; gap:8px; }
   .v2-steps{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.8; }
@@ -128,7 +131,9 @@ def main():
         links = {'folder': a.sharepoint_url,
                  'flowRuns': f'https://make.powerautomate.com/environments/{env}/flows/{flow}/details' if env and flow else '',
                  'flowEdit': f'https://make.powerautomate.com/environments/{env}/flows/{flow}' if env and flow else '',
-                 'guide': cfg_local.get('guideUrl', '')}
+                 'guide': cfg_local.get('guideUrl', ''),
+                 'upload': a.sharepoint_url.rsplit('/', 1)[0] + '/' + quote(cfg_local.get('uploadFolder', '급여원본')) if a.sharepoint_url else '',
+                 'archive': a.sharepoint_url.rsplit('/', 1)[0] + '/' + quote(cfg_local.get('archiveFolder', '급여보관')) if a.sharepoint_url else ''}
     elif a.sharepoint_url:
         links = {'folder': a.sharepoint_url}
     s = SRC.read_text(encoding='utf-8')
