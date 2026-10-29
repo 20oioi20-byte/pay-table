@@ -168,7 +168,7 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   await p.evaluate(() => { SNAPS.at(-1).estimate = window.__est; renderReport(); });
   const E = await p.evaluate(() => { const a = window.__v2report.analyze(); return a.est ? { T:a.est.all.now.T, T2:a.est.all.next.T, rate:a.est.all.rate, sheetT:a.est.all.sheetT, role:a.est.role && a.est.role.name, hidden: document.getElementById('repMgmt').closest('label').hidden } : null; });
   const eD = 59920000, eL = 11198056, eF = 720000, eM = 3591893, eP = 3771489, eV = 7920138, eT = eD + eL + eF + eM + eP + eV;
-  const b1 = eD * 1.05 + eL * 1.05 + eF, M2 = eM * b1 / (eD + eL + eF), b2 = b1 + M2, P2 = eP * b2 / (eD + eL + eF + eM), sb2 = b2 + P2, eT2 = sb2 + eV * sb2 / (eD + eL + eF + eM + eP);
+  const b1 = eD * 1.05 + eL * 1.05 + eF, M2 = eM * b1 / (eD + eL + eF), b2 = b1 + M2, eP2 = eP * b2 / (eD + eL + eF + eM), sb2 = b2 + eP2, eT2 = sb2 + eV * sb2 / (eD + eL + eF + eM + eP);
   ok(E && Math.abs(E.T - eT) < 1 && E.sheetT === eT && Math.abs(E.T2 - eT2) < 1 && E.hidden,
     `견적서 기준: 월 ${E && Math.round(E.T).toLocaleString()} → ${E && Math.round(E.T2).toLocaleString()} (단가 ${E && (E.rate * 100).toFixed(2)}%, 연 +${E && Math.round((E.T2 - E.T) * 12).toLocaleString()}원, ${E && E.role} 1인)`);
   const p1 = await p.$eval('#reportDoc .page', e => e.innerText);
@@ -181,6 +181,24 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
     const pg = document.querySelector('#reportDoc .page'); return { tot:a.riskTot, exp, txt: pg.innerText.includes('지급 의무'), dashed: pg.querySelectorAll('svg line[stroke-dasharray="4 3"]').length, h: pg.scrollHeight }; });
   ok(Math.abs(RK.tot - RK.exp) < 1 && RK.tot > 0 && RK.txt, `1쪽 근거①: 내년 최저임금 미달 월 ${Math.round(RK.tot).toLocaleString()}원`);
   ok(RK.h <= 1124, `1쪽이 A4 한 장 안 (${RK.h}px)`);
+  /* 2쪽: 비교용 가상 센터(금융 2·유통 2)를 메모리에만 추가해 벤치마킹 확인 */
+  const PG2 = await p.evaluate(() => {
+    const base = SNAPS.at(-1), mk = (name, type, k) => { const c = JSON.parse(JSON.stringify(base)); c.center = name; c.centerType = type; delete c.quote; delete c.estimate;
+      c.jobs.forEach(j => { ['stdPaySum', 'monthlyTotal', 'gradeB', 'perf', 'fixedPay', 'annualCost'].forEach(f => { if(typeof j[f] === 'number') j[f] = Math.round(j[f] * k); }); if(j.items && j.items['기본급']) j.items['기본급'] = Math.round(j.items['기본급'] * k); }); return c; };
+    SNAPS.push(mk('가상금융B', base.centerType, 1.06), mk('가상금융C', base.centerType, 1.02), mk('가상유통A', '유통', 0.97), mk('가상유통B', '유통', 0.99), mk('가상제조A', '제조', 1.01), mk('가상통신A', '통신', 1.03), mk('가상공공A', '공공', 0.98), mk('가상공공B', '공공', 0.96));
+    renderReport();
+    const pg = document.querySelectorAll('#reportDoc .page')[1], t = pg.innerText, a = window.__v2report.analyze();
+    const own = [...pg.querySelectorAll('table.bench tr')].find(r => r.classList.contains('me'));
+    const roleTot = [...pg.querySelectorAll('h2')].some(h => h.textContent.startsWith('D.'));
+    return { A: t.includes('A. 동종 산업군'), B: t.includes('B. 견적 대비'), C: t.includes('C. 최저임금 영향'), D: roleTot, E: t.includes('E. 산출 기준'),
+      own: own ? own.innerText.replace(/\s+/g, ' ') : '', paid: t.includes(base.quote.paid.toLocaleString()), note: t.includes('금융소비자보호법'), h: Math.round(pg.lastElementChild.getBoundingClientRect().bottom - pg.getBoundingClientRect().top + 60),
+      inc: a.est.all.next.T - a.est.all.now.T, dSum: (() => { const tr = [...pg.querySelectorAll('h2')].find(h => h.textContent.startsWith('D.')).nextElementSibling.querySelector('tr.me'); return +tr.cells[tr.cells.length - 1].innerText.replace(/,/g, ''); })() };
+  });
+  ok(PG2.A && PG2.B && PG2.C && PG2.D && PG2.E, '2쪽 구성: A 벤치마킹 · B 견적 대비 · C 최저임금(영향 있음) · D 직무별 단가 · E 기준');
+  ok(/◀/.test(PG2.own) && /열세|우위|동등/.test(PG2.own) && PG2.note, '2쪽 A: 당사 산업군 강조·당사 대비·시사점 — ' + PG2.own.slice(0, 80));
+  ok(PG2.paid, '2쪽 B: 실제 급여 지급 계 = 1쪽 근거 2와 같은 금액');
+  ok(Math.abs(PG2.dSum - PG2.inc) <= 5, `2쪽 D: 직무별 증가 계 ${PG2.dSum.toLocaleString()} = 견적 총액 증가 ${Math.round(PG2.inc).toLocaleString()}`);
+  ok(PG2.h <= 1124, `2쪽이 A4 한 장 안 (${PG2.h}px)`);
   const w = await p.evaluate(async () => { const r = await window.__v2report.buildWord(); return { parts:r.parts.length, head:r.mht.slice(0, 17), pb:/page-break-before:always/.test(r.html) }; });
   ok(w.head === 'MIME-Version: 1.0' && w.pb, `Word(MHTML) 저장 · 쪽 나눔`);
   if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_p2.png') });

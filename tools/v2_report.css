@@ -49,3 +49,16 @@
 .rp2 .flow td.res{ border:1.5pt solid #FE2E36; background:#FFF4F4; }
 .rp2 .flow .fl{ font-size:8pt; color:#4C4C4E; } .rp2 .flow .fv{ font-size:12.5pt; font-weight:bold; } .rp2 .flow td.res .fv{ color:#FE2E36; }
 .rp2 .flow td.fo{ width:16pt; font-size:12pt; font-weight:bold; color:#4C4C4E; }
+/* 2쪽 */
+.rp2 h2 .hsub{ font-size:8.5pt; font-weight:normal; color:#A2A4A3; }
+.rp2 table.bench td{ vertical-align:top; }
+.rp2 .bench td.nt{ font-size:8pt; color:#4C4C4E; line-height:1.4; }
+.rp2 tr.subrow td{ background:#FFF4F4; font-size:8.5pt; }
+.rp2 tr.thin td{ color:#A2A4A3; }
+#v2NoteText{ width:100%; min-height:110px; font:inherit; font-size:13px; padding:8px; border:1px solid var(--line); border-radius:8px; }
+/* 2쪽은 표가 많아 조금 촘촘하게 */
+.rp2 .p2 td{ padding:2.5pt 5pt; font-size:8.5pt; }
+.rp2 .p2 th{ padding:3pt 5pt; }
+.rp2 .p2 h2{ margin:8pt 0 3pt; font-size:11pt; }
+.rp2 .p2 .bench td.nt{ font-size:7.5pt; line-height:1.3; }
+.rp2 .p2 li{ font-size:8pt; }
