@@ -3,57 +3,74 @@
 <title>인건비 수준 통계</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--p:#4f6bed;--p2:#e8ecfd;--p3:#8fa3f5;--p4:#c9d3fb;--bg:#f4f6fb;--line:#eceff5;--t:#1f2a44;--m:#7a8499;--f:#aab1c0;--ok:#2fb67c;--warn:#f5a524;--bad:#ef5b5b}
+/* ===== KT 브랜드 토큰: Red #FE2E36(강조) · Purple/Blue/Teal(데이터 계열) · Gray(보조) ===== */
+:root{
+  --red:#FE2E36;--purple:#AA50FF;--blue:#00A5FF;--teal:#00BEAC;--gray-d:#4C4C4E;--gray-l:#A2A4A3;
+  --bg:#F4F4F5;--card:#FFFFFF;--line:#E6E6E8;--line2:#F1F1F2;--t:#000000;--m:#4C4C4E;--f:#A2A4A3;--hover:#FAFAFA;--soft:#F1F1F2;--track:#EDEDEE;
+  --acc-bg:#FFE9EA;--acc-t:#D9141D;--sel:#FFF4F4;--tip:#FFFFFF;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);
+  --blue-bg:#E5F6FF;--blue-t:#0079BD;--teal-bg:#E0F7F4;--teal-t:#00897C;--pur-bg:#F4EAFF;--pur-t:#7E2AD6;
+  --s1:var(--blue);--s2:var(--purple);--s3:var(--teal);--up:var(--teal-t);--dn:var(--acc-t);
+}
+:root[data-theme="dark"]{
+  --bg:#000000;--card:#141415;--line:#2A2A2D;--line2:#1E1E20;--t:#FFFFFF;--m:#C4C5C6;--f:#7C7E7F;--hover:#1B1B1D;--soft:#232326;--track:#2A2A2D;
+  --acc-bg:rgba(254,46,54,.16);--acc-t:#FF6B71;--sel:rgba(254,46,54,.09);--tip:#1E1E20;--shadow:0 0 0 1px #1F1F22;
+  --blue-bg:rgba(0,165,255,.16);--blue-t:#5CC6FF;--teal-bg:rgba(0,190,172,.16);--teal-t:#3FE0CF;--pur-bg:rgba(170,80,255,.18);--pur-t:#C995FF;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Malgun Gothic','Apple SD Gothic Neo','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--t);font-size:13px;min-width:1100px}
+body{font-family:'KT Flow','Pretendard','Malgun Gothic','Apple SD Gothic Neo','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--t);font-size:13px;min-width:1100px;transition:background .2s}
 button,select,input{font:inherit;color:inherit}
+select,input{background:var(--card);color:var(--t)}
 .app{display:grid;grid-template-columns:290px 1fr;gap:20px;padding:20px;max-width:1560px;margin:0 auto}
-.card{background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(31,42,68,.04),0 4px 14px rgba(31,42,68,.05)}
+.card{background:var(--card);border-radius:10px;box-shadow:var(--shadow)}
 .pad{padding:16px 18px}
 h3{font-size:14px;display:flex;align-items:center;gap:8px}
 .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}
-.lnk{color:var(--p);font-size:12px;background:none;border:0;cursor:pointer}
-.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--p2);color:#3b54d6;border:0;cursor:pointer}
-.chip.off{background:#f0f2f6;color:var(--m)}
+.lnk{color:var(--acc-t);font-size:12px;background:none;border:0;cursor:pointer}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--acc-bg);color:var(--acc-t);border:0;cursor:pointer}
+.chip.off{background:var(--soft);color:var(--m)}
 .soft{display:inline-block;font-size:11px;padding:3px 8px;border-radius:5px;font-weight:bold;white-space:nowrap}
-.sb{background:#e8ecfd;color:#3b54d6}.so{background:#fff3dc;color:#b7791f}.sr{background:#fde8e8;color:#c53030}.sg{background:#e9f8f1;color:#1f8a5b}.sx{background:#f0f2f6;color:#7a8499}
-.btn{font-size:12px;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer;white-space:nowrap}
-.btn.pri{background:var(--p);color:#fff;border-color:var(--p);font-weight:bold}
-.inp{border:1px solid var(--line);border-radius:7px;padding:7px 10px;background:#fff;font-size:12.5px}
-.up{color:var(--ok)}.dn{color:var(--bad)}
+.sb{background:var(--blue-bg);color:var(--blue-t)}.so{background:var(--acc-bg);color:var(--acc-t)}.sr{background:var(--red);color:#fff}.sg{background:var(--teal-bg);color:var(--teal-t)}.sx{background:var(--soft);color:var(--m)}.sp{background:var(--pur-bg);color:var(--pur-t)}
+.btn{font-size:12px;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--card);cursor:pointer;white-space:nowrap}
+.btn.pri{background:var(--red);color:#fff;border-color:var(--red);font-weight:bold}
+.btn:disabled{opacity:.4;cursor:default}
+.inp{border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.5px}
+.up{color:var(--up)}.dn{color:var(--dn)}
 /* 왼쪽 패널 */
 .panel{align-self:start;position:sticky;top:20px}
 .panel section{padding:16px 18px;border-bottom:1px solid var(--line)}
 .panel section:last-child{border:0}
 .panel h4{font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.logo{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:16px;color:var(--p)}
+.logo{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px}
+.logo b{display:flex;align-items:center;gap:8px}.logo b::before{content:'';width:10px;height:18px;background:var(--red);border-radius:2px}
 .yr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
 .yr button{padding:7px 0;border-radius:6px;color:var(--m);background:none;border:0;cursor:pointer;font-size:12px}
-.yr button:hover{background:#f4f6fb}.yr .on{background:var(--p);color:#fff;font-weight:bold}.yr .cmp{background:var(--p2);color:#3b54d6}
-.yr button:disabled{color:#d5d9e2;cursor:default;background:none}
-.hint{font-size:11px;color:var(--f);margin-top:8px;line-height:1.5}
+.yr button:hover{background:var(--hover)}.yr .on{background:var(--red);color:#fff;font-weight:bold}.yr .cmp{background:var(--acc-bg);color:var(--acc-t)}
+.yr button:disabled{color:var(--line);cursor:default;background:none}
+.hint{font-size:11px;color:var(--f);margin-top:8px;line-height:1.5}.hint b{color:var(--m)}
 .donuts{display:flex;justify-content:space-around;text-align:center;font-size:11.5px;color:var(--m)}
 .tree{max-height:330px;overflow:auto}
 .tree .row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px;cursor:pointer;user-select:none}
 .tree .row.c{padding-left:24px}.tree .n{margin-left:auto;font-size:11px;color:var(--f)}
 .tree .tg{width:14px;color:var(--m);font-size:10px;text-align:center}
-.cb{width:15px;height:15px;border:1.5px solid #c3c9d6;border-radius:4px;display:inline-block;position:relative;flex:none}
-.cb.on{background:var(--p);border-color:var(--p)}.cb.on::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
-.cb.part{background:var(--p);border-color:var(--p)}.cb.part::after{content:'';position:absolute;left:3px;right:3px;top:5.5px;height:2px;background:#fff}
+.cb{width:15px;height:15px;border:1.5px solid var(--f);border-radius:4px;display:inline-block;position:relative;flex:none}
+.cb.on{background:var(--red);border-color:var(--red)}.cb.on::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.cb.part{background:var(--red);border-color:var(--red)}.cb.part::after{content:'';position:absolute;left:3px;right:3px;top:5.5px;height:2px;background:#fff}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 /* 상단 */
 .top{display:flex;align-items:center;gap:12px;padding:10px 16px;margin-bottom:16px}
 .top .sp{flex:1}
-.crumb{font-size:12.5px;color:var(--m);display:flex;gap:6px;align-items:center}.crumb b{color:var(--t)}.crumb a{color:var(--p);cursor:pointer}
+.crumb{font-size:12.5px;color:var(--m);display:flex;gap:6px;align-items:center}.crumb b{color:var(--t)}.crumb a{color:var(--acc-t);cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.seg button{border:0;background:#fff;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--m)}
-.seg button.on{background:var(--p);color:#fff;font-weight:bold}
-/* KPI (B안) */
+.seg button{border:0;background:var(--card);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--m)}
+.seg button.on{background:var(--t);color:var(--card);font-weight:bold}
+.theme button{display:inline-flex;align-items:center;gap:6px}.theme i{width:10px;height:10px;border-radius:50%;border:1px solid var(--f)}
+/* KPI */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
-.kpi .h{display:flex;gap:10px;align-items:center;font-weight:bold;font-size:12.5px}.kpi .h i{width:28px;height:28px;border-radius:8px;background:var(--p2);display:grid;place-items:center;font-style:normal;color:var(--p);font-size:13px}
-.kpi .n{font-size:25px;font-weight:bold;margin:12px 0 6px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.kpi{border-top:3px solid transparent}.kpi:first-child{border-top-color:var(--red)}
+.kpi .h{display:flex;gap:10px;align-items:center;font-weight:bold;font-size:12.5px}.kpi .h i{width:28px;height:28px;border-radius:8px;background:var(--soft);display:grid;place-items:center;font-style:normal;color:var(--red);font-size:13px}
+.kpi .n{font-size:25px;font-weight:800;margin:12px 0 6px;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .kpi p{font-size:11.5px;color:var(--m);line-height:1.5;min-height:34px}
-.prog{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:11px;color:var(--m);white-space:nowrap}.prog div{flex:1;height:5px;background:#eef0f5;border-radius:3px}.prog i{display:block;height:100%;background:var(--p);border-radius:3px}
+.prog{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:11px;color:var(--m);white-space:nowrap}.prog div{flex:1;height:5px;background:var(--track);border-radius:3px}.prog i{display:block;height:100%;background:var(--red);border-radius:3px}
 /* 차트 */
 .charts{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px}
 .lg{display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--m);margin-top:4px}.lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
@@ -61,29 +78,31 @@ svg text{font-family:inherit}
 /* 표 */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 12px;padding:0 18px}
 .tabs button{border:0;background:none;padding:10px 12px;font-size:13px;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tabs button.on{color:var(--t);font-weight:bold;border-color:var(--p)}
+.tabs button.on{color:var(--t);font-weight:bold;border-color:var(--red)}
 table{width:100%;border-collapse:collapse}
 th{font-size:11px;color:var(--f);font-weight:normal;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;user-select:none}
-th.s{cursor:pointer}th.s:hover{color:var(--m)}th .ar{color:var(--p)}
-td{padding:9px 10px;border-bottom:1px solid #f5f6fa;white-space:nowrap;font-variant-numeric:tabular-nums}
+th.s{cursor:pointer}th.s:hover{color:var(--m)}th .ar{color:var(--red)}
+td{padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap;font-variant-numeric:tabular-nums}
 .r{text-align:right}
-tbody tr:hover td{background:#fafbff}
-tr.total td{font-weight:bold;background:#f7f8fc}
+tbody tr:hover td{background:var(--hover)}
+tr.total td{font-weight:bold;background:var(--soft)}
 tr.thin td{color:var(--f)}
 tr.go{cursor:pointer}tr.go td:first-child::after{content:' ›';color:var(--f)}
-tr.sel td{background:#f3f5ff}
+tr.sel td{background:var(--sel)}
 tr.closed td{color:var(--f)}
+td.cy{background:var(--sel);font-weight:bold}td.cp{background:var(--hover)}
 .st{border-left:3px solid;padding-left:8px;font-size:12px}
-.wt{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;background:#f0f2f6;color:#56607a;margin-right:3px}
-.bar{position:relative;height:10px;background:#f3f4f6;border-radius:5px;min-width:110px}
-.bar i{position:absolute;top:0;bottom:0;border-radius:3px}.bar b{position:absolute;top:-3px;bottom:-3px;left:50%;width:1px;background:#9ca3af}
+.wt{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--soft);color:var(--m);margin-right:3px}
+.bar{position:relative;height:10px;background:var(--track);border-radius:5px;min-width:110px}
+.bar i{position:absolute;top:0;bottom:0;border-radius:3px}.bar b{position:absolute;top:-3px;bottom:-3px;left:50%;width:1px;background:var(--f)}
 .dv{font-size:10.5px;color:var(--m);text-align:center;margin-top:2px}
 .tools{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--m);position:relative}
-.colpick{position:absolute;right:0;top:38px;width:210px;background:#fff;border-radius:8px;box-shadow:0 12px 30px rgba(31,42,68,.18);padding:12px 14px;z-index:5}
+.colpick{position:absolute;right:0;top:38px;width:210px;background:var(--tip);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:12px 14px;z-index:5;color:var(--t)}
 .colpick .row{display:flex;gap:8px;align-items:center;padding:5px 0;cursor:pointer;font-size:12px}
 .colpick h5{font-size:10.5px;color:var(--f);margin-bottom:6px;font-weight:normal}
 .pager{display:flex;justify-content:space-between;align-items:center;padding-top:12px;font-size:12px;color:var(--m)}
 .hm td{text-align:center}.hm th{text-align:center}.hm td:first-child,.hm th:first-child{text-align:left}
+.hm .na{color:var(--f)}.hm .nx{color:var(--line)}.hm small{display:block;font-size:10.5px;color:var(--m)}
 .empty{text-align:center;color:var(--f);padding:28px}
 .foot{font-size:11px;color:var(--f);line-height:1.7;margin-top:12px}
 </style></head>
@@ -91,7 +110,7 @@ tr.closed td{color:var(--f)}
 <div class="app">
 <!-- ===== 왼쪽 패널 (C안) ===== -->
 <aside class="card panel">
-  <section><div class="logo">인건비 통계 <span class="soft sx">가상 데이터</span></div></section>
+  <section><div class="logo"><b>인건비 통계</b><span class="soft sx">가상 데이터</span></div></section>
   <section><h4>기준 연도 <span style="font-size:11px;color:var(--f);font-weight:normal">클릭: 기준 · Shift+클릭: 비교</span></h4><div class="yr" id="years"></div>
     <div class="hint" id="yearHint"></div></section>
   <section><h4>통계 저장 현황 <span class="soft sb" id="saveYear"></span></h4><div class="donuts"><div><svg width="88" height="88" id="d1"></svg><div>저장 완료</div></div><div><svg width="88" height="88" id="d2"></svg><div>검사 통과</div></div></div></section>
@@ -104,6 +123,7 @@ tr.closed td{color:var(--f)}
 <main>
   <div class="card top">
     <div class="crumb" id="crumb"></div><div class="sp"></div>
+    <span class="seg theme" id="theme" title="화면 테마"><button data-th="light"><i style="background:#fff"></i>화이트</button><button data-th="dark"><i style="background:#000"></i>블랙</button></span>
     <span class="seg" id="unit"><button data-u="y" class="on">연</button><button data-u="m">월</button></span>
     <button class="btn pri" id="xls">엑셀 다운로드</button>
   </div>
@@ -112,7 +132,7 @@ tr.closed td{color:var(--f)}
 
   <div class="charts">
     <div class="card pad"><div class="ch"><h3 id="stackTitle"></h3><span class="soft sx" id="stackUnit"></span></div><svg id="stack" width="100%" height="230"></svg>
-      <div class="lg"><span><i style="background:var(--p)"></i>기본급</span><span><i style="background:var(--p3)"></i>고정 수당</span><span><i style="background:var(--p4)"></i>B등급 업적수당</span></div></div>
+      <div class="lg"><span><i style="background:var(--s1)"></i>기본급</span><span><i style="background:var(--s2)"></i>고정 수당</span><span><i style="background:var(--s3)"></i>B등급 업적수당</span></div></div>
     <div class="card pad"><div class="ch"><h3>인당 평균 총임금 추이</h3><span class="soft sx" id="trendUnit"></span></div><svg id="trend" width="100%" height="230"></svg>
       <div class="lg" id="trendLg"></div></div>
   </div>
@@ -224,9 +244,11 @@ function scope(){
 }
 /* 비교 축: 한 산업군 안이면 세부유형, 아니면 산업군 */
 const clsAxis = () => { const sc = scope(); return sc.ind ? { key:'sub', label:`${sc.ind} 세부유형`, opts:Object.keys(TREE[sc.ind].subs), ind:sc.ind } : { key:'ind', label:'산업군', opts:IND }; };
-const statusOf = d => d >= 3 ? ['평균 이상', '#4f6bed'] : d > -3 ? ['평균 수준', '#aab1c0'] : d > -7 ? ['평균 미만', '#f5a524'] : ['점검 필요', '#ef5b5b'];
+/* 테마 색: CSS 토큰을 읽어 SVG·인라인 스타일에 사용 */
+const K = n => getComputedStyle(document.documentElement).getPropertyValue('--' + n).trim();
+const statusOf = d => d >= 3 ? ['평균 이상', K('teal')] : d > -3 ? ['평균 수준', K('gray-l')] : d > -7 ? ['평균 미만', K('purple')] : ['점검 필요', K('red')];
 function devBar(dv, thin){
-  const w = Math.min(50, Math.abs(dv) / 0.10 * 50), c = thin ? '#d1d5db' : dv >= 0 ? '#8fa3f5' : '#fdba74';
+  const w = Math.min(50, Math.abs(dv) / 0.10 * 50), c = thin ? K('f') : dv >= 0 ? K('teal') : K('red');
   return `<div class="bar"><b></b><i style="left:${dv >= 0 ? 50 : 50 - w}%;width:${w}%;background:${c}"></i></div><div class="dv">${dv >= 0 ? '+' : ''}${(dv * 100).toFixed(1)}%</div>`;
 }
 
@@ -247,7 +269,7 @@ function renderPanel(){
   const live = CENTERS.filter(c => c.start <= st.year && c.end >= st.year && (!st.subs.size || st.subs.has(c.sub)));
   const saved = live.filter(c => !(st.year === 2026 && c.unsaved)), passed = saved.filter(c => !(st.year === 2026 && c.failed));
   $('saveYear').textContent = st.year;
-  donut('d1', saved.length, live.length, '#4f6bed'); donut('d2', passed.length, saved.length, '#2fb67c');
+  donut('d1', saved.length, live.length, K('red')); donut('d2', passed.length, saved.length, K('teal'));
   /* 분류 트리 */
   const cnt = s => CENTERS.filter(c => c.sub === s && c.start <= st.year && c.end >= st.year).length;
   $('tree').innerHTML = IND.map(i => {
@@ -259,7 +281,7 @@ function renderPanel(){
 }
 function donut(id, a, b, col){
   const r = 34, c = 2 * Math.PI * r;
-  $(id).innerHTML = `<circle cx="44" cy="44" r="${r}" fill="none" stroke="#eef0f5" stroke-width="7"/><circle cx="44" cy="44" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${b ? c * a / b : 0} ${c}" transform="rotate(-90 44 44)"/><text x="44" y="49" font-size="13" font-weight="bold" text-anchor="middle" fill="#1f2a44">${a}/${b}</text>`;
+  $(id).innerHTML = `<circle cx="44" cy="44" r="${r}" fill="none" stroke="${K('track')}" stroke-width="7"/><circle cx="44" cy="44" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${b ? c * a / b : 0} ${c}" transform="rotate(-90 44 44)"/><text x="44" y="49" font-size="13" font-weight="bold" text-anchor="middle" fill="${K('t')}">${a}/${b}</text>`;
 }
 function renderTop(){
   const sc = scope();
@@ -286,7 +308,7 @@ function renderKpis(rows, cur, cmp){
   <div class="card pad kpi"><div class="h"><i>≡</i>센터 중위수</div><div class="n">${fmt(med)}<span class="soft sx">평균 ${pctS(pct(med, cur.avg))}</span></div>
     <p>센터별 평균의 가운데 값 · 최고 ${fmt(mine.at(-1))} / 최저 ${fmt(mine[0])}</p><div class="prog"><div><i style="width:${Math.min(100, gap * 3)}%"></i></div>최고·최저 격차 ${gap.toFixed(1)}%</div></div>
   <div class="card pad kpi"><div class="h"><i>!</i>최저임금 여유</div><div class="n">+${mgAvg.toFixed(1)}%<span class="soft ${low ? 'so' : 'sg'}">${low ? `주의 ${low}곳` : '양호'}</span></div>
-    <p>센터별 최솟값의 평균 · 2% 미만은 다음 해 인상 시 미달 가능</p><div class="prog"><div><i style="width:${live.length ? (live.length - low) / live.length * 100 : 0}%;background:${low ? 'var(--warn)' : 'var(--ok)'}"></i></div>2% 미만 ${low}곳</div></div>`;
+    <p>센터별 최솟값의 평균 · 2% 미만은 다음 해 인상 시 미달 가능</p><div class="prog"><div><i style="width:${live.length ? (live.length - low) / live.length * 100 : 0}%;background:${low ? 'var(--red)' : 'var(--teal)'}"></i></div>2% 미만 ${low}곳</div></div>`;
 }
 
 /* 세부유형(또는 산업군)별 임금 구성 누적 막대 */
@@ -298,14 +320,14 @@ function renderStack(){
   const sv = $('stack'), W = sv.clientWidth || 600, H = 230, B = 28, T = 18, L = 40, m = st.unit === 'y' ? 12 : 1;
   const stepV = m === 12 ? 1000 : 100, max = Math.ceil(Math.max(...data.map(x => x.a.avg)) * m / 10000 * 1.1 / stepV) * stepV, y = v => T + (H - T - B) * (1 - v / max);
   const ticks = Array.from({ length:max / stepV + 1 }, (_, i) => i * stepV);
-  let s = ticks.map(v => `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#eef0f5"/><text x="${L - 6}" y="${y(v) + 4}" font-size="10" fill="#aab1c0" text-anchor="end">${v.toLocaleString()}</text>`).join('');
+  let s = ticks.map(v => `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="${K('line2')}"/><text x="${L - 6}" y="${y(v) + 4}" font-size="10" fill="${K('f')}" text-anchor="end">${v.toLocaleString()}</text>`).join('');
   const stp = (W - L) / Math.max(1, data.length), bw = Math.min(34, stp * 0.5);
   data.forEach(({ o, a }, i) => {
     const x = L + stp * i + stp / 2 - bw / 2, sel = st.subs.has(o) || (ax.key === 'ind' && Object.keys(TREE[o].subs).some(z => st.subs.has(z))), thin = a.n < MIN_N;
     let acc = 0;
-    [[a.base, '#4f6bed'], [a.fixed, '#8fa3f5'], [a.perf, '#c9d3fb']].forEach(([v, c], j) => { const vv = v * m / 10000; s += `<rect x="${x}" y="${y(acc + vv)}" width="${bw}" height="${y(acc) - y(acc + vv)}" fill="${c}" opacity="${thin ? .45 : 1}" ${j === 2 ? 'rx="3"' : ''}/>`; acc += vv; });
-    s += `<text x="${x + bw / 2}" y="${y(acc) - 6}" font-size="11" font-weight="bold" text-anchor="middle" fill="${sel ? '#4f6bed' : '#1f2a44'}">${Math.round(acc).toLocaleString()}</text>`;
-    s += `<text x="${x + bw / 2}" y="${H - 10}" font-size="11" text-anchor="middle" fill="${sel ? '#1f2a44' : '#7a8499'}" font-weight="${sel ? 'bold' : 'normal'}" style="cursor:pointer" data-pick="${o}">${o}${thin ? '*' : ''}</text>`;
+    [[a.base, K('s1')], [a.fixed, K('s2')], [a.perf, K('s3')]].forEach(([v, c], j) => { const vv = v * m / 10000; s += `<rect x="${x}" y="${y(acc + vv)}" width="${bw}" height="${y(acc) - y(acc + vv)}" fill="${c}" opacity="${thin ? .45 : 1}" ${j === 2 ? 'rx="3"' : ''}/>`; acc += vv; });
+    s += `<text x="${x + bw / 2}" y="${y(acc) - 6}" font-size="11" font-weight="bold" text-anchor="middle" fill="${sel ? K('red') : K('t')}">${Math.round(acc).toLocaleString()}</text>`;
+    s += `<text x="${x + bw / 2}" y="${H - 10}" font-size="11" text-anchor="middle" fill="${sel ? K('red') : K('m')}" font-weight="${sel ? 'bold' : 'normal'}" style="cursor:pointer" data-pick="${o}">${o}${thin ? '*' : ''}</text>`;
   });
   sv.innerHTML = s;
 }
@@ -317,23 +339,23 @@ function renderTrend(){
   const parentName = sc.ind && sc.path.length > 1 ? `${sc.ind} 전체` : '전체 산업';
   const P = YEARS.map(y => agg(yearOf(mine, y)).avg), F = YEARS.map(y => agg(yearOf(parentRows, y)).avg);
   $('trendUnit').textContent = `인당 ${st.unit === 'y' ? '연' : '월'}, 만원`;
-  $('trendLg').innerHTML = `<span><i style="background:var(--p)"></i>${sc.name}</span>${sc.path.length ? `<span><i style="background:#9fb0f7"></i>${parentName}</span>` : ''}`;
+  $('trendLg').innerHTML = `<span><i style="background:var(--red)"></i>${sc.name}</span>${sc.path.length ? `<span><i style="background:var(--gray-l)"></i>${parentName}</span>` : ''}`;
   const sv = $('trend'), W = sv.clientWidth || 540, H = 230, B = 28, T = 14, L = 46;
   const vals = P.concat(sc.path.length ? F : []).filter(Boolean).map(v => v * m / 10000), stepV = st.unit === 'y' ? 200 : 20, lo = Math.floor(Math.min(...vals) * 0.98 / stepV) * stepV, hi = Math.ceil(Math.max(...vals) * 1.02 / stepV) * stepV;
   const ya = v => T + (H - T - B) * (1 - (v * m / 10000 - lo) / (hi - lo)), xa = i => L + (W - L - 24) * i / (YEARS.length - 1);
-  let a = [0, 1, 2, 3].map(t => { const v = lo + (hi - lo) * t / 3, yy = T + (H - T - B) * (1 - t / 3); return `<line x1="${L}" x2="${W - 14}" y1="${yy}" y2="${yy}" stroke="#eef0f5"/><text x="${L - 6}" y="${yy + 4}" font-size="10" fill="#aab1c0" text-anchor="end">${Math.round(v).toLocaleString()}</text>`; }).join('');
+  let a = [0, 1, 2, 3].map(t => { const v = lo + (hi - lo) * t / 3, yy = T + (H - T - B) * (1 - t / 3); return `<line x1="${L}" x2="${W - 14}" y1="${yy}" y2="${yy}" stroke="${K('line2')}"/><text x="${L - 6}" y="${yy + 4}" font-size="10" fill="${K('f')}" text-anchor="end">${Math.round(v).toLocaleString()}</text>`; }).join('');
   const pts = arr => arr.map((v, i) => v == null ? null : [xa(i), ya(v)]).filter(Boolean);
   const path = p => p.map((q, i) => i ? `C${(p[i - 1][0] + q[0]) / 2},${p[i - 1][1]} ${(p[i - 1][0] + q[0]) / 2},${q[1]} ${q[0]},${q[1]}` : `M${q[0]},${q[1]}`).join(' ');
   const pp = pts(P);
-  a += `<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4f6bed" stop-opacity=".22"/><stop offset="1" stop-color="#4f6bed" stop-opacity="0"/></linearGradient></defs>`;
+  a += `<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${K('red')}" stop-opacity=".22"/><stop offset="1" stop-color="${K('red')}" stop-opacity="0"/></linearGradient></defs>`;
   if(pp.length) a += `<path d="${path(pp)} L${pp.at(-1)[0]},${H - B} L${pp[0][0]},${H - B}Z" fill="url(#g)"/>`;
-  if(sc.path.length) a += `<path d="${path(pts(F))}" fill="none" stroke="#9fb0f7" stroke-width="2"/>`;
-  a += `<path d="${path(pp)}" fill="none" stroke="#4f6bed" stroke-width="2.5"/>`;
-  YEARS.forEach((yy, i) => { a += `<text x="${xa(i)}" y="${H - 8}" font-size="10.5" text-anchor="middle" fill="${yy === st.year ? '#1f2a44' : '#7a8499'}" font-weight="${yy === st.year ? 'bold' : 'normal'}">${yy}</text>`; });
+  if(sc.path.length) a += `<path d="${path(pts(F))}" fill="none" stroke="${K('gray-l')}" stroke-width="2" stroke-dasharray="5 4"/>`;
+  a += `<path d="${path(pp)}" fill="none" stroke="${K('red')}" stroke-width="2.5"/>`;
+  YEARS.forEach((yy, i) => { a += `<text x="${xa(i)}" y="${H - 8}" font-size="10.5" text-anchor="middle" fill="${yy === st.year ? K('t') : K('m')}" font-weight="${yy === st.year ? 'bold' : 'normal'}">${yy}</text>`; });
   [st.cmp, st.year].forEach(yy => { const i = YEARS.indexOf(yy); if(P[i] == null) return; const x = xa(i), y = ya(P[i]);
-    a += `<line x1="${x}" x2="${x}" y1="${y}" y2="${H - B}" stroke="#4f6bed" stroke-dasharray="3 3" opacity="${yy === st.year ? 1 : .4}"/><circle cx="${x}" cy="${y}" r="${yy === st.year ? 5 : 4}" fill="#fff" stroke="#4f6bed" stroke-width="2.5"/>`; });
+    a += `<line x1="${x}" x2="${x}" y1="${y}" y2="${H - B}" stroke="${K('red')}" stroke-dasharray="3 3" opacity="${yy === st.year ? 1 : .4}"/><circle cx="${x}" cy="${y}" r="${yy === st.year ? 5 : 4}" fill="${K('card')}" stroke="${K('red')}" stroke-width="2.5"/>`; });
   const ci = YEARS.indexOf(st.year), x = xa(ci), y = ya(P[ci] || lo), tx = x - 138 < L ? x + 12 : x - 138, ty = Math.min(H - B - 50, y + 40);
-  a += `<g transform="translate(${tx},${ty})"><rect width="126" height="44" rx="6" fill="#fff" stroke="#eef0f5" style="filter:drop-shadow(0 4px 8px rgba(31,42,68,.12))"/><text x="12" y="20" font-size="13" font-weight="bold" fill="#1f2a44">${fmt(P[ci])}원</text><text x="12" y="35" font-size="10.5" fill="#7a8499">${st.year} · ${st.cmp} 대비 ${pctS(pct(P[ci], P[YEARS.indexOf(st.cmp)]))}</text></g>`;
+  a += `<g transform="translate(${tx},${ty})"><rect width="126" height="44" rx="6" fill="${K('tip')}" stroke="${K('line')}" style="filter:drop-shadow(0 4px 8px rgba(0,0,0,.15))"/><text x="12" y="20" font-size="13" font-weight="bold" fill="${K('t')}">${fmt(P[ci])}원</text><text x="12" y="35" font-size="10.5" fill="${K('m')}">${st.year} · ${st.cmp} 대비 ${pctS(pct(P[ci], P[YEARS.indexOf(st.cmp)]))}</text></g>`;
   sv.innerHTML = a;
 }
 
@@ -370,7 +392,7 @@ function renderList(scopeAvg){
       margin:`<span class="soft ${x.margin < 2 ? 'sr' : x.margin < 4 ? 'so' : 'sx'}">+${x.margin}%</span>`, rank:`${x.rank} / ${ranked.length}`, dev:devBar(d / 100) })[k];
   };
   $('list').innerHTML = `<thead><tr>${th('name', '센터')}<th>상태</th>${C.map(([k, l]) => k === 'wt' ? `<th>${l}</th>` : th(k, head(k), num.has(k) ? 'r' : '')).join('')}</tr></thead>
-  <tbody>${shown.map(x => { const d = x.a.avg && scopeAvg ? (x.a.avg / scopeAvg - 1) * 100 : 0, s = x.live ? statusOf(d) : [`${x.c.end}년 종료`, '#d5d9e2'];
+  <tbody>${shown.map(x => { const d = x.a.avg && scopeAvg ? (x.a.avg / scopeAvg - 1) * 100 : 0, s = x.live ? statusOf(d) : [`${x.c.end}년 종료`, K('line')];
     return `<tr class="${x.live ? '' : 'closed'}"><td><b>${x.c.center}</b></td><td><span class="st" style="border-color:${s[1]}">${s[0]}</span></td>${C.map(([k]) => `<td class="${num.has(k) ? 'r' : ''}">${cell(k, x)}</td>`).join('')}</tr>`; }).join('')
     || `<tr><td colspan="20" class="empty">조건에 맞는 센터가 없습니다. 왼쪽 분류·근무유형 선택을 확인해 주세요.</td></tr>`}</tbody>`;
   $('pager').innerHTML = `<span>${items.length ? `${st.page * st.pageSize + 1}–${Math.min(items.length, (st.page + 1) * st.pageSize)}` : 0} / ${items.length}개 · 상태 기준: ${sc.name} 평균 대비 ±3% / −7%</span>
@@ -394,7 +416,7 @@ function renderPivot(){
   list.sort((a, b) => ((b.c.n >= MIN_N) - (a.c.n >= MIN_N)) || (b.c.avg || 0) - (a.c.avg || 0));
   const row = (name, ys, c, p, cls, go) => { const thin = c.n && c.n < MIN_N;
     return `<tr class="${cls || ''}${thin ? ' thin' : ''}"${go ? ` data-pick="${go}"` : ''}><td>${name}${thin ? ' <span class="soft sx">표본 부족</span>' : ''}</td><td class="r">${c.n || '–'}</td><td class="r">${c.heads ? c.heads.toLocaleString() : '–'}</td>
-      ${ys.map((a, i) => `<td class="r" style="${show[i] === st.year ? 'background:#f3f5ff;font-weight:bold' : show[i] === st.cmp ? 'background:#fafbff' : ''}">${fmt(a.avg)}</td>`).join('')}
+      ${ys.map((a, i) => `<td class="r ${show[i] === st.year ? 'cy' : show[i] === st.cmp ? 'cp' : ''}">${fmt(a.avg)}</td>`).join('')}
       <td class="r ${!thin && c.avg > p.avg ? 'up' : !thin && p.avg ? 'dn' : ''}">${pctS(pct(c.avg, p.avg))}</td><td style="width:150px">${c.avg && tc.avg ? devBar(c.avg / tc.avg - 1, thin) : ''}</td></tr>`; };
   const totName = st.dim === 'cls' ? (clsAxis().ind ? `${clsAxis().ind} 전체` : '전체 산업') : `${sc.name} 전체`;
   $('pivot').innerHTML = `<thead><tr><th>${sp.label}</th><th class="r">센터</th><th class="r">인원</th>${show.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">${st.cmp}→${st.year}</th><th>${totName} 대비</th></tr></thead>
@@ -406,11 +428,11 @@ function renderHeat(){
   const ax = st.dim === 'reg' ? { key:'zone', label:'권역', opts:Object.keys(ZONES) } : clsAxis();
   const yr = yearOf(ROWS.filter(r => inReg(r) && (ax.key === 'zone' ? inCls(r) : !ax.ind || r.ind === ax.ind)), st.year);
   $('hmTitle').textContent = `${ax.label} × 근무유형 (${st.year}, 단위: ${unitL()})`;
-  const cell = (rs, w) => { const a = agg(rs); if(!a.n) return '<td style="color:#d5d9e2">–</td>';
-    if(a.n < MIN_N) return `<td style="color:#aab1c0">${fmt(a.avg)}<div style="font-size:10.5px">${a.n}개</div></td>`;
+  const cell = (rs, w) => { const a = agg(rs); if(!a.n) return '<td class="nx">–</td>';
+    if(a.n < MIN_N) return `<td class="na">${fmt(a.avg)}<small>${a.n}개</small></td>`;
     const dv = a.avg / agg(yr.filter(r => r.wt === w)).avg - 1, t = Math.min(1, Math.abs(dv) / 0.12);
-    const bg = Math.abs(dv) < 0.015 ? '#f3f4f6' : dv > 0 ? `rgba(143,163,245,${t * .7})` : `rgba(253,186,116,${t * .8})`;
-    return `<td style="background:${bg}">${fmt(a.avg)}<div style="font-size:10.5px;color:#7a8499">${a.n}개</div></td>`; };
+    const bg = Math.abs(dv) < 0.015 ? K('soft') : dv > 0 ? `rgba(0,165,255,${t * .4})` : `rgba(254,46,54,${t * .32})`;
+    return `<td style="background:${bg}">${fmt(a.avg)}<small>${a.n}개</small></td>`; };
   $('hm').innerHTML = `<thead><tr><th>${ax.label}</th>${WT.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody>${
     ax.opts.filter(o => yr.some(r => r[ax.key] === o)).map(o => `<tr><td>${o}</td>${WT.map(w => cell(yr.filter(r => r[ax.key] === o && r.wt === w), w)).join('')}</tr>`).join('')}</tbody>`;
 }
@@ -499,6 +521,14 @@ $('xls').onclick = () => {
   XLSX.writeFile(wb, `인건비_수준_통계_${scope().name}_${st.year}.xlsx`);
 };
 
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  [...$('theme').children].forEach(b => b.classList.toggle('on', b.dataset.th === t));
+  try{ localStorage.setItem('statsTheme', t); }catch(e){}
+}
+let savedTheme = 'light'; try{ savedTheme = localStorage.getItem('statsTheme') || 'light'; }catch(e){}
+setTheme(new URLSearchParams(location.search).get('theme') || savedTheme);
+$('theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ setTheme(b.dataset.th); render(); } };
 pickCls('');
 </script>
 </body></html>

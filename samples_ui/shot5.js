@@ -1,0 +1,13 @@
+const { chromium } = require('playwright');
+(async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport:{ width:1480, height:950 }, deviceScaleFactor:1.25, acceptDownloads:true });
+await p.route('**/xlsx.full.min.js', r => r.fulfill({ path: process.argv[2] }));
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('file://' + __dirname + '/stats_prototype.html'); await p.waitForTimeout(300);
+await p.click('#tree .row[data-sub="보험"]'); await p.waitForTimeout(200);
+await p.screenshot({ path: __dirname + '/s7_white.png', fullPage:true });
+await p.click('#theme button[data-th="dark"]'); await p.waitForTimeout(200);
+await p.screenshot({ path: __dirname + '/s7_black.png', fullPage:true });
+await p.click('#tabs button[data-t="heat"]'); await p.waitForTimeout(150);
+await p.screenshot({ path: __dirname + '/s7_black_heat.png', clip:{ x:0, y:880, width:1480, height:600 } });
+await p.reload(); await p.waitForTimeout(300);
+console.log('theme after reload:', await p.evaluate(() => document.documentElement.dataset.theme), 'errors', errs); await b.close(); })();
