@@ -1,0 +1,83 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>C안 분석·표 중심</title>
+<link rel="stylesheet" href="common.css"><script src="data.js"></script>
+<style>
+body{background:linear-gradient(135deg,#f4f6fb 0,#f4f6fb 70%,#e3e8fd 70%)}
+.app{display:grid;grid-template-columns:300px 1fr;gap:22px;padding:24px}
+.panel{background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(31,42,68,.08)}
+.panel section{padding:18px 20px;border-bottom:1px solid var(--line)}
+.panel h4{font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.logo{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:17px;color:var(--p)}
+.yr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;font-size:12px}
+.yr span{padding:7px 0;border-radius:6px;color:var(--m)}.yr .on{background:var(--p);color:#fff;font-weight:bold}.yr .cmp{background:var(--p2);color:#3b54d6}
+.donuts{display:flex;justify-content:space-around;text-align:center;font-size:11.5px;color:var(--m)}
+.tree div{padding:6px 0;font-size:12.5px;display:flex;align-items:center;gap:8px}
+.tree .c{padding-left:22px}.tree .n{margin-left:auto;font-size:11px;color:var(--f)}
+.cb{width:15px;height:15px;border:1.5px solid #c3c9d6;border-radius:4px;display:inline-block}.cb.on{background:var(--p);border-color:var(--p);position:relative}
+.cb.on::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.top{display:flex;align-items:center;gap:14px;background:#fff;border-radius:10px;padding:12px 18px;margin-bottom:18px}.top .sp{flex:1}
+.charts{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;margin-bottom:18px}
+.lg{display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--m);margin-top:6px}.lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.tbl{position:relative}
+.tools{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--m)}
+.inp{border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--f);width:170px}
+.st{border-left:3px solid;padding-left:8px;font-size:12px}
+.lift{box-shadow:0 8px 24px rgba(31,42,68,.12);position:relative;background:#fff}
+.colpick{position:absolute;right:14px;top:96px;width:200px;background:#fff;border-radius:8px;box-shadow:0 12px 30px rgba(31,42,68,.16);padding:12px 14px;font-size:12px}
+.colpick div{display:flex;gap:8px;align-items:center;padding:5px 0}
+.colpick h5{font-size:10.5px;color:var(--f);margin-bottom:6px;letter-spacing:1px}
+</style></head><body>
+<div class="app">
+<aside class="panel">
+<section><div class="logo">PAYTABLE <span style="font-size:18px;color:var(--m)">☰</span></div></section>
+<section><h4>기준 연도 <span class="lnk">비교 연도 선택</span></h4><div class="yr"><span>2019</span><span>2020</span><span>2021</span><span>2022</span><span>2023</span><span>2024</span><span class="cmp">2025</span><span class="on">2026</span></div></section>
+<section><h4>통계 저장 현황 <span class="chip">상세</span></h4><div class="donuts"><div><svg width="88" height="88" id="d1"></svg><div>저장 완료</div></div><div><svg width="88" height="88" id="d2"></svg><div>검사 통과</div></div></div></section>
+<section><h4>분류 선택 <span class="lnk">전체 해제</span></h4><div class="tree">
+<div><span class="cb"></span>공공<span class="n">44</span></div>
+<div><span class="cb on"></span><b>금융</b> ▾<span class="n">35</span></div>
+<div class="c"><span class="cb on"></span><b>보험</b><span class="n">15</span></div>
+<div class="c"><span class="cb"></span>은행<span class="n">6</span></div>
+<div class="c"><span class="cb"></span>카드<span class="n">8</span></div>
+<div class="c"><span class="cb"></span>증권<span class="n">2</span></div>
+<div class="c"><span class="cb"></span>금융 그 외<span class="n">4</span></div>
+<div><span class="cb"></span>통신<span class="n">23</span></div>
+<div><span class="cb"></span>유통·커머스<span class="n">33</span></div>
+<div><span class="cb"></span>제조·기타<span class="n">25</span></div></div></section>
+<section style="border:0"><h4>근무유형 · 지역</h4><div style="display:flex;flex-wrap:wrap;gap:6px"><span class="chip">주5일 ✓</span><span class="chip">주4일 ✓</span><span class="chip">단시간 ✓</span><span class="chip">교대·야간 ✓</span><span class="chip" style="background:#f0f2f6;color:#7a8499">지역 전체 ▾</span></div></section>
+</aside>
+<main>
+<div class="top"><span style="color:var(--f)">⌕</span><span style="color:var(--f)">센터명·지역 검색</span><div class="sp"></div><span class="chip">금융 › 보험 · 2026 vs 2025</span><div style="width:28px;height:28px;border-radius:50%;background:#c7d0f5"></div></div>
+<div class="charts">
+<div class="card"><div class="ch"><h3>금융 세부유형별 임금 구성 (인당 월, 만원)</h3></div><svg id="stack" width="100%" height="230"></svg>
+<div class="lg"><span><i style="background:#4f6bed"></i>기본급</span><span><i style="background:#8fa3f5"></i>고정 수당</span><span><i style="background:#c9d3fb"></i>B등급 업적수당</span></div></div>
+<div class="card"><div class="ch"><h3>인당 평균 연 총임금 추이</h3></div><svg id="area" width="100%" height="230"></svg>
+<div class="lg"><span><i style="background:#4f6bed"></i>보험</span><span><i style="background:#9fb0f7"></i>금융 전체</span></div></div></div>
+<div class="card tbl"><div class="ch"><h3>보험 센터 목록 <span class="soft sb">15</span></h3><div class="tools">표시 <span class="inp" style="width:auto;color:var(--t)">15 ▾</span><span class="inp">검색</span><span class="btn">CSV</span><span class="btn pri">엑셀</span><span style="font-size:16px;color:var(--m)">⚙</span></div></div>
+<table><thead><tr><th>센터</th><th>상태</th><th>지역</th><th>근무유형</th><th class="r">인원</th><th class="r">2025</th><th class="r">2026 연 총임금</th><th class="r">전년 대비</th><th class="r">보험 평균 대비</th></tr></thead><tbody id="t"></tbody></table>
+<div class="colpick"><h5>표시할 열</h5>
+<div><span class="cb on"></span>센터·지역</div><div><span class="cb on"></span>근무유형</div><div><span class="cb on"></span>인원</div><div><span class="cb"></span>기본급</div><div><span class="cb"></span>고정 수당</div><div><span class="cb"></span>B등급 업적수당</div><div><span class="cb on"></span>연 총임금</div><div><span class="cb on"></span>전년 대비</div><div><span class="cb"></span>최저임금 여유</div><div><span class="cb on"></span>평균 대비</div></div>
+</div>
+</main></div>
+<script>
+const C=['#4f6bed','#f5a524','#ef5b5b','#aab1c0'];
+document.getElementById('t').innerHTML=CENTERS.slice(0,9).map((c,i)=>{const s=status(c[4]),col={pb:'#4f6bed',pg:'#aab1c0',po:'#f5a524',pr:'#ef5b5b'}[s[1]],d=(c[4]/AVG-1)*100;
+ return `<tr${i===3?' class="lift"':''}><td><b>${c[0]}</b></td><td><span class="st" style="border-color:${col}">${s[0]}</span></td><td>${c[1]}</td><td>${c[2].map(w=>`<span class="wt">${w}</span>`).join('')}</td><td class="r">${c[3]}</td><td class="r" style="color:#7a8499">${won(Math.round(c[4]/(1+c[5]/100)))}</td><td class="r"><b>${won(c[4])}</b></td><td class="r up">+${c[5]}%</td><td class="r ${d<0?'dn':''}">${d>0?'+':''}${d.toFixed(1)}%</td></tr>`}).join('');
+// 도넛
+const donut=(id,a,b,col)=>{const r=34,c=2*Math.PI*r;document.getElementById(id).innerHTML=`<circle cx="44" cy="44" r="${r}" fill="none" stroke="#eef0f5" stroke-width="7"/><circle cx="44" cy="44" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c*a/b} ${c}" transform="rotate(-90 44 44)"/><text x="44" y="49" font-size="13" font-weight="bold" text-anchor="middle" fill="#1f2a44">${a}/${b}</text>`;};
+donut('d1',152,160,'#4f6bed');donut('d2',148,152,'#2fb67c');
+// 누적 막대
+const S=[['은행',[230,52,28]],['보험',[214,49,27]],['카드',[214,48,28]],['증권',[234,53,31]],['금융 그 외',[205,47,26]]],sv=document.getElementById('stack'),W=sv.clientWidth||620,H=230,B=26,T=10,L=36,y=v=>T+(H-T-B)*(1-v/350);
+let s='';[0,100,200,300].forEach(v=>s+=`<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#eef0f5"/><text x="${L-6}" y="${y(v)+4}" font-size="10" fill="#aab1c0" text-anchor="end">${v}</text>`);
+const st=(W-L)/S.length;S.forEach(([n,p],i)=>{let acc=0;const x=L+st*i+st/2-16;p.forEach((v,j)=>{s+=`<rect x="${x}" y="${y(acc+v)}" width="32" height="${y(acc)-y(acc+v)}" fill="${['#4f6bed','#8fa3f5','#c9d3fb'][j]}" ${j===2?'rx="4"':''}/>`;acc+=v;});
+ s+=`<text x="${x+16}" y="${y(acc)-6}" font-size="11" font-weight="bold" text-anchor="middle" fill="${n==='보험'?'#4f6bed':'#1f2a44'}">${acc}</text><text x="${x+16}" y="${H-8}" font-size="11" text-anchor="middle" fill="${n==='보험'?'#1f2a44':'#7a8499'}" ${n==='보험'?'font-weight="bold"':''}>${n}</text>`;});
+sv.innerHTML=s;
+// 영역 추이
+const Y=[2019,2020,2021,2022,2023,2024,2025,2026],P=[2846,2921,2984,3040,3117,3241,3371,3483],F=[2890,2965,3030,3095,3141,3264,3403,3520],av=document.getElementById('area'),W2=av.clientWidth||540,ya=v=>T+(H-T-B)*(1-(v-2700)/1000),xa=i=>40+(W2-60)*i/7;
+let a='';[2800,3100,3400,3700].forEach(v=>a+=`<line x1="40" x2="${W2-20}" y1="${ya(v)}" y2="${ya(v)}" stroke="#eef0f5"/><text x="34" y="${ya(v)+4}" font-size="10" fill="#aab1c0" text-anchor="end">${v.toLocaleString()}</text>`);
+const path=arr=>arr.map((v,i)=>{if(!i)return `M${xa(0)},${ya(v)}`;const x0=xa(i-1),x1=xa(i);return `C${(x0+x1)/2},${ya(arr[i-1])} ${(x0+x1)/2},${ya(v)} ${x1},${ya(v)}`;}).join(' ');
+a+=`<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4f6bed" stop-opacity=".22"/><stop offset="1" stop-color="#4f6bed" stop-opacity="0"/></linearGradient></defs>`;
+a+=`<path d="${path(P)} L${xa(7)},${H-B} L${xa(0)},${H-B}Z" fill="url(#g)"/><path d="${path(F)}" fill="none" stroke="#9fb0f7" stroke-width="2"/><path d="${path(P)}" fill="none" stroke="#4f6bed" stroke-width="2.5"/>`;
+Y.forEach((yy,i)=>a+=`<text x="${xa(i)}" y="${H-8}" font-size="10.5" text-anchor="middle" fill="#7a8499">${yy}</text>`);
+a+=`<line x1="${xa(7)}" x2="${xa(7)}" y1="${ya(P[7])}" y2="${H-B}" stroke="#4f6bed" stroke-dasharray="3 3"/><circle cx="${xa(7)}" cy="${ya(P[7])}" r="5" fill="#fff" stroke="#4f6bed" stroke-width="2.5"/>`;
+a+=`<g transform="translate(${xa(7)-118},${ya(P[7])-58})"><rect width="108" height="44" rx="6" fill="#fff" stroke="#eef0f5" filter="drop-shadow(0 4px 8px rgba(31,42,68,.12))"/><text x="12" y="20" font-size="13" font-weight="bold" fill="#1f2a44">3,483만</text><text x="12" y="35" font-size="10.5" fill="#7a8499">2026 · 전년 +3.3%</text></g>`;
+av.innerHTML=a;
+</script></body></html>

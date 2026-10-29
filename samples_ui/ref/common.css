@@ -1,0 +1,21 @@
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#4f6bed;--p2:#e8ecfd;--bg:#f4f6fb;--line:#eceff5;--t:#1f2a44;--m:#7a8499;--f:#aab1c0;--ok:#2fb67c;--warn:#f5a524;--bad:#ef5b5b}
+body{font-family:'Malgun Gothic','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--t);font-size:13px;width:1440px}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(31,42,68,.04),0 4px 14px rgba(31,42,68,.04);padding:16px 18px}
+.card h3{font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;color:var(--f);font-weight:normal;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid #f5f6fa;white-space:nowrap;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+.pill{display:inline-block;min-width:66px;text-align:center;font-size:11px;padding:4px 10px;border-radius:999px;color:#fff;font-weight:bold}
+.pb{background:var(--p)}.po{background:var(--warn)}.pr{background:var(--bad)}.pg{background:#9aa3b5}
+.soft{display:inline-block;font-size:11px;padding:3px 8px;border-radius:5px;font-weight:bold}
+.sb{background:#e8ecfd;color:#3b54d6}.so{background:#fff3dc;color:#b7791f}.sr{background:#fde8e8;color:#c53030}.sg{background:#e9f8f1;color:#1f8a5b}.sx{background:#f0f2f6;color:#7a8499}
+.lnk{color:var(--p);font-size:12px}
+.chip{display:inline-block;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--p2);color:#3b54d6}
+.btn{display:inline-block;font-size:12px;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--t)}
+.btn.pri{background:var(--p);color:#fff;border-color:var(--p);font-weight:bold}
+.wt{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;background:#f0f2f6;color:#56607a;margin-right:3px}
+.up{color:var(--ok)}.dn{color:var(--bad)}
+.search{background:#f4f6fb;border-radius:999px;padding:8px 16px;color:var(--f);font-size:12px;width:260px}

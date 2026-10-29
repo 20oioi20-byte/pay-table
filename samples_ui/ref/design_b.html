@@ -1,0 +1,76 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>B안 KPI 대시보드</title>
+<link rel="stylesheet" href="common.css"><script src="data.js"></script>
+<style>
+.app{display:grid;grid-template-columns:200px 1fr}
+.side{background:#fff;border-right:1px solid var(--line);padding:18px 14px;min-height:1300px}
+.logo{font-weight:bold;font-size:16px;padding:0 8px 20px;display:flex;gap:8px;align-items:center}.logo i{width:20px;height:20px;border-radius:5px;background:var(--p)}
+.sec{font-size:10.5px;color:var(--f);padding:14px 8px 6px;letter-spacing:1px}
+.nav div{padding:8px 10px;border-radius:7px;color:var(--m);font-size:12.5px}.nav .on{background:var(--p2);color:#3b54d6;font-weight:bold}.nav .s{padding-left:24px;font-size:12px}
+.main{padding:16px 22px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:6px}.top h1{font-size:16px}.top .sp{flex:1}
+.bc{font-size:12px;color:var(--m);margin:8px 0 14px}.bc b{color:var(--t)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.kpi .h{display:flex;gap:10px;align-items:center;font-weight:bold;font-size:13px}.kpi .h i{width:30px;height:30px;border-radius:8px;background:var(--p2)}
+.kpi .n{font-size:26px;font-weight:bold;margin:12px 0 6px;display:flex;align-items:center;gap:8px}
+.kpi p{font-size:11.5px;color:var(--m);line-height:1.5}
+.prog{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:11px;color:var(--m)}.prog div{flex:1;height:5px;background:#eef0f5;border-radius:3px}.prog i{display:block;height:100%;background:var(--p);border-radius:3px}
+.row{display:grid;gap:14px;margin-bottom:14px}
+.lg{display:flex;gap:14px;font-size:11px;color:var(--m)}.lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.reg div.it{margin-bottom:12px}.reg .l{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}.reg .b{height:6px;background:#eef0f5;border-radius:3px}.reg .b i{display:block;height:100%;background:#2d3a5c;border-radius:3px}
+.rv .l{display:flex;justify-content:space-between;font-size:12px;margin:9px 0 4px}
+.tools{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--m)}
+.sel{border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;background:#fff}
+.pager{display:flex;justify-content:space-between;align-items:center;padding-top:12px;font-size:12px;color:var(--m)}.pager span{display:inline-block;padding:4px 10px;border:1px solid var(--line);border-radius:5px;margin-left:4px}.pager .on{background:var(--p);color:#fff;border-color:var(--p)}
+</style></head><body>
+<div class="app"><aside class="side"><div class="logo"><i></i>PAYTABLE</div>
+<div class="sec">메뉴</div><div class="nav"><div>홈</div><div>조견표 생성</div><div>검사</div><div class="on">통계</div><div class="s">수준 통계</div><div class="s">센터 비교</div><div class="s">연도 추이</div><div>보고서</div></div>
+<div class="sec">관리</div><div class="nav"><div>분류 목록</div><div>공유 폴더</div><div>설정</div></div></aside>
+<main class="main">
+<div class="top"><h1>인건비 수준 통계</h1><div class="sp"></div><div class="search">센터명 검색</div><span class="btn">2026 ▾</span><span class="btn pri">엑셀 다운로드</span></div>
+<div class="bc">전체 산업 › 금융 › <b>보험</b> · 인원 가중 평균 · 가상 데이터</div>
+<div class="kpis">
+<div class="card kpi"><div class="h"><i></i>인당 평균 연 총임금</div><div class="n">3,483만 <span class="soft sg">+3.3%</span></div><p>보험 15개 센터 · 전체 산업 대비 +9.3%</p><div class="prog"><div><i style="width:78%"></i></div>전체 160개 중 상위 22%</div></div>
+<div class="card kpi"><div class="h"><i></i>운영 센터 · 인원</div><div class="n">15개 <span class="soft sb">1,765명</span></div><p>2026 통계 저장 완료 14개 · 미저장 1개</p><div class="prog"><div><i style="width:93%"></i></div>저장 14/15</div></div>
+<div class="card kpi"><div class="h"><i></i>센터 중위수</div><div class="n">3,527만 <span class="soft sx">±0.0</span></div><p>센터별 평균의 가운데 값 · 최고 3,777만 / 최저 3,192만</p><div class="prog"><div><i style="width:52%"></i></div>격차 18.3%</div></div>
+<div class="card kpi"><div class="h"><i></i>최저임금 여유</div><div class="n">+7.1% <span class="soft so">주의 3곳</span></div><p>직무별 기본급 ÷ (최저시급 × 소정시간) 최솟값 기준</p><div class="prog"><div><i style="width:71%;background:#f5a524"></i></div>2% 미만 3곳</div></div>
+</div>
+<div class="row" style="grid-template-columns:2fr 1fr">
+<div class="card"><div class="ch"><h3>연도별 인당 평균 총임금 · 인상률</h3><div class="lg"><span><i style="background:#3d8de0"></i>보험 평균(만원)</span><span><i style="background:#c98a52"></i>인상률(%)</span><span><i style="background:#c3c9d6"></i>전체 산업</span></div></div><svg id="combo" width="100%" height="260"></svg></div>
+<div class="card reg"><div class="ch"><h3>지역별 수준 (보험)</h3><span class="lnk">권역 보기</span></div>
+<div class="it"><div class="l"><span>서울 · 7곳</span><b>3,524만</b></div><div class="b"><i style="width:88%"></i></div></div>
+<div class="it"><div class="l"><span>대전 · 1곳</span><b>3,750만</b></div><div class="b"><i style="width:94%;opacity:.4"></i></div></div>
+<div class="it"><div class="l"><span>경기 · 2곳</span><b>3,519만</b></div><div class="b"><i style="width:87%;opacity:.4"></i></div></div>
+<div class="it"><div class="l"><span>충청 · 2곳</span><b>3,512만</b></div><div class="b"><i style="width:86%;opacity:.4"></i></div></div>
+<div class="it"><div class="l"><span>대구 · 2곳</span><b>3,283만</b></div><div class="b"><i style="width:72%;opacity:.4"></i></div></div>
+<div class="it"><div class="l"><span>부산 · 1곳</span><b>3,534만</b></div><div class="b"><i style="width:88%;opacity:.4"></i></div></div>
+<p style="font-size:11px;color:#aab1c0">연한 막대: 센터 5개 미만(참고)</p></div></div>
+<div class="row" style="grid-template-columns:1fr 1fr 1fr">
+<div class="card"><div class="ch"><h3>금융 세부유형 순위</h3><span class="lnk">전체</span></div><table><thead><tr><th>세부유형</th><th class="r">센터</th><th class="r">연 총임금</th></tr></thead><tbody>
+<tr><td>증권 <span class="soft sx">표본 부족</span></td><td class="r">2</td><td class="r">3,811만</td></tr><tr><td>은행</td><td class="r">6</td><td class="r">3,715만</td></tr><tr style="background:#f7f8ff"><td><b>보험</b></td><td class="r">15</td><td class="r"><b>3,483만</b></td></tr><tr><td>카드</td><td class="r">8</td><td class="r">3,481만</td></tr><tr><td>금융 그 외 <span class="soft sx">표본 부족</span></td><td class="r">4</td><td class="r">3,339만</td></tr></tbody></table></div>
+<div class="card" style="text-align:center"><div class="ch"><h3>보험 · 전체 산업 대비 위치</h3></div><div style="display:flex;justify-content:space-between;background:#f4f6fb;border-radius:8px;padding:10px 14px;text-align:left;font-size:11.5px;color:var(--m)"><div>보험 평균<br><b style="font-size:18px;color:#3b54d6">3,483만</b></div><div>전체 산업<br><b style="font-size:18px;color:#1f2a44">3,152만</b></div></div><svg id="gauge" width="220" height="140" style="margin-top:8px"></svg></div>
+<div class="card rv"><div class="ch"><h3>근무유형 구성 (인원)</h3></div><div style="font-size:28px;font-weight:bold">1,765명 <span style="font-size:12px;color:var(--m);font-weight:normal">15개 센터</span></div>
+<div class="l"><span>주5일(209h)</span><b>74%</b></div><div class="prog" style="margin:0"><div><i style="width:74%"></i></div></div>
+<div class="l"><span>주4일(167h)</span><b>9%</b></div><div class="prog" style="margin:0"><div><i style="width:9%"></i></div></div>
+<div class="l"><span>단시간(≤130h)</span><b>8%</b></div><div class="prog" style="margin:0"><div><i style="width:8%"></i></div></div>
+<div class="l"><span>교대·야간</span><b>9%</b></div><div class="prog" style="margin:0"><div><i style="width:9%"></i></div></div></div></div>
+<div class="card"><div class="ch"><h3>보험 센터 목록</h3><div class="tools">지역 <span class="sel">전체 ▾</span> 상태 <span class="sel">전체 ▾</span><span class="sel" style="width:180px;color:#aab1c0">센터명 검색</span></div></div>
+<table><thead><tr><th>센터</th><th>지역</th><th>근무유형</th><th class="r">인원</th><th class="r">인당 연 총임금</th><th class="r">전년 대비</th><th class="r">순위</th><th>상태</th></tr></thead><tbody id="t"></tbody></table>
+<div class="pager"><span style="border:0;margin:0">1–8 / 15</span><div><span>이전</span><span class="on">1</span><span>2</span><span>다음</span></div></div></div>
+</main></div>
+<script>
+document.getElementById('t').innerHTML=CENTERS.slice(0,8).map((c,i)=>{const s=status(c[4]);return `<tr><td><b>${c[0]}</b></td><td>${c[1]}</td><td>${c[2].map(w=>`<span class="wt">${w}</span>`).join('')}</td><td class="r">${c[3]}</td><td class="r">${won(c[4])}</td><td class="r up">+${c[5]}%</td><td class="r">${i+1}/15</td><td><span class="soft ${s[2]}">${s[0]}</span></td></tr>`}).join('');
+// 복합 차트
+const Y=[2019,2020,2021,2022,2023,2024,2025,2026],V=[2846,2921,2984,3040,3117,3241,3371,3483],A=[2560,2640,2700,2760,2829,2930,3040,3152];
+const svg=document.getElementById('combo'),W=svg.clientWidth||720,H=260,L=46,B=30,T=14,yv=v=>T+(H-T-B)*(1-(v-2000)/2000),R=[null,...V.slice(1).map((v,i)=>(v/V[i]-1)*100)],yr=r=>T+(H-T-B)*(1-(r-1)/4.5);
+let s='';[2000,2500,3000,3500,4000].forEach(v=>s+=`<line x1="${L}" x2="${W-40}" y1="${yv(v)}" y2="${yv(v)}" stroke="#eef0f5"/><text x="${L-8}" y="${yv(v)+4}" font-size="10" fill="#aab1c0" text-anchor="end">${v.toLocaleString()}</text>`);
+[1,2,3,4,5].forEach(r=>s+=`<text x="${W-34}" y="${yr(r)+4}" font-size="10" fill="#c98a52">${r}%</text>`);
+const step=(W-L-60)/Y.length;let pts=[],ap=[];
+Y.forEach((y,i)=>{const x=L+step*i+step/2;s+=`<rect x="${x-13}" y="${yv(V[i])}" width="26" height="${H-B-yv(V[i])}" rx="4" fill="#3d8de0"/><text x="${x}" y="${H-10}" font-size="11" fill="#7a8499" text-anchor="middle">${y}</text>`;ap.push(`${x},${yv(A[i])}`);if(R[i])pts.push([x,yr(R[i]),R[i]]);});
+s+=`<polyline points="${ap.join(' ')}" fill="none" stroke="#c3c9d6" stroke-width="2" stroke-dasharray="4 4"/>`;
+s+=`<path d="M${pts.map(p=>p[0]+','+p[1]).join(' L')}" fill="none" stroke="#c98a52" stroke-width="2.2"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#fff" stroke="#c98a52" stroke-width="2"/>`).join('');
+s+=`<text x="${L+step*7.5}" y="${yv(V[7])-8}" font-size="11" font-weight="bold" fill="#1f2a44" text-anchor="middle">3,483</text>`;
+svg.innerHTML=s;
+// 게이지: 전체 산업 분포에서 보험 평균 위치(백분위 78)
+const g=document.getElementById('gauge');let gs='';for(let i=0;i<40;i++){const a=Math.PI*(1-i/39),x1=110+70*Math.cos(a),y1=120-70*Math.sin(a),x2=110+90*Math.cos(a),y2=120-90*Math.sin(a);gs+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${i/39<=0.78?'#3d8de0':'#e3e7ef'}" stroke-width="3" stroke-linecap="round"/>`;}
+gs+=`<text x="110" y="108" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2a44">78</text><text x="110" y="128" font-size="11" text-anchor="middle" fill="#7a8499">백분위</text>`;g.innerHTML=gs;
+</script></body></html>
