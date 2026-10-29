@@ -101,7 +101,7 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   const snap = await p.evaluate(() => SNAPS.at(-1));
   const j0 = snap.jobs[0];
   ok(j0.perf > 0 && j0.perf < j0.stdPaySum && j0.compareMonthly === j0.monthlyTotal, `비교 금액 = 월 보수 합계 (업적수당 ${j0.perf}, 합계 ${j0.monthlyTotal})`);
-  ok(Math.abs(j0.hourly - j0.monthlyTotal / j0.hours) < 0.01, '시급 = 월 보수 합계 ÷ 소정시간');
+  ok(Math.abs(j0.hourly - (j0.stdPaySum + j0.perf) / j0.wHours) < 0.01, '시급 = (기준급여 소계 + B등급 업적수당) ÷ 기본급 수식 시간수');
   ok(snap.jobs.every(j => j.wHours > 0), '직무별 소정시간 저장: ' + snap.jobs.map(j => j.wHours).join(','));
   await p.click('#v2Next [data-n="stats"]');
   await p.waitForSelector('#sGrid .s-ic');

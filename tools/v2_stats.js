@@ -600,9 +600,9 @@
       /* 실제 양식은 등급 행이 업적수당 금액 → 비교 금액은 월 보수 합계(B등급 기준)로 */
       if(typeof j.gradeB === 'number' && j.stdPaySum && j.gradeB < j.stdPaySum * 0.5){
         j.perf = j.gradeB;
-        j.compareMonthly = j.monthlyTotal ?? (j.stdPaySum + j.gradeB + num(j.overtime) + num(j.night) + num(j.telecom));
-        j.hourly = j.compareMonthly && j.hours ? j.compareMonthly / j.hours : null;
       }
+      /* 비교 금액·시급은 v2_report.js의 정의(월 보수 합계 / (소계+업적수당) ÷ 수식 시간수)로 저장 */
+      if(window.__v2pay){ const p = window.__v2pay(j); j.compareMonthly = p.monthly; j.hourly = p.hourly; }
     });
     return rec;
   };

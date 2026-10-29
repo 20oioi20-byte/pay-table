@@ -213,9 +213,10 @@
       const x = R.jobs[i]; if(!x) return;
       if(x.heads != null) j.heads = x.heads;
       if(x.manual != null){   // B등급 없음·0원 → 입력한 1인 업적수당을 월 보수 합계에 반영
-        j.perf = x.manual; j.perfManual = true;
+        j.perf = x.manual; j.gradeB = x.manual; j.perfManual = true;
         j.monthlyTotal = num(j.stdPaySum) + num(j.overtime) + num(j.night) + num(j.telecom) + x.manual;
-        j.compareMonthly = j.monthlyTotal; j.hourly = j.hours ? j.compareMonthly / j.hours : null;
+        const p = window.__v2pay ? window.__v2pay(j) : { monthly: j.monthlyTotal, hourly: j.hours ? j.monthlyTotal / j.hours : null };
+        j.compareMonthly = p.monthly; j.hourly = p.hourly;
       }
     });
     if(R.received != null) rec.quote = { incomplete: R.missing.length > 0, received: R.received, paid: R.paid, gap: R.gap, rate: R.rate, recvSrc: R.recvSrc, quoteTotal: R.quoteTotal,

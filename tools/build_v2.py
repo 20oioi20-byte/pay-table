@@ -185,7 +185,7 @@ def main():
     s = must_replace(s, '<html lang="ko">', '<html lang="ko" data-skin="kt-light">')
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
            'links': links}
-    js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8') + '\n' + (ROOT / 'tools' / 'v2_stats.js').read_text(encoding='utf-8') + '\n' + (ROOT / 'tools' / 'v2_quote.js').read_text(encoding='utf-8')
+    js = '\n'.join((ROOT / 'tools' / f).read_text(encoding='utf-8') for f in ('v2_inject.js', 'v2_stats.js', 'v2_report.js', 'v2_quote.js'))
     i = s.rindex('</body>')
     s = (s[:i] + '<script>\n/* 관리자 설정: build_v2.py 인자로 바꿉니다 */\nwindow.V2_CONFIG = '
          + json.dumps(cfg, ensure_ascii=False) + ';\n' + js + '\n</script>\n' + s[i:])
