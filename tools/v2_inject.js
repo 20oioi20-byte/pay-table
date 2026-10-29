@@ -609,6 +609,12 @@
         <label><input type="radio" name="v2Mode" value="auto" id="v2ModeAuto"> <b>자동(M365)</b> · 01_원본에 올려 자동 처리 (OneDrive 동기화 반출 예외 승인 후)</label>
         <span class="hint" id="v2ModeMsg"></span>
       </div>
+      <div class="v2-mode">
+        <span class="flabel">결과물 자동 보관 ${helpBtn('archive')}</span>
+        <label><input type="checkbox" id="v2AutoArchive"> 조견표 ZIP·PNG·보고서를 다운로드할 때 공유 폴더(03_조견표·05_보고서)에도 저장
+          <span class="hint">(회사 DLP가 OneDrive 업로드를 차단하면 끄세요 · 기본 꺼짐)</span></label>
+        <span class="hint" id="v2ArchiveMsg"></span>
+      </div>
       <div class="v2-admins">
         <label>관리자 이니셜 <input type="text" id="v2AdminIni" placeholder="예: HGD, ABC"></label>
         <button type="button" class="btn-ghost btn-sm" id="v2AdminSave">저장</button>
@@ -635,6 +641,7 @@
     $('v2AdminIni').value = (SETTINGS.admins || []).join(', ');
     $({ auto:'v2ModeAuto', web:'v2ModeWeb', paste:'v2ModePaste' }[uploadMode()]).checked = true;
     renderDropHint();
+    $('v2AutoArchive').checked = SETTINGS.autoArchive === true;
   }
   function renderDropHint(){
     const hint = document.querySelector('#dropzone .hint'); if(!hint) return;
@@ -643,6 +650,11 @@
       web: '보안 파일은 SharePoint 업로드 폴더에 끌어다 놓으면 자동으로 읽습니다 (원본을 PC 동기화 폴더에 복사하지 않음)',
       paste: '원본 파일은 PC 밖으로 보내지 않으며, 보안 파일은 붙여넣기 안내가 나옵니다' }[uploadMode()];
   }
+  $('v2AutoArchive').addEventListener('change', async e => {
+    SETTINGS.autoArchive = e.target.checked; await saveSettings();
+    if(shareDir && await perm(shareDir, false)) await publishSettings();
+    $('v2ArchiveMsg').textContent = e.target.checked ? '켰습니다. 다운로드할 때 공유 폴더에도 저장합니다.' : '껐습니다. 결과물은 PC에만 다운로드됩니다.';
+  });
   document.querySelectorAll('input[name="v2Mode"]').forEach(r => r.addEventListener('change', async () => {
     SETTINGS.uploadMode = r.value; await saveSettings();
     let shared = false;
@@ -681,6 +693,7 @@
   async function runHealth(){
     const rows = [];
     const add = (state, label, detail, action) => rows.push({ state, label, detail, action: action || '' });
+    add('ok', '결과물 자동 보관', SETTINGS.autoArchive === true ? '켜짐 · ZIP·보고서를 03_조견표·05_보고서에도 저장 (DLP 팝업이 뜨면 기준정보에서 끄기)' : '꺼짐 · 결과물은 PC에만 다운로드');
     add('ok', '보안 파일 처리 방식', { auto:'자동(M365) · 01_원본에 올려 처리 (보안 예외 승인 필요)', web:'웹 업로드 · SharePoint 급여원본 폴더에 직접 올림', paste:'붙여넣기 · 원본 파일을 PC 밖으로 보내지 않음' }[uploadMode()]);
     add(typeof window.showDirectoryPicker === 'function' ? 'ok' : 'bad', '브라우저', typeof window.showDirectoryPicker === 'function' ? '폴더 연결 지원(Chrome·Edge)' : '이 브라우저는 폴더 연결을 지원하지 않습니다. Chrome이나 Edge로 열어 주세요.');
     if(!shareDir){
@@ -779,7 +792,7 @@
   const origAnchorClick = HTMLAnchorElement.prototype.click;
   HTMLAnchorElement.prototype.click = function(){
     const name = this.download, href = this.href;
-    if(name && /^blob:/.test(href) && shareDir){
+    if(name && /^blob:/.test(href) && shareDir && SETTINGS.autoArchive === true){
       const target = /\.(zip|png)$/i.test(name) ? SUB.table : /^인건비분석보고서.*\.(doc|html)$/i.test(name) ? SUB.report : null;
       if(target){
         const got = fetch(href).then(r => r.blob());
@@ -1034,6 +1047,7 @@
     burden: '4대보험 사업주 부담분과 퇴직급여 충당분을 합한 비율입니다. 연간 비용 계산에 쓰입니다.',
     minwage: '해당 연도 최저시급입니다. 최저임금 미달 검사와 여유율 계산에 쓰입니다.',
     paste: '보안 파일은 회사 보안 정책상 PC 밖으로 보내면 차단됩니다. PC의 Excel이 값을 읽어 주고, 화면에는 숫자 데이터만 붙여넣으므로 파일이 밖으로 나가지 않습니다.',
+    archive: '꼭 필요한 기능은 아닙니다. 다른 사람과 결과물을 함께 보거나 서버에 남기고 싶을 때만 켭니다. 회사 DLP가 OneDrive 업로드를 반출로 차단하면 팝업이 반복되므로 끄고, 필요할 때 SharePoint 웹에 직접 올리세요.',
     upload: '보안 파일은 SharePoint(회사 M365) 업로드 폴더에 브라우저로 직접 올립니다. 회사 M365가 값을 읽어 결과를 보내 주면 이 화면이 자동으로 받아 조견표를 만듭니다.',
     mode: '웹 업로드(권장)는 보안 파일을 SharePoint에 브라우저로 직접 올립니다. 자동(M365)은 보안 파일을 OneDrive로 올리므로 회사 DLP의 반출 예외 승인이 필요합니다. 승인 전에는 붙여넣기를 쓰세요. 바꾸면 모든 사용자에게 적용됩니다.',
     history: '요청번호별 자동 처리 상태입니다. 처리 중은 15분까지 정상이며, 넘으면 지연으로 표시합니다.'
@@ -1317,7 +1331,9 @@
     else if(pend){ step = 1; msg = `확인 항목 ${pend}개를 확인해 주세요.`; act = '<button type="button" class="btn-ghost" data-n="check">검사 결과 보기</button><button type="button" class="btn-primary" data-n="ackall">모두 확인함</button>'; }
     else if(!made){ step = 2; msg = '검사 완료 · 조견표를 만들 수 있습니다.'; act = '<button type="button" class="btn-primary" data-n="gen">조견표 생성</button>'; }
     else if(!zipDone){ step = 3; msg = `조견표 ${cardRegistry.length}장 생성됨 · 미리보기를 확인하고 받으세요.`; act = '<button type="button" class="btn-ghost" data-n="result">결과 보기</button><button type="button" class="btn-primary" data-n="zip">PNG(ZIP) 받기</button>'; }
-    else if(!snapSaved){ step = 4; msg = '다운로드 완료 · 마지막으로 통계에 저장하세요.'; act = '<button type="button" class="btn-ghost" data-n="zip">다시 받기</button><button type="button" class="btn-primary" data-n="snap">통계에 저장</button>'; }
+    else if(!snapSaved){ step = 4; msg = '다운로드 완료 · 마지막으로 통계에 저장하세요.'; act = '<button type="button" class="btn-ghost" data-n="zip">다시 받기</button>'
+      + (SETTINGS.autoArchive !== true && folderUrl(SUB.table) ? linkBtn('SharePoint 03_조견표에 올리기', folderUrl(SUB.table)) : '')
+      + '<button type="button" class="btn-primary" data-n="snap">통계에 저장</button>'; }
     else { step = 5; msg = '완료 · 통계와 보고서에 반영되었습니다.'; act = '<button type="button" class="btn-ghost" data-n="stats">급여 통계 보기</button><button type="button" class="btn-ghost" data-n="report">보고서 만들기</button><button type="button" class="btn-primary" data-n="new">다른 파일 올리기</button>'; }
     $('v2NextSteps').innerHTML = ['검사 확인', '조견표 생성', 'PNG 받기', '통계 저장'].map((t, i) => `<span class="${i + 1 < step ? 'done' : i + 1 === step ? 'on' : ''}">${i + 1 < step ? '✓' : (i + 1) + '.'} ${t}</span>`).join('');
     $('v2NextMsg').textContent = zipBusy ? nextOverride : msg;

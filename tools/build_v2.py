@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.4.0'
+APP_VERSION = '2.4.1'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -121,6 +121,7 @@ V2_CSS = """
   .v2-next-steps span.on{ background:#fff; color:#0f1b30; font-weight:800; } .v2-next-steps span.done{ color:#8fd6a6; }
   .v2-next-msg{ flex:1; min-width:200px; font-size:13.5px; font-weight:600; }
   .v2-next-act{ display:flex; gap:8px; flex-wrap:wrap; }
+  .v2-next-act a.v2-link.btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
   .v2-next-act .btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
   .v2-flash{ outline:3px solid var(--pri); outline-offset:3px; transition:outline-color .6s; }
   .v2-sandbox{ background:var(--bad-soft); border-color:#f3c2c2; color:var(--bad); }

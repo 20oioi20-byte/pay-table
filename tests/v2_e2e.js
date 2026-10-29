@@ -124,6 +124,10 @@ const seedFolders = p => p.evaluate(async () => {
   ok(await p.inputValue('#v2q_centerType') === '금융', '센터유형 "금융" 자동 채움: ' + await p.textContent('#v2Prefill'));
 
   console.log('5-2. 결과 자동 보관 (ZIP → 03_조견표)');
+  await p.evaluate(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['zip'])); a.download = '급여조견표_끔.zip'; a.click(); });
+  await p.waitForTimeout(500);
+  ok(!(await listDir(p, '03_조견표')).some(n => n.includes('끔')), '기본(꺼짐): 공유 폴더에 저장하지 않음');
+  await p.evaluate(() => { SETTINGS.autoArchive = true; });
   await p.evaluate(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['zip'])); a.download = '급여조견표_시험.zip'; a.click(); });
   await p.waitForTimeout(800);
   ok((await listDir(p, '03_조견표')).some(n => n.endsWith('_급여조견표_시험.zip')), '03_조견표에 저장');
