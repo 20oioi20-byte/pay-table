@@ -1,0 +1,39 @@
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+.body{padding:22px 26px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center}.chip{border:1px solid #d1d5db;border-radius:999px;padding:6px 12px;font-size:13px;background:#fff}.chip.on{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.k{border:1px solid #e5e7eb;border-radius:10px;padding:14px}.k .l{font-size:12.5px;color:#6b7280}.k .n{font-size:24px;font-weight:bold;margin:6px 0 2px}.k .d{font-size:12.5px}
+.up{color:#15803d}.dn{color:#b91c1c}
+.rows{border:1px solid #e5e7eb;border-radius:10px;padding:8px 18px 16px}
+.hdr{display:grid;grid-template-columns:210px 1fr 110px 120px;font-size:12px;color:#6b7280;padding:10px 0;border-bottom:1px solid #e5e7eb}
+.r{display:grid;grid-template-columns:210px 1fr 110px 120px;align-items:center;padding:14px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
+.nm b{display:block}.nm span{font-size:12px;color:#6b7280}
+.track{position:relative;height:34px}
+.axis{position:absolute;top:16px;left:0;right:0;height:2px;background:#e5e7eb}
+.p1090{position:absolute;top:12px;height:10px;background:#dbeafe;border-radius:5px}
+.p2575{position:absolute;top:8px;height:18px;background:#93c5fd;border-radius:5px}
+.med{position:absolute;top:4px;width:2px;height:26px;background:#1e3a8a}
+.min{position:absolute;top:0;height:34px;border-left:2px dashed #ef4444}
+.me{position:absolute;top:6px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:#f97316;border:3px solid #fff;box-shadow:0 0 0 1px #f97316}
+.scale{display:grid;grid-template-columns:210px 1fr 230px;font-size:11.5px;color:#9ca3af;margin-top:6px}.scale div{display:flex;justify-content:space-between}
+.pc{font-weight:bold;text-align:right}.gap{text-align:right;font-size:13px}
+.leg{display:flex;gap:18px;font-size:12.5px;color:#4b5563;margin-top:14px;align-items:center}.leg i{display:inline-block;vertical-align:middle;margin-right:5px}
+.warn{margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px}
+</style></head><body><div class="frame">
+<div class="top"><div><h1>인건비 통계 — 시급 환산 비교 (2026-11 기준)</h1><div class="sub">비교 월액 = 기준급여 소계 + B등급 업적수당 · 시급 = 비교 월액 ÷ 직무별 월 소정시간(수식 추출)</div></div><span class="btn btn-g">계산식 보기</span></div>
+<div class="body">
+<div class="chips"><b style="font-size:13px;margin-right:4px">비교 집단</b><span class="chip on">같은 소정시간대 ✓</span><span class="chip on">상담유형: 인바운드</span><span class="chip">센터유형: 전체</span><span class="chip">지역: 전체</span><span style="font-size:12.5px;color:#6b7280;margin-left:6px">→ 표본 14개 센터 · 38개 직무</span></div>
+<div class="kpis">
+<div class="k"><div class="l">가상센터A 평균 시급(가중)</div><div class="n">11,050원</div><div class="d up">전년 대비 +3.1%</div></div>
+<div class="k"><div class="l">비교 집단 중위수</div><div class="n">11,480원</div><div class="d dn">중위수 대비 −430원 (−3.7%)</div></div>
+<div class="k"><div class="l">백분위</div><div class="n">31 / 100</div><div class="d">하위 3분위 구간</div></div>
+<div class="k"><div class="l">최저임금 여유</div><div class="n">+7.1%</div><div class="d">최소 직무 기준 +2.0%</div></div></div>
+<div class="rows"><div class="hdr"><div>직무 (소정시간 · 표본)</div><div>분포: 연한 막대 P10–P90 · 진한 막대 P25–P75 · 세로선 중위수 · <span style="color:#ef4444">점선 최저임금</span></div><div style="text-align:right">우리 백분위</div><div style="text-align:right">중위수 대비</div></div>
+<div class="r"><div class="nm"><b>상담사</b><span>209h · n=14</span></div><div class="track"><div class="axis"></div><div class="min" style="left:9.1%"></div><div class="p1090" style="left:12%;width:68%"></div><div class="p2575" style="left:27%;width:31%"></div><div class="med" style="left:42%"></div><div class="me" style="left:30%"></div></div><div class="pc">29</div><div class="gap dn">−430원</div></div>
+<div class="r"><div class="nm"><b>상담사(주4일)</b><span>167h · n=6</span></div><div class="track"><div class="axis"></div><div class="min" style="left:9.1%"></div><div class="p1090" style="left:14%;width:58%"></div><div class="p2575" style="left:24%;width:30%"></div><div class="med" style="left:40%"></div><div class="me" style="left:46%"></div></div><div class="pc">62</div><div class="gap up">+190원</div></div>
+<div class="r"><div class="nm"><b>파트장</b><span>209h · n=12</span></div><div class="track"><div class="axis"></div><div class="min" style="left:9.1%"></div><div class="p1090" style="left:40%;width:52%"></div><div class="p2575" style="left:52%;width:28%"></div><div class="med" style="left:66%"></div><div class="me" style="left:57%"></div></div><div class="pc">35</div><div class="gap dn">−320원</div></div>
+<div class="r" style="opacity:.55"><div class="nm"><b>단시간 상담사</b><span>104h · n=3</span></div><div class="track"><div class="axis"></div><div class="min" style="left:9.1%"></div><div class="p2575" style="left:12%;width:16%;background:#d1d5db"></div><div class="me" style="left:15%;background:#9ca3af;box-shadow:0 0 0 1px #9ca3af"></div></div><div class="pc">—</div><div class="gap"><span class="tag t-warn">표본 부족</span></div></div>
+<div class="scale"><div></div><div><span>10,000</span><span>11,000</span><span>12,000</span><span>13,000</span><span>14,000</span></div><div></div></div>
+</div>
+<div class="leg"><span><i style="width:14px;height:14px;border-radius:50%;background:#f97316"></i>가상센터A</span><span><i style="width:20px;height:10px;background:#93c5fd"></i>중간 50%</span><span><i style="width:20px;height:10px;background:#dbeafe"></i>중간 80%</span><span><i style="width:2px;height:14px;background:#1e3a8a"></i>중위수</span></div>
+<div class="warn">⚠ <b>단시간 상담사</b>는 같은 소정시간대 표본이 3개(최소 5개 필요)라 백분위를 표시하지 않습니다. [비교 집단 넓히기: 소정시간 무관] 을 누르면 n=11로 계산합니다.</div>
+</div></div></body></html>
