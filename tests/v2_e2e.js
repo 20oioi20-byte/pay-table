@@ -207,6 +207,19 @@ const seedFolders = p => p.evaluate(async () => {
   await p.waitForFunction(() => /웹/.test(document.getElementById('v2HistBody').textContent));
   ok(true, '처리 이력에 웹 업로드 결과 표시');
 
+  console.log('8-1. [SharePoint에 바로 올리기] 한 번만: 시스템에 파일을 올리지 않아도 새 결과 자동 수신');
+  await p.evaluate(() => { window.V2_CONFIG.links = Object.assign({}, window.V2_CONFIG.links, { upload: 'about:blank' }); window.__v2.renderLinks(); });
+  await p.click('#tabBtnCreate');
+  ok(await p.isVisible('#v2WebGo'), '[SharePoint에 바로 올리기] 버튼 표시');
+  const [popup] = await Promise.all([p.context().waitForEvent('page'), p.click('#v2WebGo')]);
+  await popup.close();
+  await p.waitForFunction(() => document.getElementById('v2State').textContent === '웹 업로드');
+  await p.waitForTimeout(6000);
+  await fakeFlow(p, '센터B_급여테이블');
+  await p.waitForFunction(() => document.getElementById('fileMeta').textContent.includes('자동연동'), null, { timeout: 25000 });
+  // (시험 환경은 한글 파일명이 인코딩되어 보이므로 상태로 확인)
+  ok(await p.textContent('#v2State') === '완료', '시스템에 파일을 올리지 않고도 새 결과를 받아 조견표 화면');
+
   console.log('6. 다시 열면 안내 없이 바로 연결');
   await p.reload(); await p.waitForTimeout(1500);
   ok(await p.$eval('#v2Wizard', e => e.hidden), '첫 실행 안내 안 뜸');

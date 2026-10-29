@@ -91,6 +91,12 @@
     <div class="v2-q" id="v2Q"></div>
     <div class="v2-act" id="v2JobAct"></div>`;
   $('dropzone').after(qPanel);
+  /* 웹 업로드 바로 시작: 시스템에 파일을 올리지 않고 SharePoint에만 한 번 올림 → 이후 새로 생긴 결과를 자동으로 받음 */
+  const webStart = document.createElement('div');
+  webStart.className = 'v2-webstart'; webStart.hidden = true;
+  webStart.innerHTML = '<a class="btn-primary v2-big" id="v2WebGo" target="_blank" rel="noopener">보안 급여테이블 → SharePoint에 바로 올리기 ↗</a><span class="hint">누르면 업로드 폴더가 열립니다. 거기에 파일을 끌어다 놓기만 하면, 이 화면이 결과를 자동으로 받아 조견표를 만듭니다. (시스템에는 따로 올리지 않아도 됩니다)</span>';
+  $('dropzone').before(webStart);
+  $('v2WebGo').addEventListener('click', () => { switchAppTab('create'); startWebWait(); });
 
   /* ---------- 저장(IndexedDB kv) ---------- */
   const kvGet = k => sysStore.getKV(k).catch(() => null);
@@ -414,9 +420,26 @@
     if(canWatch){ await kvSet('pending', pending); startPolling(true); }
     else $('v2JobMsg').textContent = '공유 폴더가 연결되어 있지 않아 결과를 자동으로 받지 못합니다. 올린 뒤 1~5분 기다렸다가 02_연동데이터에서 결과 파일(.json)을 내려받아 여기에 끌어다 놓아 주세요.';
   }
-  function webSteps(name, up){
+  function startWebWait(){
+    showParseError(new Error(''));
+    requestId = '';
+    kvGet('lastAnswers').then(a => { answers = Object.assign({}, a || {}, answers || {}); });
+    answers = answers || {};
+    pending = { requestId:'', file:'SharePoint에 올린 파일', base:'', web:true, any:true, startedAt: Date.now() };
+    renderJob();
+    $('v2JobSub').textContent = 'SharePoint 업로드 폴더에 올린 파일의 결과를 기다리는 중';
+    fileMeta.textContent = '웹 업로드 대기 · SharePoint에 파일을 올려 주세요';
+    setJob('upload', '열린 SharePoint 창에 보안 급여테이블을 끌어다 놓으세요. 나머지는 자동입니다. 이 화면은 그대로 두세요.', webSteps('보안 급여테이블', (V2.links || {}).upload, true));
+    (async () => {
+      let canWatch = false;
+      try{ canWatch = !!shareDir && await perm(shareDir, false); }catch(e){}
+      if(canWatch){ await kvSet('pending', pending); startPolling(true); }
+      else $('v2JobMsg').textContent = '공유 폴더가 연결되어 있지 않아 결과를 자동으로 받지 못합니다. 올린 뒤 1~5분 기다렸다가 02_연동데이터에서 결과 파일(.json)을 내려받아 여기에 끌어다 놓아 주세요.';
+    })();
+  }
+  function webSteps(name, up, opened){
     return `<ol class="v2-steps">
-      <li>${up ? `<a class="btn-primary v2-link" href="${h(up)}" target="_blank" rel="noopener">SharePoint 업로드 폴더 열기 ↗</a>` : 'SharePoint의 <b>급여원본</b> 폴더를 엽니다.'}</li>
+      <li>${up ? `<a class="${opened ? 'btn-ghost' : 'btn-primary'} v2-link" href="${h(up)}" target="_blank" rel="noopener">${opened ? '업로드 폴더 다시 열기' : 'SharePoint 업로드 폴더 열기'} ↗</a>` : 'SharePoint의 <b>급여원본</b> 폴더를 엽니다.'}</li>
       <li>열린 창에 <b>${h(name)}</b> 파일을 <b>끌어다 놓습니다</b>. (이 창과 나란히 두면 편합니다)</li>
       <li>끝. 1~5분 뒤 자동으로 읽어 옵니다. 기다리는 동안 아래 내용을 골라 주세요.</li>
     </ol>`;
@@ -432,9 +455,9 @@
     for await (const e of dir.values()){
       if(e.kind !== 'file' || !e.name.startsWith(p.base)) continue;
       const rest = e.name.slice(p.base.length);
-      if(!/^( \(\d+\))?(\.error)?\.json$/i.test(rest)) continue;
+      if(p.any ? !/\.json$/i.test(e.name) : !/^( \(\d+\))?(\.error)?\.json$/i.test(rest)) continue;
       const f = await e.getFile();
-      if(f.lastModified < p.startedAt - 60000) continue;
+      if(f.lastModified < p.startedAt - (p.any ? 5000 : 60000)) continue;
       if(!best || f.lastModified > best.file.lastModified) best = { file: f, error: /\.error\.json$/i.test(e.name) };
     }
     return best;
@@ -544,6 +567,7 @@
   async function arrive(file){
     clearInterval(pollTimer);
     const done = pending; pending = null; await kvSet('pending', null);
+    if(done && done.any){ done.file = file.name.replace(/\.json$/i, ''); $('v2JobFile').textContent = done.file; }
     const onCreate = $('tabCreate') && $('tabCreate').classList.contains('on');
     const open = () => { switchAppTab('create'); handleLinkedJsonFile(file); setJob('done', '읽기를 마쳤습니다. 아래에서 검사 결과와 조견표를 확인하세요.'); renderNavBadge('opened'); };
     document.title = '● 완료 · ' + document.title.replace(/^● 완료 · /, '');
@@ -644,10 +668,13 @@
     $('v2AutoArchive').checked = SETTINGS.autoArchive === true;
   }
   function renderDropHint(){
+    const up = (V2.links || {}).upload;
+    webStart.hidden = !(uploadMode() === 'web' && up);
+    if(up) $('v2WebGo').href = up;
     const hint = document.querySelector('#dropzone .hint'); if(!hint) return;
     hint.innerHTML = '시트 이름이 <strong>급여테이블(변경후)</strong>인 시트를 읽습니다 · ' + {
       auto: '올린 파일은 공유 폴더(01_원본)에 요청번호와 함께 보관되고, 보안 파일은 회사 M365가 자동으로 읽습니다',
-      web: '보안 파일은 SharePoint 업로드 폴더에 끌어다 놓으면 자동으로 읽습니다 (원본을 PC 동기화 폴더에 복사하지 않음)',
+      web: '보안 파일은 위 [SharePoint에 바로 올리기]로 한 번만 올리면 됩니다 · 여기에 올려도 같은 안내가 나옵니다',
       paste: '원본 파일은 PC 밖으로 보내지 않으며, 보안 파일은 붙여넣기 안내가 나옵니다' }[uploadMode()];
   }
   $('v2AutoArchive').addEventListener('change', async e => {
@@ -1387,5 +1414,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, get pending(){ return pending; }, get shareDir(){ return shareDir; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, get pending(){ return pending; }, get shareDir(){ return shareDir; } };
 })();

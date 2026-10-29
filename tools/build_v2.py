@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.4.1'
+APP_VERSION = '2.4.2'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -42,6 +42,8 @@ V2_CSS = """
   .v2-err{ color:var(--bad); font-weight:700; font-size:13px; margin:0; } .v2-err:empty, .v2-ok:empty{ display:none; }
   .v2-ok{ color:var(--ok); font-weight:700; font-size:13px; margin:0; background:var(--ok-soft); padding:8px 10px; border-radius:8px; }
   .v2-later{ display:block; margin:14px auto 0; border:0; background:none; color:var(--muted); font:inherit; font-size:12.5px; text-decoration:underline; cursor:pointer; }
+  .v2-webstart{ display:flex; gap:10px 14px; align-items:center; flex-wrap:wrap; margin:0 0 12px; padding:12px 14px; border:1px solid var(--pri); border-radius:12px; background:var(--pri-soft); }
+  .v2-webstart a{ text-decoration:none; } .v2-webstart .hint{ flex:1; min-width:220px; margin:0; }
   .v2-fallback{ margin-top:12px; } .v2-fallback summary{ cursor:pointer; font-size:13px; color:var(--muted); font-weight:600; }
   .v2-conn{ margin-left:auto; margin-right:12px; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:5px 12px; font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; color:var(--muted); }
   .v2-conn::before{ content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--muted); margin-right:6px; vertical-align:1px; }
