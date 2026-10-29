@@ -1,0 +1,12 @@
+const { chromium } = require('playwright');
+(async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport:{ width:1228, height:900 }, deviceScaleFactor:1.5, acceptDownloads:true });
+await p.route('**/xlsx.full.min.js', r => r.fulfill({ path: process.argv[3] }));
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('file://' + __dirname + '/stats_prototype.html'); await p.waitForTimeout(500);
+await p.screenshot({ path: __dirname + '/s5_1_industry.png', fullPage:true });
+await p.click('#pivot tr[data-go="금융"]'); await p.waitForTimeout(400);
+await p.screenshot({ path: __dirname + '/s5_2_finance.png', fullPage:true });
+await p.click('#pivot tr[data-go="금융|보험"]'); await p.waitForTimeout(400);
+await p.screenshot({ path: __dirname + '/s5_3_insurance.png', fullPage:true });
+const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#xls')]); await dl.saveAs(process.argv[2]);
+console.log('errors', errs, dl.suggestedFilename()); await b.close(); })();
