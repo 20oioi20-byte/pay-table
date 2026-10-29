@@ -101,7 +101,7 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   const snap = await p.evaluate(() => SNAPS.at(-1));
   const j0 = snap.jobs[0];
   ok(j0.perf > 0 && j0.perf < j0.stdPaySum && j0.compareMonthly === j0.monthlyTotal, `비교 금액 = 월 보수 합계 (업적수당 ${j0.perf}, 합계 ${j0.monthlyTotal})`);
-  ok(Math.abs(j0.hourly - (j0.stdPaySum + j0.perf) / j0.wHours) < 0.01, '시급 = (기준급여 소계 + B등급 업적수당) ÷ 기본급 수식 시간수');
+  ok(Math.abs(j0.hourly - (j0.stdPaySum + j0.perf) / j0.wHours) < 0.01, `시급 = (소계 + 업적수당) ÷ 수식 시간수 (${Math.round(j0.hourly).toLocaleString()}원)`);
   ok(snap.jobs.every(j => j.wHours > 0), '직무별 소정시간 저장: ' + snap.jobs.map(j => j.wHours).join(','));
   await p.click('#v2Next [data-n="stats"]');
   await p.waitForSelector('#sGrid .s-ic');
@@ -143,6 +143,40 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   const c1 = R.jobs.find(x => x.key === '상담1');
   ok(R.missing.length === 0 && c1.perfTotal === 400000 && c1.src === '직접 입력', `입력 반영: 상담1 업적수당 50,000 × 8명 = ${c1.perfTotal}`);
   if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v24_done.png') });
+
+  console.log('6. 보고서: 정원·연간 인건비(정원기준)로 계약금액 변화 · 2쪽 · Word');
+  const s2 = await p.evaluate(() => SNAPS.at(-1));
+  ok(s2.jobs.every(j => typeof j.annualCost === 'number' && typeof j.heads === 'number') && s2.jobs.filter(j => j.heads > 0).length >= 6, '정원·연간 인건비 읽기: ' + s2.jobs.map(j => `${j.heads}명/${Math.round(j.annualCost / 10000)}만`).join(', '));
+  await p.evaluate(() => switchAppTab('report'));
+  await p.waitForSelector('#reportDoc .page');
+  ok((await p.$$('#reportDoc .page')).length === 2, '보고서 2쪽');
+  const D = s2.jobs.reduce((a, j) => a + (j.annualCost > 0 || !j.heads ? j.annualCost : j.monthlyTotal * 12 * j.heads), 0);
+  await p.fill('#repLabor', '5'); await p.dispatchEvent('#repLabor', 'change');
+  /* 견적서가 없는 센터의 계산(정원 기준 직접인건비 + 입력한 법정부담·관리비·경비)을 먼저 확인 → 끝나면 견적서 복원 */
+  await p.evaluate(() => { const s = SNAPS.at(-1); window.__est = s.estimate; delete s.estimate; renderReport(); });
+  await p.fill('#repMgmt', '10'); await p.dispatchEvent('#repMgmt', 'change');
+  await p.fill('#repFixed', '0'); await p.dispatchEvent('#repFixed', 'change');
+  let A = await p.evaluate(() => { const a = window.__v2report.analyze(); return { D:a.now.D, T:a.now.T, T2:a.next.T, rate:a.rate }; });
+  const T = D * (1 + 0.185) * 1.10;
+  A.rate = await p.evaluate(() => { const a = window.__v2report.analyze(); return a.next.T / a.now.T - 1; });
+  ok(Math.abs(A.D - D) < 1 && Math.abs(A.T - T) < 1 && Math.abs(A.rate - 0.05) < 1e-9, `(견적서 없을 때) 경비 0: 계약금액 ${Math.round(A.T).toLocaleString()} → ${Math.round(A.T2).toLocaleString()} (단가 ${(A.rate * 100).toFixed(2)}%)`);
+  await p.fill('#repFixed', '1000'); await p.dispatchEvent('#repFixed', 'change');
+  A = await p.evaluate(() => { const a = window.__v2report.analyze(); return { T:a.now.T, T2:a.next.T, rate:a.next.T / a.now.T - 1 }; });
+  const expRate = (T * 0.05) / (T + 1e7);
+  ok(Math.abs(A.rate - expRate) < 1e-9 && A.rate < 0.05, `(견적서 없을 때) 고정 경비 1,000만: 단가 ${(A.rate * 100).toFixed(2)}% · 증가 ${Math.round(A.T2 - A.T).toLocaleString()}원`);
+  /* 견적서 기준: 직접인건비 5% → 간접인건비 비례, 경비 그대로, 관리비·이윤·부가세 비례 */
+  await p.evaluate(() => { SNAPS.at(-1).estimate = window.__est; renderReport(); });
+  const E = await p.evaluate(() => { const a = window.__v2report.analyze(); return a.est ? { T:a.est.all.now.T, T2:a.est.all.next.T, rate:a.est.all.rate, sheetT:a.est.all.sheetT, role:a.est.role && a.est.role.name, hidden: document.getElementById('repMgmt').closest('label').hidden } : null; });
+  const eD = 59920000, eL = 11198056, eF = 720000, eM = 3591893, eP = 3771489, eV = 7920138, eT = eD + eL + eF + eM + eP + eV;
+  const b1 = eD * 1.05 + eL * 1.05 + eF, M2 = eM * b1 / (eD + eL + eF), b2 = b1 + M2, P2 = eP * b2 / (eD + eL + eF + eM), sb2 = b2 + P2, eT2 = sb2 + eV * sb2 / (eD + eL + eF + eM + eP);
+  ok(E && Math.abs(E.T - eT) < 1 && E.sheetT === eT && Math.abs(E.T2 - eT2) < 1 && E.hidden,
+    `견적서 기준: 월 ${E && Math.round(E.T).toLocaleString()} → ${E && Math.round(E.T2).toLocaleString()} (단가 ${E && (E.rate * 100).toFixed(2)}%, 연 +${E && Math.round((E.T2 - E.T) * 12).toLocaleString()}원, ${E && E.role} 1인)`);
+  const p1 = await p.$eval('#reportDoc .page', e => e.innerText);
+  ok(p1.includes(s2.center) && !p1.includes('우리 센터') && /연 \+[\d,]+원/.test(p1) && p1.includes('견적서 기준'), '1쪽: 센터명 표기 · 견적서 기준 금액 변화 · 연 증가액');
+  const w = await p.evaluate(async () => { const r = await window.__v2report.buildWord(); return { parts:r.parts.length, head:r.mht.slice(0, 17), pb:/page-break-before:always/.test(r.html) }; });
+  ok(w.head === 'MIME-Version: 1.0' && w.parts >= 1 && w.pb, `Word(MHTML) 저장: 차트 ${w.parts}개 · 쪽 나눔`);
+  if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_p2.png') });
+    fs.writeFileSync(path.join(process.env.SHOTS, 'report.doc'), await p.evaluate(async () => (await window.__v2report.buildWord()).mht)); }
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   await b.close(); srv.close();
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');

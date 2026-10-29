@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.6.0'
+APP_VERSION = '2.6.1'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -180,6 +180,7 @@ def main():
     i = s.index('</style>\n</head>')
     skin = (ROOT / 'tools' / 'v2_skin.css').read_text(encoding='utf-8')
     stats_css = (ROOT / 'tools' / 'v2_stats.css').read_text(encoding='utf-8')
+    stats_css += (ROOT / 'tools' / 'v2_report.css').read_text(encoding='utf-8')
     s = s[:i] + V2_CSS + skin + stats_css + s[i:]
     # 화면 디자인은 KT 화이트로 고정 (되돌리려면 이 줄과 v2_skin.css를 빼고 빌드)
     s = must_replace(s, '<html lang="ko">', '<html lang="ko" data-skin="kt-light">')

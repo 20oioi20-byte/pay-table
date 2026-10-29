@@ -1243,6 +1243,19 @@
     });
     return out;
   }
+  /* 직무 열에서 '호칭별 연간 보수 합계'·'전체 연간 인건비 합계(정원기준)'를 읽어 정원과 연간 직접인건비를 구함 (보고서 금액 계산용) */
+  function jobAnnual(job){
+    if(!curGrid || !job._col || !job._t) return null;
+    const G = gridAt(curGrid); let per = null, all = null;
+    for(let r = job._t; r <= Math.min(G.rows, job._t + 50); r++){
+      const label = txt(G.v(r, 1)).replace(/\s/g, '');
+      if(per == null && /호칭별연간보수합계/.test(label)) per = num(G.v(r, job._col));
+      if(all == null && /전체연간인건비합계/.test(label)) all = num(G.v(r, job._col));
+      if(per != null && all != null) break;
+    }
+    if(all == null) return null;                 // 행이 없으면 읽지 않음 (정원 0명은 0으로 둠)
+    return { annual: all, perHead: per, heads: per ? Math.round(all / per) : 0 };
+  }
   /* 최저임금: 직무마다 기본급 시간수(=시급×209·167·84 …)로 월 기준을 다시 잡음 (주4일·단시간이 209시간 기준으로 잘못 차단되지 않게) */
   function baseHours(job){
     if(curGrid && job._col && job._t){
@@ -1422,5 +1435,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
 })();

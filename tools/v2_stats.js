@@ -597,6 +597,9 @@
     rec.jobs.forEach((j, i) => {
       const src = parsedData && parsedData.jobs[i];
       if(src && bh){ try{ j.wHours = bh(src); }catch(e){} }
+      /* 정원·연간 직접인건비(정원기준) — 보고서의 '총 얼마 늘어나는지' 계산에 사용 */
+      const ja = V2X().jobAnnual;
+      if(src && ja){ try{ const a = ja(src); if(a){ j.annualCost = a.annual; j.heads = a.heads; } }catch(e){} }
       /* 실제 양식은 등급 행이 업적수당 금액 → 비교 금액은 월 보수 합계(B등급 기준)로 */
       if(typeof j.gradeB === 'number' && j.stdPaySum && j.gradeB < j.stdPaySum * 0.5){
         j.perf = j.gradeB;
