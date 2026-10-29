@@ -20,7 +20,9 @@ button,select,input{font:inherit;color:inherit}
 .btn{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:bold;margin-top:8px}
 .btn.pri{background:var(--red);border-color:var(--red);color:#fff}
 .calc{font-size:11.5px;line-height:1.7;color:var(--m)}.calc b{color:var(--t)}
-.paper{background:#fff;width:794px;margin:0 auto;padding:56px 76px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.08)}
+/* 화면에서만 A4 종이처럼 보이게 (Word에는 들어가지 않음) */
+#doc .page{background:#fff;width:794px;min-height:1123px;margin:0 auto 24px;padding:60px 68px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.08)}
+#doc br.pb{display:none}
 </style>
 <!-- 보고서 본문 스타일: 화면과 Word가 같은 CSS를 씀 (Word가 지원하는 속성만 사용) -->
 <style id="docCss">
@@ -29,12 +31,12 @@ button,select,input{font:inherit;color:inherit}
 .rp .kicker{color:#FE2E36;font-weight:bold;font-size:9.5pt;margin:0}
 .rp h1{font-size:18pt;margin:4pt 0 4pt;font-weight:bold;color:#000000}
 .rp .meta{color:#4C4C4E;font-size:8.5pt;margin:0 0 12pt;padding-bottom:8pt;border-bottom:2pt solid #000000}
-.rp h2{font-size:12.5pt;font-weight:bold;margin:18pt 0 6pt;padding:0 0 3pt 0;border-bottom:1pt solid #A2A4A3;color:#000000}
+.rp h2{font-size:12.5pt;font-weight:bold;margin:13pt 0 5pt;padding:0 0 3pt 0;border-bottom:1pt solid #A2A4A3;color:#000000}
 .rp h2 span{color:#FE2E36}
 .rp h3{font-size:10.5pt;font-weight:bold;margin:10pt 0 4pt;color:#000000}
 .rp table{border-collapse:collapse;width:100%;margin:4pt 0 6pt}
 .rp th{background:#F1F1F2;color:#4C4C4E;font-weight:bold;font-size:8.5pt;padding:4pt 5pt;border-top:1pt solid #4C4C4E;border-bottom:1pt solid #A2A4A3;text-align:left}
-.rp td{font-size:9pt;padding:4pt 5pt;border-bottom:.5pt solid #D6D7D7}
+.rp td{font-size:9pt;padding:3pt 5pt;border-bottom:.5pt solid #D6D7D7}
 .rp th,.rp td.r,.rp td.nw{white-space:nowrap}
 .rp .r{text-align:right}
 .rp tr.me td{background:#FFF4F4;font-weight:bold}
@@ -44,12 +46,16 @@ button,select,input{font:inherit;color:inherit}
 .rp .conclusion p{margin:0 0 3pt}.rp .conclusion .big{font-size:12pt;font-weight:bold}
 .rp .kpi td{border:1pt solid #D6D7D7;padding:7pt 8pt;vertical-align:top;width:33%}
 .rp .kpi .l{font-size:8.5pt;color:#4C4C4E}.rp .kpi .v{font-size:16pt;font-weight:bold}.rp .kpi .s{font-size:8.5pt;color:#4C4C4E}
-.rp .kpi td.hl{border:1.5pt solid #FE2E36}.rp .kpi td.hl .v{color:#FE2E36}
+
 .rp ul{margin:2pt 0 6pt 14pt;padding:0}.rp li{margin:0 0 2pt;font-size:9.5pt}
 .rp .note{font-size:8pt;color:#4C4C4E;margin:2pt 0 6pt}
 .rp .formula{font-size:8.5pt;background:#F1F1F2;padding:5pt 7pt;margin:4pt 0 6pt;color:#000000}
 .rp .chart{margin:4pt 0 2pt;text-align:center}
 .rp .tag{color:#FE2E36;font-weight:bold}
+.rp table.ask{margin:8pt 0 4pt}.rp .ask td{border-top:2pt solid #FE2E36;border-bottom:2pt solid #FE2E36;padding:9pt 10pt;background:#FFF4F4;vertical-align:middle}
+.rp .ask .al{font-size:10.5pt;font-weight:bold;width:24%}.rp .ask .av{font-size:28pt;font-weight:bold;color:#FE2E36;width:22%;white-space:nowrap}.rp .ask .ad{font-size:9.5pt;color:#000000}
+.rp table.two td{vertical-align:top;width:50%;padding:0 6pt 0 0;border:0}
+.rp .kpi .v.neg{color:#D9141D}
 </style>
 </head>
 <body>
@@ -77,7 +83,7 @@ button,select,input{font:inherit;color:inherit}
     <button class="btn" id="btnPrint">인쇄 · PDF</button>
   </section>
 </aside>
-<main><div class="paper"><div class="rp" id="doc"></div></div></main>
+<main><div class="rp" id="doc"></div></main>
 </div>
 
 <script>
@@ -217,155 +223,135 @@ function analyze(){
   const Y = C.years[y], ir0 = C.years[2020].ir;
   const irTo = st.indMode === 'restore' ? Math.max(Y.ir, ir0) : Y.ir;
   const price = (1 + labor) * (1 + irTo) / (1 + Y.ir) - 1; /* 단가 = 직접인건비 × (1+법정부담) × (1+간접비율) */
-  const minOnly = m; /* 하한: 임금 수준 유지(최저임금 인상분) */
   const annualAdd = (C.years[y].price * Y.jobs.상담사.heads * 12) * price;
-  return { C, y, ext, levels, groups, trend, cum, m, jobRows, labor, price, minOnly, irNow:Y.ir, ir0, irTo, annualAdd, priceNow:Y.price, mgr:groups[1], cs:groups[0] };
+  return { C, y, ext, levels, groups, trend, cum, m, jobRows, labor, price, irNow:Y.ir, ir0, irTo, annualAdd, priceNow:Y.price, mgr:groups[1], cs:groups[0] };
 }
 
-/* ================= 차트 (회색 계열 + 강조 Red) — SVG를 Word 저장 시 PNG로 변환 ================= */
+/* ================= 차트 (회색 계열 + 강조 Red) — Word 저장 시 PNG로 변환 ================= */
 const F = "font-family=\"KT Flow, Malgun Gothic, WenQuanYi Zen Hei, sans-serif\"";
+const svgOpen = (W, H) => `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" ${F} font-size="11"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
 function chartCompare(A){
-  /* 상담사 월 총임금: 비교 집단별 분포(P25~P75 막대, 중위수 눈금) + 우리 센터(빨간 점) */
-  const g = A.cs, rows = g.lv.map(l => ({ label:l.label, p25:l.p25, p75:l.p75, med:l.med, n:l.n }));
-  if(A.ext && g.mk) rows.push({ label:'채용시장(공고)', med:g.mk.med, n:g.mk.n, mk:true });
-  const W = 640, rowH = 40, T = 26, L = 150, R = 70, H = T + rows.length * rowH + 30;
-  const vals = rows.flatMap(r => [r.p25, r.p75, r.med]).concat(g.me.total).filter(Boolean);
-  const lo = Math.floor(Math.min(...vals) * 0.97 / 100000) * 100000, hi = Math.ceil(Math.max(...vals) * 1.02 / 100000) * 100000;
+  /* 상담사 월 총임금: 비교 집단 중위수(회색 막대) vs 우리 센터(빨간 선) */
+  const g = A.cs, rows = g.lv.map(l => ({ label:l.key === 'all' ? '전체 산업' : l.key === 'ind' ? `산업군 ${A.C.ind}` : `세부산업 ${A.C.sub}`, med:l.med, n:`${l.n}곳` }));
+  if(A.ext && g.mk) rows.push({ label:'채용시장 공고', med:g.mk.med, n:`${g.mk.n}건` });
+  const W = 640, rowH = 30, T = 22, L = 150, R = 110, H = T + rows.length * rowH + 6;
+  const vals = rows.map(r => r.med).concat(g.me.total), lo = Math.floor(Math.min(...vals) * 0.9 / 100000) * 100000, hi = Math.max(...vals) * 1.02;
   const x = v => L + (v - lo) / (hi - lo) * (W - L - R);
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" ${F} font-size="11"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
-  for(let v = lo; v <= hi; v += 100000) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${T - 6}" y2="${H - 26}" stroke="#F1F1F2"/>` + ((v / 100000) % 2 === 0 ? `<text x="${x(v)}" y="${H - 10}" text-anchor="middle" fill="#A2A4A3" font-size="10">${Math.round(v / 10000)}만</text>` : '');
-  s += `<line x1="${x(g.me.total)}" x2="${x(g.me.total)}" y1="${T - 10}" y2="${H - 26}" stroke="#FE2E36" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-  s += `<text x="${x(g.me.total)}" y="${T - 12}" text-anchor="middle" fill="#FE2E36" font-weight="bold" font-size="11">${esc(A.C.name)} ${man(g.me.total)}</text>`;
+  let s = svgOpen(W, H);
   rows.forEach((r, i) => {
-    const cy = T + i * rowH + rowH / 2;
-    s += `<text x="0" y="${cy + 4}" fill="#000000" font-weight="bold">${esc(r.label)}</text><text x="${L - 10}" y="${cy + 4}" fill="#A2A4A3" text-anchor="end" font-size="10">${r.mk ? '공고 ' : ''}${r.n}${r.mk ? '건' : '곳'}</text>`;
-    if(r.p25) s += `<rect x="${x(r.p25)}" y="${cy - 8}" width="${x(r.p75) - x(r.p25)}" height="16" fill="#D6D7D7" rx="2"/>`;
-    s += `<line x1="${x(r.med)}" x2="${x(r.med)}" y1="${cy - 11}" y2="${cy + 11}" stroke="#000000" stroke-width="2.5"/>`;
-    s += `<text x="${W - R + 8}" y="${cy + 4}" fill="#000000" font-size="11">${man(r.med)}</text>`;
-    const d = g.me.total / r.med - 1;
-    s += `<text x="${W}" y="${cy + 4}" text-anchor="end" fill="${d < 0 ? '#D9141D' : '#4C4C4E'}" font-size="10" font-weight="bold">${pct(d)}</text>`;
+    const y = T + i * rowH, d = g.me.total / r.med - 1;
+    s += `<text x="0" y="${y + 18}" fill="#000000" font-weight="bold">${esc(r.label)}</text><text x="${L - 8}" y="${y + 18}" text-anchor="end" fill="#A2A4A3" font-size="10">${r.n}</text>`;
+    s += `<rect x="${L}" y="${y + 6}" width="${x(r.med) - L}" height="16" fill="#D6D7D7"/><text x="${x(r.med) + 6}" y="${y + 18}" fill="#4C4C4E" font-size="10.5">${man(r.med)}</text>`;
+    s += `<text x="${W}" y="${y + 18}" text-anchor="end" fill="${d < 0 ? '#D9141D' : '#000000'}" font-weight="bold">${pct(d)}</text>`;
   });
+  s += `<line x1="${x(g.me.total)}" x2="${x(g.me.total)}" y1="${T - 4}" y2="${H - 2}" stroke="#FE2E36" stroke-width="2"/><text x="${x(g.me.total)}" y="${T - 8}" text-anchor="middle" fill="#FE2E36" font-weight="bold">우리 센터 ${man(g.me.total)}</text>`;
+  s += `<text x="${W}" y="${T - 8}" text-anchor="end" fill="#A2A4A3" font-size="10">우리 센터 차이</text>`;
   return s + `</svg>`;
 }
-function chartTrend(A){
-  /* 연도별 인상률: 최저임금(검정 점선) / 센터 단가(빨강) / 센터 상담사 임금(회색) */
-  const T = A.trend, W = 640, H = 230, L = 40, R = 16, Tp = 30, B = 28;
-  const vals = T.flatMap(t => [t.mw, t.price, t.wage]), lo = Math.min(0, Math.floor(Math.min(...vals) * 100) / 100), hi = Math.ceil(Math.max(...vals) * 100 + 0.5) / 100;
-  const x = i => L + 20 + i * (W - L - R - 40) / (T.length - 1), y = v => Tp + (H - Tp - B) * (1 - (v - lo) / (hi - lo));
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" ${F} font-size="11"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
-  for(let v = lo; v <= hi + 1e-9; v += 0.01) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${Math.abs(v) < 1e-9 ? '#A2A4A3' : '#F1F1F2'}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" fill="#A2A4A3" font-size="10">${Math.round(v * 100)}%</text>`;
-  T.forEach((t, i) => { s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" fill="#4C4C4E" font-size="10.5">${t.y}</text>`; });
-  const line = (k, c, w, dash) => `<polyline fill="none" stroke="${c}" stroke-width="${w}" ${dash ? 'stroke-dasharray="5 4"' : ''} points="${T.map((t, i) => `${x(i)},${y(t[k])}`).join(' ')}"/>` + T.map((t, i) => `<circle cx="${x(i)}" cy="${y(t[k])}" r="3.5" fill="${c}"/>`).join('');
+function chartCum(A){
+  /* 2020년 대비 누적 인상률: 최저임금(검정 점선) · 단가(빨강) · 상담사 임금(회색) */
+  const ys = [YEARS[0]].concat(A.trend.map(t => t.y)), acc = k => { let v = 0; return [0].concat(A.trend.map(t => (v = (1 + v) * (1 + t[k]) - 1))); };
+  const S = { mw:acc('mw'), price:acc('price'), wage:acc('wage') };
+  const W = 310, H = 190, L = 34, R = 10, T = 26, B = 22, hi = Math.ceil(Math.max(...Object.values(S).flat()) * 20) / 20;
+  const x = i => L + i * (W - L - R) / (ys.length - 1), y = v => T + (H - T - B) * (1 - v / hi);
+  let s = svgOpen(W, H);
+  for(let v = 0; v <= hi + 1e-9; v += 0.05) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#F1F1F2"/><text x="${L - 5}" y="${y(v) + 3}" text-anchor="end" fill="#A2A4A3" font-size="9">${Math.round(v * 100)}%</text>`;
+  ys.forEach((yy, i) => { if(i % 2 === 0 || i === ys.length - 1) s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" fill="#4C4C4E" font-size="9.5">${yy}</text>`; });
+  const line = (k, c, w, dash) => `<polyline fill="none" stroke="${c}" stroke-width="${w}" ${dash ? 'stroke-dasharray="4 3"' : ''} points="${S[k].map((v, i) => `${x(i)},${y(v)}`).join(' ')}"/>`;
   s += line('wage', '#A2A4A3', 2) + line('mw', '#000000', 2, true) + line('price', '#FE2E36', 2.5);
-  const lt = T.at(-1), li = T.length - 1;
-  s += `<text x="${x(li) + 6}" y="${y(lt.price) - 6}" fill="#FE2E36" font-weight="bold" font-size="10" text-anchor="end">${pct(lt.price)}</text>`;
-  const lg = [['최저임금 인상률', '#000000', 1], ['센터 단가 인상률', '#FE2E36', 0], ['센터 상담사 임금 인상률', '#A2A4A3', 0]];
-  lg.forEach(([n, c, d], i) => { const lx = L + i * 170; s += `<line x1="${lx}" x2="${lx + 20}" y1="12" y2="12" stroke="${c}" stroke-width="2.5" ${d ? 'stroke-dasharray="5 4"' : ''}/><text x="${lx + 26}" y="16" fill="#000000" font-size="10.5">${n}</text>`; });
+  const li = ys.length - 1;
+  [['mw', '최저임금', '#000000', 1], ['price', '단가', '#FE2E36', 0], ['wage', '상담사 임금', '#A2A4A3', 0]].forEach(([k, n, c, d], i) => { const lx = L + i * 92;
+    s += `<line x1="${lx}" x2="${lx + 14}" y1="9" y2="9" stroke="${c}" stroke-width="2.5" ${d ? 'stroke-dasharray="4 3"' : ''}/><text x="${lx + 18}" y="13" fill="${c}" font-size="9.5" font-weight="bold">${n} ${(S[k][li] * 100).toFixed(1)}%</text>`; });
   return s + `</svg>`;
 }
-function chartIr(A){
-  /* 간접비율: 센터(회색 막대, 기준 연도 진하게) + 산업군 평균(빨간 선) */
-  const T = [{ y:2020, ir:A.C.years[2020].ir, irPeer:mean(CENTERS.filter(c => c.ind === A.C.ind).map(c => c.years[2020].ir)) }].concat(A.trend);
-  const W = 640, H = 200, L = 40, R = 16, Tp = 28, B = 26, lo = 0, hi = Math.ceil(Math.max(...T.flatMap(t => [t.ir, t.irPeer])) * 100 + 2) / 100;
-  const bw = (W - L - R) / T.length, y = v => Tp + (H - Tp - B) * (1 - (v - lo) / (hi - lo)), cx = i => L + bw * i + bw / 2;
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" ${F} font-size="11"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
-  for(let v = 0; v <= hi + 1e-9; v += 0.05) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#F1F1F2"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" fill="#A2A4A3" font-size="10">${Math.round(v * 100)}%</text>`;
-  T.forEach((t, i) => { const last = i === T.length - 1;
-    s += `<rect x="${cx(i) - 16}" y="${y(t.ir)}" width="32" height="${y(0) - y(t.ir)}" fill="${last ? '#4C4C4E' : '#D6D7D7'}"/><text x="${cx(i)}" y="${y(t.ir) - 5}" text-anchor="middle" fill="#000000" font-size="10" ${last ? 'font-weight="bold"' : ''}>${(t.ir * 100).toFixed(1)}%</text><text x="${cx(i)}" y="${H - 8}" text-anchor="middle" fill="#4C4C4E" font-size="10.5">${t.y}</text>`; });
-  s += `<polyline fill="none" stroke="#FE2E36" stroke-width="2" points="${T.map((t, i) => `${cx(i)},${y(t.irPeer)}`).join(' ')}"/>` + T.map((t, i) => `<circle cx="${cx(i)}" cy="${y(t.irPeer)}" r="3" fill="#FE2E36"/>`).join('');
-  s += `<rect x="${L}" y="7" width="12" height="10" fill="#4C4C4E"/><text x="${L + 16}" y="16" font-size="10.5">${esc(A.C.name)} 간접비율</text><line x1="${L + 160}" x2="${L + 180}" y1="12" y2="12" stroke="#FE2E36" stroke-width="2"/><text x="${L + 186}" y="16" font-size="10.5">${esc(A.C.ind)} 산업군 평균</text>`;
+function chartBuild(A){
+  /* 단가 인상률 구성: 최저임금 반영 + 격차 해소 + 간접비 조정 = 요청 인상률 */
+  const parts = [['최저임금 반영', A.m], ['격차 해소', A.labor - A.m], ['간접비 조정', A.price - A.labor]].filter(p => Math.abs(p[1]) > 0.0005);
+  const W = 310, H = 190, L = 8, T = 22, B = 34, hi = Math.max(A.price, A.labor) * 1.18, n = parts.length + 1, bw = (W - L * 2) / n;
+  const y = v => T + (H - T - B) * (1 - v / hi);
+  let s = svgOpen(W, H), acc = 0;
+  parts.forEach(([lab, v], i) => {
+    const cx = L + bw * i + bw / 2, top = y(acc + Math.max(v, 0)), bot = y(acc + Math.min(v, 0));
+    s += `<rect x="${cx - bw * 0.3}" y="${top}" width="${bw * 0.6}" height="${Math.max(1, bot - top)}" fill="#A2A4A3"/><text x="${cx}" y="${top - 5}" text-anchor="middle" fill="#000000" font-weight="bold" font-size="11">${pct(v)}</text><text x="${cx}" y="${H - 18}" text-anchor="middle" fill="#4C4C4E" font-size="9.5">${lab}</text>`;
+    acc += v;
+  });
+  const cx = L + bw * (n - 1) + bw / 2;
+  s += `<rect x="${cx - bw * 0.3}" y="${y(A.price)}" width="${bw * 0.6}" height="${y(0) - y(A.price)}" fill="#FE2E36"/><text x="${cx}" y="${y(A.price) - 5}" text-anchor="middle" fill="#FE2E36" font-weight="bold" font-size="12">${pct0(A.price)}</text><text x="${cx}" y="${H - 18}" text-anchor="middle" fill="#000000" font-weight="bold" font-size="9.5">요청 인상률</text>`;
+  s += `<line x1="${L}" x2="${W - L}" y1="${y(0)}" y2="${y(0)}" stroke="#4C4C4E"/>`;
   return s + `</svg>`;
 }
 
-/* ================= 보고서 본문 (화면·Word 공통 마크업) ================= */
+/* ================= 보고서 본문 (화면·Word 공통) — 1쪽 핵심 보고 + 2쪽 참고 자료 ================= */
 function buildDoc(A){
   const C = A.C, y = A.y, cs = A.cs, sub = cs.lv[2], today = new Date().toISOString().slice(0, 10);
-  const verdict = sub.gap <= -0.05 ? '열위' : sub.gap < -0.01 ? '소폭 열위' : sub.gap < 0.03 ? '동등' : '우위';
-  const lastT = A.trend.at(-1), priceVsMw = A.cum('price') - A.cum('mw');
-  const tgtName = TARGETS[st.target] + (st.target === 'mkt' && !A.ext ? ' (채용시장 미사용 → 세부산업 중위수)' : '');
-  const lvRows = g => g.lv.map(l => `<tr><td>${esc(l.label)}</td><td class="r">${l.n}</td><td class="r">${man(l.p25)}</td><td class="r"><b>${man(l.med)}</b></td><td class="r">${man(l.p75)}</td><td class="r">${man(l.avg)}</td><td class="r ${cls(l.gap)}"><b>${pct(l.gap)}</b></td><td class="r">${Math.round(l.pr * 100)}</td></tr>`).join('')
-    + (A.ext && g.mk ? `<tr><td>채용시장 <span class="muted">(${esc(g.mk.src)})</span></td><td class="r">공고 ${g.mk.n}</td><td class="r">–</td><td class="r"><b>${man(g.mk.med)}</b></td><td class="r">–</td><td class="r">–</td><td class="r ${cls(g.mkGap)}"><b>${pct(g.mkGap)}</b></td><td class="r">–</td></tr>` : '');
-  return `
-<p class="kicker">인건비 분석 보고서 · ${y}년 기준</p>
-<h1>${esc(C.name)} 인건비 수준 분석 및 단가 인상 제안</h1>
-<p class="meta">${esc(C.ind)} › ${esc(C.sub)} · ${esc(C.reg)} · 상담사 ${cs.me.heads}명 · 관리자 ${A.mgr.me.heads}명 · 비교 자료 ${A.ext ? '내부 급여테이블 + 채용시장 공고' : '내부 급여테이블'} · 작성일 ${today}</p>
-
-<table class="conclusion"><tr><td>
-  <p class="big">결론: 단가 인상률 <span class="tag">최소 ${pct0(A.minOnly)}</span>, 적정 <span class="tag">${pct0(A.price)} 이상</span> 필요</p>
-  <p>상담사 인당 월 총임금 ${man(cs.me.total)}원은 동일 세부산업(${esc(C.sub)}) 중위수 대비 <b>${pct(sub.gap)}</b>로 <b>${verdict}</b>입니다. 최근 6년 단가 누적 인상률은 최저임금 누적 인상률보다 <b>${(priceVsMw * 100).toFixed(1)}%p ${priceVsMw < 0 ? '낮고' : '높고'}</b>, 간접비율은 ${pct0(A.ir0)} → ${pct0(A.irNow)}로 ${A.irNow < A.ir0 ? '낮아졌습니다' : '유지되고 있습니다'}.</p>
-  <p class="note" style="margin:0">최소 = 내년 최저임금 인상 전망(${pct0(A.m)})만 반영해 현재 임금 수준을 유지 · 적정 = 목표 기준(${esc(tgtName)})과의 격차 해소분까지 반영</p>
-</td></tr></table>
-
-<table class="kpi"><tr>
-  <td><div class="l">상담사 인당 월 총임금</div><div class="v">${man(cs.me.total)}원</div><div class="s">환산 시급 ${won(cs.me.hourly)}원 · 전년 대비 ${pct(cs.yoy)}</div></td>
-  <td><div class="l">세부산업(${esc(C.sub)}) 중위수 대비</div><div class="v ${cls(sub.gap)}">${pct(sub.gap)}</div><div class="s">${sub.n}곳 중 백분위 ${Math.round(sub.pr * 100)}</div></td>
-  <td class="hl"><div class="l">적정 단가 인상률</div><div class="v">${pct0(A.price)}</div><div class="s">연간 약 ${Math.round(A.annualAdd / 1e6).toLocaleString()}백만원 증액 (단가 기준)</div></td>
+  const cum = k => A.cum(k), newPrice = Math.round(A.priceNow * (1 + A.price) / 1000) * 1000;
+  const tgtName = TARGETS[st.target] + (st.target === 'mkt' && !A.ext ? '(채용시장 미선택 → 세부산업 중위수)' : '');
+  const irPeer0 = mean(CENTERS.filter(c => c.ind === C.ind).map(c => c.years[2020].ir));
+  const page1 = `<div class="page">
+<p class="kicker">상담 단가 조정 보고 · ${y + 1}년 적용</p>
+<h1>${esc(C.name)} 상담 단가 ${pct0(A.price)} 인상 요청</h1>
+<p class="meta">${esc(C.ind)} › ${esc(C.sub)} · ${esc(C.reg)} · 상담사 ${cs.me.heads}명 · 관리자 ${A.mgr.me.heads}명 · ${y}년 급여테이블 기준 · ${today}</p>
+<table class="ask"><tr>
+  <td class="al">요청 단가 인상률</td><td class="av">${pct0(A.price)}</td>
+  <td class="ad">월 단가(상담사 1인) ${won(A.priceNow)}원 → <b>${won(newPrice)}원</b><br>연간 증액 약 ${Math.round(A.annualAdd / 1e6).toLocaleString()}백만원</td>
 </tr></table>
-
-<h2><span>1.</span> 현재 인건비 수준 (${y}년, 직군별)</h2>
-<table>
-  <tr><th>직군</th><th class="r">인원</th><th class="r">기본급</th><th class="r">수당</th><th class="r">업적수당(B)</th><th class="r">초과·야간·통신</th><th class="r">월 총임금</th><th class="r">환산 시급</th><th class="r">최저임금 여유</th></tr>
-  ${A.groups.map(g => `<tr class="${g.job === '전체' ? 'sum' : g.job === '상담사' ? 'me' : ''}"><td class="nw">${g.job}</td><td class="r">${g.me.heads}</td><td class="r">${won(g.me.base)}</td><td class="r">${won(g.me.allow)}</td><td class="r">${won(g.me.perf)}</td><td class="r">${won(g.me.extra)}</td><td class="r"><b>${won(g.me.total)}</b></td><td class="r">${won(g.me.hourly)}</td><td class="r ${g.me.margin < 0.02 ? 'neg' : ''}">${pct(g.me.margin)}</td></tr>`).join('')}
+<h2>인상 근거</h2>
+<table class="kpi"><tr>
+  <td><div class="l">① 임금 수준 (상담사)</div><div class="v ${cls(sub.gap)}">${pct(sub.gap)}</div><div class="s">세부산업(${esc(C.sub)}) 중위수 ${man(sub.med)} 대비<br>우리 센터 ${man(cs.me.total)}</div></td>
+  <td><div class="l">② 단가 vs 최저임금 (6년 누적)</div><div class="v ${cls(cum('price') - cum('mw'))}">${((cum('price') - cum('mw')) * 100).toFixed(1)}%p</div><div class="s">단가 ${pct(cum('price'))}<br>최저임금 ${pct(cum('mw'))}</div></td>
+  <td><div class="l">③ 간접비율</div><div class="v ${cls(A.irNow - A.ir0)}">${((A.irNow - A.ir0) * 100).toFixed(1)}%p</div><div class="s">2020년 ${pct0(A.ir0)} → ${y}년 ${pct0(A.irNow)}<br>산업군 평균 ${pct0(A.trend.at(-1).irPeer)}</div></td>
+</tr></table>
+<h3>① 상담사 월 총임금 — 비교 집단 중위수와 우리 센터</h3>
+<div class="chart">${chartCompare(A)}</div>
+<table class="two"><tr>
+  <td><h3>② 2020년 대비 누적 인상률</h3><div class="chart">${chartCum(A)}</div></td>
+  <td><h3>③ 요청 인상률 구성</h3><div class="chart">${chartBuild(A)}</div></td>
+</tr></table>
+<p class="note">요청 인상률 = (1 + 내년 최저임금 전망 ${pct0(A.m)}) × (1 + ${esc(tgtName)}까지 격차) − 1, 간접비율 ${st.indMode === 'restore' ? `2020년 수준(${pct0(A.ir0)}) 회복` : '현 수준 유지'} · 세부 수치는 2쪽 참고</p>
+</div>`;
+  const lvName = l => l.key === 'all' ? '전체 산업' : l.key === 'ind' ? `산업군 · ${esc(C.ind)}` : `세부산업 · ${esc(C.sub)}`;
+  const gj = j => A.groups.find(g => g.job === j);
+  const page2 = `<div class="page">
+<p class="kicker">참고 자료</p>
+<h2 style="margin-top:4pt">A. 직군별 현재 수준 (${y}년, 원)</h2>
+<table><tr><th>직군</th><th class="r">인원</th><th class="r">기본급</th><th class="r">수당</th><th class="r">업적수당(B)</th><th class="r">초과·야간·통신</th><th class="r">월 총임금</th><th class="r">환산 시급</th><th class="r">최저임금 여유</th></tr>
+${A.groups.map(g => `<tr class="${g.job === '전체' ? 'sum' : g.job === '상담사' ? 'me' : ''}"><td class="nw">${g.job}</td><td class="r">${g.me.heads}</td><td class="r">${won(g.me.base)}</td><td class="r">${won(g.me.allow)}</td><td class="r">${won(g.me.perf)}</td><td class="r">${won(g.me.extra)}</td><td class="r"><b>${won(g.me.total)}</b></td><td class="r">${won(g.me.hourly)}</td><td class="r ${g.me.margin < 0.02 ? 'neg' : ''}">${pct(g.me.margin)}</td></tr>`).join('')}</table>
+<h2>B. 비교 집단 중위수와 우리 센터 차이 (월 총임금)</h2>
+<table><tr><th>비교 집단</th><th class="r">센터</th><th class="r">상담사</th><th class="r">차이</th><th class="r">관리자</th><th class="r">차이</th><th class="r">전체</th><th class="r">차이</th></tr>
+${[0, 1, 2].map(i => `<tr class="${i === 2 ? 'me' : ''}"><td class="nw">${lvName(gj('상담사').lv[i])}</td><td class="r">${gj('상담사').lv[i].n}</td>${['상담사', '관리자', '전체'].map(j => `<td class="r">${man(gj(j).lv[i].med)}</td><td class="r ${cls(gj(j).lv[i].gap)}"><b>${pct(gj(j).lv[i].gap)}</b></td>`).join('')}</tr>`).join('')}
+${A.ext ? `<tr><td class="nw">채용시장 공고 <span class="muted">(가상)</span></td><td class="r">${gj('상담사').mk.n}건</td>${['상담사', '관리자'].map(j => `<td class="r">${man(gj(j).mk.med)}</td><td class="r ${cls(gj(j).mkGap)}"><b>${pct(gj(j).mkGap)}</b></td>`).join('')}<td class="r">–</td><td class="r">–</td></tr>` : ''}
+<tr><td class="nw">우리 센터</td><td class="r">–</td>${['상담사', '관리자', '전체'].map(j => `<td class="r"><b>${man(gj(j).me.total)}</b></td><td class="r">–</td>`).join('')}</tr></table>
+<h2>C. 연도별 추이</h2>
+<table><tr><th>구분</th><th class="r">2020</th>${A.trend.map(t => `<th class="r">${t.y}</th>`).join('')}<th class="r">누적·변화</th></tr>
+  <tr><td class="nw">최저임금 인상률</td><td class="r">–</td>${A.trend.map(t => `<td class="r">${pct(t.mw)}</td>`).join('')}<td class="r"><b>${pct(cum('mw'))}</b></td></tr>
+  <tr class="me"><td class="nw">단가 인상률</td><td class="r">–</td>${A.trend.map(t => `<td class="r">${pct(t.price)}</td>`).join('')}<td class="r"><b>${pct(cum('price'))}</b></td></tr>
+  <tr><td class="nw">상담사 임금 인상률</td><td class="r">–</td>${A.trend.map(t => `<td class="r">${pct(t.wage)}</td>`).join('')}<td class="r"><b>${pct(cum('wage'))}</b></td></tr>
+  <tr><td class="nw">간접비율</td><td class="r">${pct0(A.ir0)}</td>${A.trend.map(t => `<td class="r">${pct0(t.ir)}</td>`).join('')}<td class="r ${cls(A.irNow - A.ir0)}"><b>${((A.irNow - A.ir0) * 100).toFixed(1)}%p</b></td></tr>
+  <tr><td class="nw muted">간접비율(산업군 평균)</td><td class="r muted">${pct0(irPeer0)}</td>${A.trend.map(t => `<td class="r muted">${pct0(t.irPeer)}</td>`).join('')}<td class="r muted">${((A.trend.at(-1).irPeer - irPeer0) * 100).toFixed(1)}%p</td></tr>
+  <tr><td class="nw muted">최저시급(원)</td><td class="r muted">${won(MW[2020])}</td>${A.trend.map(t => `<td class="r muted">${won(MW[t.y])}</td>`).join('')}<td class="r muted"></td></tr>
 </table>
-<p class="note">연 총임금 = 월 총임금 × 12 (상담사 ${manY(cs.me.total)}원 · 관리자 ${manY(A.mgr.me.total)}원) · 환산 시급 = (기본급 + 수당 + B등급 업적수당) ÷ 월 소정시간 ${Math.round(cs.me.hours)}시간 · 최저임금 여유 = 기본급 ÷ (${y}년 최저시급 ${won(MW[y])}원 × 소정시간) − 1 (직군 내 최솟값)</p>
-
-<h2><span>2.</span> 비교 근거 — 전체 산업 · 산업군 · 세부산업${A.ext ? ' · 채용시장' : ''}</h2>
-<h3>상담사 인당 월 총임금 분포와 우리 센터 위치</h3>
-<div class="chart" data-chart="cmp">${chartCompare(A)}</div>
-<p class="note">회색 막대 = 비교 집단의 중간 50%(P25~P75) · 검은 눈금 = 중위수 · 빨간 점선 = ${esc(C.name)} · 오른쪽 % = 중위수 대비 차이</p>
-${A.groups.map(g => `<h3>${g.job} 비교 (월 총임금, 원)</h3>
-<table><tr><th>비교 집단</th><th class="r">센터</th><th class="r">하위 25%</th><th class="r">중위수</th><th class="r">상위 25%</th><th class="r">평균</th><th class="r">우리 센터 차이</th><th class="r">백분위</th></tr>${lvRows(g)}</table>`).join('')}
-
-<h2><span>3.</span> 연도별 인상률 — 최저임금 vs 센터 단가 vs 상담사 임금</h2>
-<div class="chart" data-chart="trend">${chartTrend(A)}</div>
-<table><tr><th>구분</th>${A.trend.map(t => `<th class="r">${t.y}</th>`).join('')}<th class="r">6년 누적</th></tr>
-  <tr><td>최저임금 인상률</td>${A.trend.map(t => `<td class="r">${pct(t.mw)}</td>`).join('')}<td class="r"><b>${pct(A.cum('mw'))}</b></td></tr>
-  <tr class="me"><td>센터 단가 인상률</td>${A.trend.map(t => `<td class="r">${pct(t.price)}</td>`).join('')}<td class="r">${pct(A.cum('price'))}</td></tr>
-  <tr><td>센터 상담사 임금 인상률</td>${A.trend.map(t => `<td class="r">${pct(t.wage)}</td>`).join('')}<td class="r"><b>${pct(A.cum('wage'))}</b></td></tr>
-  <tr><td class="muted">세부산업 평균 단가 인상률</td>${A.trend.map(t => `<td class="r muted">${pct(t.peerPrice)}</td>`).join('')}<td class="r muted">${pct(A.trend.reduce((p, t) => p * (1 + t.peerPrice), 1) - 1)}</td></tr>
-</table>
-<p class="note">최저임금: 고용노동부 고시 최저시급 기준(${A.trend[0].y - 1}년 ${won(MW[A.trend[0].y - 1])}원 → ${y}년 ${won(MW[y])}원) · 단가: 상담사 1인 월 도급단가</p>
-
-<h2><span>4.</span> 간접비율 추이</h2>
-<div class="chart" data-chart="ir">${chartIr(A)}</div>
-<table><tr><th>구분</th><th class="r">2020</th>${A.trend.map(t => `<th class="r">${t.y}</th>`).join('')}<th class="r">변화</th></tr>
-  <tr class="me"><td>${esc(C.name)}</td><td class="r">${pct0(A.ir0)}</td>${A.trend.map(t => `<td class="r">${pct0(t.ir)}</td>`).join('')}<td class="r ${cls(A.irNow - A.ir0)}">${((A.irNow - A.ir0) * 100).toFixed(1)}%p</td></tr>
-  <tr><td>${esc(C.ind)} 산업군 평균</td><td class="r">${pct0(mean(CENTERS.filter(c => c.ind === C.ind).map(c => c.years[2020].ir)))}</td>${A.trend.map(t => `<td class="r">${pct0(t.irPeer)}</td>`).join('')}<td class="r">${((A.trend.at(-1).irPeer - mean(CENTERS.filter(c => c.ind === C.ind).map(c => c.years[2020].ir))) * 100).toFixed(1)}%p</td></tr>
-</table>
-<p class="note">간접비율 = (단가 − 직접인건비 × (1+법정부담률 ${BURDEN * 100}%)) ÷ (직접인건비 × (1+법정부담률)) · 단가 인상이 임금 인상보다 낮으면 간접비율이 내려갑니다.</p>
-
-<h2><span>5.</span> 적정 단가 인상률 산출</h2>
-<table><tr><th>직군</th><th class="r">현재 월</th><th class="r">목표 월</th><th class="r">격차분</th><th class="r">최저임금분</th><th class="r">필요 인상률</th><th class="r">인원</th><th class="r">연 추가 인건비</th></tr>
-  ${A.jobRows.map(r => `<tr class="${r.job === '상담사' ? 'me' : ''}"><td>${r.job}</td><td class="r">${won(r.cur)}</td><td class="r">${won(r.tgt)}</td><td class="r">${pct(r.gap)}</td><td class="r">${pct(A.m)}</td><td class="r"><b>${pct(r.need)}</b></td><td class="r">${r.heads}</td><td class="r">${Math.round(r.add / 1e6).toLocaleString()}백만</td></tr>`).join('')}
-  <tr class="sum"><td class="nw">계</td><td colspan="4"></td><td class="r">${pct(A.labor)}</td><td class="r">${A.jobRows.reduce((s, r) => s + r.heads, 0)}</td><td class="r">${Math.round(A.jobRows.reduce((s, r) => s + r.add, 0) / 1e6).toLocaleString()}백만</td></tr>
-</table>
-<table><tr><th>안</th><th>근거</th><th class="r">단가 인상률</th><th class="r">월 단가(1인)</th></tr>
-  <tr><td class="nw">최소</td><td>내년 최저임금 인상 전망 ${pct0(A.m)} — 현재 임금 수준 유지</td><td class="r">${pct0(A.minOnly)}</td><td class="r">${won(A.priceNow * (1 + A.minOnly))}원</td></tr>
-  <tr class="me"><td class="nw">적정(권장)</td><td>${esc(tgtName)} 도달 + 최저임금 전망, 간접비율 ${st.indMode === 'restore' ? `2020년 수준(${pct0(A.ir0)}) 회복` : `현 수준(${pct0(A.irNow)}) 유지`}</td><td class="r">${pct0(A.price)}</td><td class="r">${won(A.priceNow * (1 + A.price))}원</td></tr>
-</table>
-<div class="formula">필요 임금 인상률 = (1 + 최저임금 인상 전망) × (1 + max(0, 목표 기준 ÷ 현재 − 1)) − 1<br>
-직접인건비 인상률 = Σ(직군별 현재 월 총임금 × 필요 인상률 × 인원) ÷ Σ(현재 월 총임금 × 인원)<br>
-단가 인상률 = (1 + 직접인건비 인상률) × (1 + 목표 간접비율) ÷ (1 + 현재 간접비율) − 1 · 현재 월 단가 ${won(A.priceNow)}원</div>
-
-<h2><span>6.</span> 산출 기준 및 유의사항</h2>
+<h2>D. 요청 인상률 산출</h2>
+<table><tr><th>직군</th><th class="r">현재 월 총임금</th><th class="r">목표(${esc(TARGETS[st.target])})</th><th class="r">격차</th><th class="r">최저임금 전망</th><th class="r">필요 인상률</th><th class="r">인원</th></tr>
+${A.jobRows.map(r => `<tr class="${r.job === '상담사' ? 'me' : ''}"><td class="nw">${r.job}</td><td class="r">${won(r.cur)}</td><td class="r">${won(r.tgt)}</td><td class="r">${pct(r.gap)}</td><td class="r">${pct(A.m)}</td><td class="r"><b>${pct(r.need)}</b></td><td class="r">${r.heads}</td></tr>`).join('')}
+<tr class="sum"><td class="nw">직접인건비</td><td colspan="4"></td><td class="r">${pct(A.labor)}</td><td class="r">${A.jobRows.reduce((s, r) => s + r.heads, 0)}</td></tr>
+<tr class="me"><td class="nw">단가</td><td colspan="4">간접비율 ${pct0(A.irNow)} → ${pct0(A.irTo)}</td><td class="r"><b>${pct0(A.price)}</b></td><td></td></tr></table>
 <ul>
-  <li>월 총임금 = 기본급 + 수당 + B등급 업적수당 + 고정 초과·야간·통신 수당(급여테이블 ‘월 보수 합계’, B등급 기준). 평균은 인원 가중입니다.</li>
-  <li>직군: 급여테이블에서 ‘리더그룹’으로 묶인 직무는 관리자, 그 외는 상담사로 분류했습니다.</li>
-  <li>비교 집단은 ${y}년 각 센터의 최신 급여테이블이며, 같은 세부산업 센터가 5곳 미만이면 산업군 기준을 우선 참고합니다.${sub.n < 5 ? ` <b class="neg">현재 세부산업 표본 ${sub.n}곳 — 참고용</b>` : ''}</li>
-  ${A.ext ? `<li>채용시장 값은 채용공고에 게시된 월 급여의 중위수로, 실제 지급액과 차이가 있을 수 있어 보조 근거로만 사용합니다.</li>` : ''}
-  <li>법정부담률 ${BURDEN * 100}%는 4대보험 사업주 부담분·퇴직급여 충당을 합한 가정치입니다. 상여·복리후생비는 포함하지 않았습니다.</li>
-  <li>이 보고서의 숫자는 시스템이 계산했으며, 최종 판단은 담당자가 합니다.${C.name.startsWith('가상') ? ' (가상 데이터)' : ''}</li>
-</ul>`;
+  <li>월 총임금 = 기본급 + 수당 + B등급 업적수당 + 고정 초과·야간·통신 (급여테이블 ‘월 보수 합계’) · 인원 가중 평균</li>
+  <li>환산 시급 = (기본급 + 수당 + B등급 업적수당) ÷ 월 소정시간(기본급 수식 시간수) · 관리자 = 리더그룹 직무</li>
+  <li>단가 = 직접인건비 × (1 + 법정부담 ${BURDEN * 100}%) × (1 + 간접비율) · 비교 집단 = ${y}년 센터별 최신 급여테이블${sub.n < 5 ? ` · <b class="neg">세부산업 표본 ${sub.n}곳(참고용)</b>` : ''}${A.ext ? ' · 채용시장 = 공고 게시 월 급여 중위수(보조 근거)' : ''}</li>
+</ul>
+</div>`;
+  return page1 + `<br class="pb" clear="all">` + page2;
 }
 
 /* ================= 화면 ================= */
 const $ = id => document.getElementById(id);
 function renderCalc(A){
   $('calc').innerHTML = `상담사 월 총임금 <b>${man(A.cs.me.total)}원</b> (시급 ${won(A.cs.me.hourly)}원)<br>
-    목표(${esc(TARGETS[st.target])}) <b>${man(A.jobRows[0].tgt)}원</b> · 격차 ${pct(A.jobRows[0].gap)}<br>
-    최저임금 전망 <b>${pct0(A.m)}</b> · 직접인건비 <b>${pct(A.labor)}</b><br>
+    목표 ${man(A.jobRows[0].tgt)}원 · 격차 ${pct(A.jobRows[0].gap)}<br>
+    최저임금 전망 ${pct0(A.m)} · 직접인건비 ${pct(A.labor)}<br>
     간접비율 ${pct0(A.irNow)} → ${pct0(A.irTo)}<br>
-    <span style="color:var(--red);font-weight:bold">적정 단가 인상률 ${pct0(A.price)}</span> (최소 ${pct0(A.minOnly)})`;
+    <span style="color:var(--red);font-weight:bold">요청 단가 인상률 ${pct0(A.price)}</span>`;
 }
 function render(){
   const A = analyze();
@@ -391,7 +377,7 @@ const seg = (id, key) => $(id).onclick = e => { const b = e.target.closest('butt
 seg('fSrc', 'src'); seg('fInd', 'indMode');
 $('btnPrint').onclick = () => {
   const w = window.open('', '_blank');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(fileBase())}</title><style>${$('docCss').textContent} @page{size:A4;margin:18mm 18mm} body{margin:0}</style></head><body><div class="rp">${$('doc').innerHTML}</div></body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(fileBase())}</title><style>${$('docCss').textContent} @page{size:A4;margin:18mm 18mm} body{margin:0}</style></head><body><div class="rp">${$('doc').innerHTML.replace(/<br class="pb"[^>]*>/g, '<div style="page-break-before:always"></div>')}</div></body></html>`);
   w.document.close(); setTimeout(() => w.print(), 300);
 };
 
@@ -414,7 +400,7 @@ async function buildWord(){
   const live = [...$('doc').querySelectorAll('*')], copy = [...clone.querySelectorAll('*')];
   const PROPS = ['color', 'background-color', 'font-size', 'font-weight', 'text-align', 'line-height', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin-top', 'margin-bottom'];
   live.forEach((el, k) => {
-    if(el.closest('svg')) return;
+    if(el.closest('svg') || el.classList.contains('page') || el.classList.contains('pb')) return;
     const cs = getComputedStyle(el), out = [];
     PROPS.forEach(pr => { const v = cs.getPropertyValue(pr); if(pr === 'background-color' && /rgba\(0, 0, 0, 0\)|transparent/.test(v)) return; out.push(`${pr}:${v}`); });
     ['top', 'right', 'bottom', 'left'].forEach(sd => { const w = cs.getPropertyValue(`border-${sd}-width`); if(parseFloat(w) > 0) out.push(`border-${sd}:${w} ${cs.getPropertyValue(`border-${sd}-style`)} ${cs.getPropertyValue(`border-${sd}-color`)}`); });
@@ -422,6 +408,7 @@ async function buildWord(){
     copy[k].setAttribute('style', out.join(';'));
     if(/^T[DH]$/.test(el.tagName) && cs.whiteSpace === 'nowrap') copy[k].setAttribute('nowrap', '');
   });
+  clone.querySelectorAll('br.pb').forEach(b => b.setAttribute('style', 'page-break-before:always'));
   let i = 0;
   for(const box of clone.querySelectorAll('.chart')){
     const svg = box.querySelector('svg'); if(!svg) continue;
