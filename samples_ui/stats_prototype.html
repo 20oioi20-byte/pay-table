@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>인건비 수준 통계</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--line:#e5e7eb;--soft:#f1f3f6;--text:#1f2937;--muted:#6b7280;--faint:#9ca3af;--brand:#1e3a8a;--brand2:#93c5fd;--up:#15803d;--dn:#b91c1c}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--text);padding:24px;font-size:14px}
+.wrap{max-width:1180px;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.head h1{font-size:21px}.head p{font-size:12.5px;color:var(--muted);margin-top:5px}
+.btn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:bold;cursor:pointer}
+.btn:hover{opacity:.9}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:16px 18px;margin-bottom:14px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted)}
+select{font:inherit;font-size:13.5px;padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;background:#fff;min-width:120px;color:var(--text)}
+.seg{display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--brand);color:#fff;font-weight:bold}
+.sp{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted)}.kpi .n{font-size:24px;font-weight:bold;margin:6px 0 2px}.kpi .d{font-size:12.5px;color:var(--muted)}
+.up{color:var(--up)!important}.dn{color:var(--dn)!important}
+.sec{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.sec h2{font-size:15px}.sec .hint{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+th{font-size:11.5px;color:var(--muted);font-weight:normal;text-align:right;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.total td{font-weight:bold;background:#f8fafc;border-bottom:1px solid var(--line)}
+tr.thin td{color:var(--faint)}
+th.cur,td.cur{background:#eff6ff;font-weight:bold}
+tr.total td.cur{background:#dbeafe}
+.barc{width:170px}
+.bar{position:relative;height:12px;background:var(--soft);border-radius:6px}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--brand2);border-radius:6px}
+.bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--brand)}
+.tag{font-size:11px;padding:2px 7px;border-radius:999px;background:#fee2e2;color:#991b1b;margin-left:6px}
+.more{margin-top:8px;font-size:12.5px;color:var(--brand);cursor:pointer;background:none;border:0;font:inherit}
+.hm td{text-align:center;padding:10px 6px;font-size:13px}.hm th{text-align:center}
+.hm td:first-child{text-align:left}.hm td.na{color:var(--faint)}
+.legend{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:10px;border-radius:2px}
+.foot{font-size:11.5px;color:var(--faint);line-height:1.7;margin-top:4px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.barc,.spark{display:none}body{padding:12px}}
+</style></head>
+<body><div class="wrap">
+<div class="head"><div><h1>인건비 수준 통계 — 인당 평균 총임금</h1>
+<p>연도·근무유형·산업군·지역별 · 인원 가중 평균 · 센터별 기준 시점 최신본 · <b>가상 데이터</b></p></div>
+<button class="btn" id="xls">엑셀 다운로드</button></div>
+
+<div class="card filters">
+<label>연도<select id="fYear"></select></label>
+<label>근무유형<select id="fWt"></select></label>
+<label>산업군<select id="fInd"></select></label>
+<label>지역<select id="fReg"></select></label>
+<span class="sp"></span>
+<label>금액 단위<span class="seg" id="unit"><button data-u="y" class="on">연</button><button data-u="m">월</button></span></label>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="card">
+<div class="sec"><h2>구분별 인당 평균 총임금 (연도별)</h2>
+<span class="seg" id="dim"><button data-d="ind" class="on">산업군</button><button data-d="reg">지역</button><button data-d="wt">근무유형</button></span></div>
+<table id="pivot"></table>
+<button class="more" id="more" hidden></button>
+</div>
+
+<div class="card">
+<div class="sec"><h2 id="hmTitle">산업군 × 근무유형 교차표</h2>
+<span class="legend">전체 평균 대비 <i style="background:#fdba74"></i>낮음 <i style="background:#f3f4f6"></i>비슷 <i style="background:#93c5fd"></i>높음 · 회색: 센터 5개 미만</span></div>
+<table class="hm" id="hm"></table>
+</div>
+
+<div class="foot">산출: 인당 월 총임금 = 월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당) · 연 = 월 × 12 · 평균 = Σ(직무별 월 총임금 × 인원) ÷ Σ인원 · 근무유형 = 직무별 기본급 수식의 월 소정시간(209h 주5일 / 167h 주4일 / 130h 이하 단시간 / 야간수당 고정 직무 교대·야간) · 센터 5개 미만 구분은 흐리게 표시 · 상여·퇴직급여·법정부담금 제외</div>
+</div>
+
+<script>
+/* ---------- 가상 데이터: 120개 센터 × 2023~2026 ---------- */
+const YEARS = [2023, 2024, 2025, 2026];
+const WT = ['주5일(209h)', '주4일(167h)', '단시간(≤130h)', '교대·야간'];
+const IND = ['공공', '금융', '통신', '유통·커머스', '제조·기타'];
+const REG = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const pick = (a, w) => { let r = rnd() * w.reduce((s, x) => s + x, 0); for(let i = 0; i < a.length; i++){ if((r -= w[i]) < 0) return a[i]; } return a[0]; };
+const indK = { '공공':1.00, '금융':1.12, '통신':1.05, '유통·커머스':0.96, '제조·기타':0.98 };
+const wtK = { '주5일(209h)':1, '주4일(167h)':0.82, '단시간(≤130h)':0.53, '교대·야간':1.16 };
+const regK = r => r === '서울' ? 1.05 : r === '경기' || r === '세종' ? 1.02 : r === '제주' ? 0.95 : 0.97 + rnd() * 0.04;
+const ROWS = [];
+for(let c = 1; c <= 120; c++){
+  const center = `가상센터${String(c).padStart(3, '0')}`;
+  const ind = pick(IND, [30, 22, 16, 20, 12]);
+  const reg = pick(REG, [26, 22, 6, 7, 5, 4, 6, 2, 1, 3, 3, 4, 3, 2, 3, 4, 1]);
+  const k = indK[ind] * regK(reg) * (0.94 + rnd() * 0.12);
+  const wts = ['주5일(209h)'].concat(WT.slice(1).filter(() => rnd() < 0.3));
+  const start = rnd() < 0.8 ? 2023 : 2023 + Math.floor(rnd() * 3);
+  const g = 0.025 + rnd() * 0.025;
+  wts.forEach(wt => {
+    const heads0 = wt === '주5일(209h)' ? 30 + Math.round(rnd() * 150) : 5 + Math.round(rnd() * 30);
+    YEARS.filter(y => y >= start).forEach(y => {
+      const monthly = Math.round(2620000 * k * wtK[wt] * Math.pow(1 + g, y - 2026) / 1000) * 1000;
+      ROWS.push({ year:y, center, ind, reg, wt, heads:Math.max(1, Math.round(heads0 * (0.9 + rnd() * 0.2))), monthly });
+    });
+  });
+}
+
+/* ---------- 집계 ---------- */
+const $ = id => document.getElementById(id);
+const DIMS = { ind:{ l:'산업군', o:IND }, reg:{ l:'지역', o:REG }, wt:{ l:'근무유형', o:WT } };
+const ZONES = { '수도권':['서울', '경기', '인천'], '충청권':['대전', '세종', '충북', '충남'], '호남권':['광주', '전북', '전남'], '대경권':['대구', '경북'], '동남권':['부산', '울산', '경남'], '강원·제주':['강원', '제주'] };
+const ZONE_OF = Object.fromEntries(Object.entries(ZONES).flatMap(([z, rs]) => rs.map(r => [r, z])));
+ROWS.forEach(r => { r.zone = ZONE_OF[r.reg]; });
+const DIMS_HM = { zone:{ l:'권역', o:Object.keys(ZONES) } };
+function devBar(dv, thin){
+  const w = Math.min(50, Math.abs(dv) / 0.10 * 50), c = thin ? '#d1d5db' : dv >= 0 ? '#93c5fd' : '#fdba74';
+  return `<div class="bar" style="background:#f3f4f6"><b style="left:50%;background:#9ca3af;width:1px"></b><i style="left:${dv >= 0 ? 50 : 50 - w}%;width:${w}%;background:${c};border-radius:3px"></i></div><div style="font-size:11px;color:#6b7280;text-align:center;margin-top:2px">${dv >= 0 ? '+' : ''}${(dv * 100).toFixed(1)}%</div>`;
+}
+const MIN_N = 5;
+const st = { year:2026, wt:'', ind:'', reg:'', unit:'y', dim:'ind', all:false };
+const fill = (el, opts, all) => { el.innerHTML = (all ? `<option value="">${all}</option>` : '') + opts.map(o => `<option>${o}</option>`).join(''); };
+fill($('fYear'), YEARS.slice().reverse()); fill($('fWt'), WT, '전체'); fill($('fInd'), IND, '전체'); fill($('fReg'), REG, '전체');
+function agg(rows){
+  let h = 0, s = 0; const cs = new Set();
+  rows.forEach(r => { h += r.heads; s += r.monthly * r.heads; cs.add(r.center); });
+  return { heads:h, n:cs.size, avg:h ? s / h : null };
+}
+const base = (ex = []) => ROWS.filter(r => (ex.includes('wt') || !st.wt || r.wt === st.wt) && (ex.includes('ind') || !st.ind || r.ind === st.ind) && (ex.includes('reg') || !st.reg || r.reg === st.reg));
+const mul = () => st.unit === 'y' ? 12 : 1;
+const fmt = v => v == null ? '–' : st.unit === 'y' ? `${Math.round(v * 12 / 10000).toLocaleString()}만` : `${Math.round(v / 1000).toLocaleString()}천`;
+const unitL = () => st.unit === 'y' ? '연, 원' : '월, 원';
+const pct = (a, b) => a != null && b ? (a / b - 1) * 100 : null;
+const pctS = p => p == null ? '–' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`;
+
+function render(){
+  const rows = base(), cur = agg(rows.filter(r => r.year === st.year)), prev = agg(rows.filter(r => r.year === st.year - 1));
+  const centersAvg = [...new Set(rows.filter(r => r.year === st.year).map(r => r.center))].map(c => agg(rows.filter(r => r.year === st.year && r.center === c)).avg).sort((a, b) => a - b);
+  const med = centersAvg.length ? centersAvg[Math.floor(centersAvg.length / 2)] : null;
+  const yo = pct(cur.avg, prev.avg);
+  $('kpis').innerHTML = `
+    <div class="kpi"><div class="l">${st.year}년 인당 평균 총임금 (${st.unit === 'y' ? '연' : '월'})</div><div class="n">${fmt(cur.avg)}원</div><div class="d">인원 가중 평균</div></div>
+    <div class="kpi"><div class="l">전년 대비</div><div class="n ${yo > 0 ? 'up' : 'dn'}">${pctS(yo)}</div><div class="d">${st.year - 1}년 ${fmt(prev.avg)}원</div></div>
+    <div class="kpi"><div class="l">센터 수 · 인원</div><div class="n">${cur.n}개</div><div class="d">${cur.heads.toLocaleString()}명</div></div>
+    <div class="kpi"><div class="l">센터 중위수</div><div class="n">${fmt(med)}원</div><div class="d">센터별 평균의 가운데 값</div></div>`;
+
+  /* 피벗: 선택한 구분 × 연도 */
+  const d = DIMS[st.dim], pr = base([st.dim]);
+  const tot = YEARS.map(y => agg(rows.filter(r => r.year === y)));
+  let list = d.o.map(o => {
+    const rs = pr.filter(r => r[st.dim] === o);
+    return { o, ys:YEARS.map(y => agg(rs.filter(r => r.year === y))) };
+  }).filter(x => x.ys.some(a => a.n));
+  const ci = YEARS.indexOf(st.year);
+  const ok = x => x.ys[ci].n >= MIN_N;
+  list.sort((a, b) => (ok(b) - ok(a)) || (b.ys[ci].avg || 0) - (a.ys[ci].avg || 0));
+  const LIM = 8, shown = st.all ? list : list.slice(0, LIM);
+  const row = (name, ys, cls) => {
+    const c = ys[ci], p = ys[ci - 1], thin = c.n && c.n < MIN_N;
+    return `<tr class="${cls || ''}${thin ? ' thin' : ''}"><td>${name}${thin ? '<span class="tag">표본 부족</span>' : ''}</td>
+      <td>${c.n || '–'}</td><td>${c.heads ? c.heads.toLocaleString() : '–'}</td>
+      ${ys.map((a, i) => `<td class="${i === ci ? 'cur' : ''}">${fmt(a.avg)}</td>`).join('')}
+      <td class="${!thin && p && c.avg > p.avg ? 'up' : !thin && p ? 'dn' : ''}">${pctS(pct(c.avg, p && p.avg))}</td>
+      <td class="barc">${c.avg ? devBar(c.avg / tot[ci].avg - 1, thin) : ''}</td></tr>`;
+  };
+  $('pivot').innerHTML = `<thead><tr><th>${d.l}</th><th>센터</th><th>인원</th>${YEARS.map(y => `<th class="${y === st.year ? 'cur' : ''}">${y}</th>`).join('')}<th>전년 대비</th><th class="barc">${st.year} 전체 대비 (±10%)</th></tr></thead>
+    <tbody>${row('전체', tot, 'total')}${shown.map(x => row(x.o, x.ys)).join('')}</tbody>`;
+  $('more').hidden = list.length <= LIM;
+  $('more').textContent = st.all ? '접기' : `나머지 ${list.length - LIM}개 더 보기`;
+
+  /* 교차표: 산업군(또는 지역) × 근무유형, 선택 연도 */
+  const rd = st.dim === 'reg' ? 'zone' : 'ind', rdo = (DIMS[rd] || DIMS_HM[rd]).o;
+  const HD = DIMS[rd] || DIMS_HM[rd];
+  $('hmTitle').textContent = `${HD.l} × 근무유형 교차표 (${st.year}, 단위: ${unitL()})`;
+  const yr = ROWS.filter(r => r.year === st.year && (!st.reg || r.reg === st.reg) && (!st.ind || rd === 'ind' || r.ind === st.ind));
+  const all = agg(yr).avg;
+  const cell = rs => { const a = agg(rs); if(!a.n) return '<td class="na">–</td>';
+    if(a.n < MIN_N) return `<td class="na" style="background:#f9fafb">${fmt(a.avg)}</td>`;
+    const wtAll = agg(yr.filter(r => r.wt === rs[0].wt)).avg, dv = a.avg / wtAll - 1, t = Math.min(1, Math.abs(dv) / 0.12);
+    const bg = dv > 0 ? `rgba(147,197,253,${t})` : `rgba(253,186,116,${t})`;
+    return `<td style="background:${Math.abs(dv) < 0.015 ? '#f3f4f6' : bg}">${fmt(a.avg)}<div style="font-size:11px;color:#6b7280">${a.n}개</div></td>`; };
+  $('hm').innerHTML = `<thead><tr><th style="text-align:left">${HD.l}</th>${WT.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody>${
+    rdo.filter(o => yr.some(r => r[rd] === o)).map(o => `<tr><td>${o}</td>${WT.map(w => cell(yr.filter(r => r[rd] === o && r.wt === w))).join('')}</tr>`).join('')}</tbody>`;
+}
+
+/* ---------- 이벤트 ---------- */
+$('fYear').onchange = e => { st.year = +e.target.value; render(); };
+$('fWt').onchange = e => { st.wt = e.target.value; render(); };
+$('fInd').onchange = e => { st.ind = e.target.value; render(); };
+$('fReg').onchange = e => { st.reg = e.target.value; render(); };
+$('more').onclick = () => { st.all = !st.all; render(); };
+const seg = (id, key) => $(id).onclick = e => { const b = e.target.closest('button'); if(!b) return;
+  [...$(id).children].forEach(x => x.classList.toggle('on', x === b)); st[key] = b.dataset.u || b.dataset.d; st.all = false; render(); };
+seg('unit', 'unit'); seg('dim', 'dim');
+
+/* ---------- 엑셀: 요약 3종 + 교차표 + 원자료 + 산출 기준 ---------- */
+$('xls').onclick = () => {
+  const wb = XLSX.utils.book_new(), filt = `필터: 근무유형 ${st.wt || '전체'} / 산업군 ${st.ind || '전체'} / 지역 ${st.reg || '전체'}`;
+  Object.entries(DIMS).forEach(([k, d]) => {
+    const pr = base([k]), aoa = [[`인당 평균 월 총임금 — ${d.l}별 (원)`], [filt], [],
+      [d.l, ...YEARS.flatMap(y => [`${y} 센터수`, `${y} 인원`, `${y} 월 평균`, `${y} 연 환산`]), `${YEARS.at(-1)} 전년 대비`]];
+    d.o.forEach(o => {
+      const ys = YEARS.map(y => agg(pr.filter(r => r[k] === o && r.year === y)));
+      if(!ys.some(a => a.n)) return;
+      const n = ys.length - 1;
+      aoa.push([o, ...ys.flatMap(a => [a.n, a.heads, a.avg && Math.round(a.avg), a.avg && Math.round(a.avg * 12)]), ys[n].avg && ys[n - 1].avg ? +(ys[n].avg / ys[n - 1].avg - 1).toFixed(4) : null]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch:14 }, ...Array(17).fill({ wch:12 })];
+    XLSX.utils.book_append_sheet(wb, ws, `${d.l}별`);
+  });
+  const hm = [[`산업군 × 근무유형 — ${st.year} 인당 평균 월 총임금 (원)`], [], ['산업군', ...WT]];
+  IND.forEach(o => hm.push([o, ...WT.map(w => { const a = agg(ROWS.filter(r => r.year === st.year && r.ind === o && r.wt === w)); return a.n ? Math.round(a.avg) : null; })]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hm), '교차표');
+  const raw = XLSX.utils.json_to_sheet(ROWS.map(r => ({ 연도:r.year, 센터:r.center, 산업군:r.ind, 지역:r.reg, 권역:r.zone, 근무유형:r.wt, 인원:r.heads, 인당월총임금:r.monthly, 인당연총임금:r.monthly * 12 })));
+  raw['!autofilter'] = { ref:raw['!ref'] };
+  XLSX.utils.book_append_sheet(wb, raw, '센터별 원자료');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['항목', '정의'],
+    ['인당 월 총임금', '월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당)'],
+    ['연 환산', '월 × 12 (상여·퇴직급여·법정부담금 제외)'], ['평균', 'Σ(직무별 월 총임금 × 인원) ÷ Σ인원'],
+    ['근무유형', '직무별 기본급 수식의 월 소정시간으로 자동 분류'], ['기준 자료', '센터별 해당 연도 최신 스냅샷'],
+    ['표본 기준', `센터 ${MIN_N}개 미만 구분은 참고용`], ['생성 일시', new Date().toLocaleString('ko-KR')]]), '산출 기준');
+  XLSX.writeFile(wb, `인건비_수준_통계_${st.year}.xlsx`);
+};
+render();
+</script>
+</body></html>
