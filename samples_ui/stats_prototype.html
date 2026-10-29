@@ -3,38 +3,37 @@
 <title>인건비 수준 통계</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ===== KT 브랜드 토큰: Red #FE2E36(강조) · Purple/Blue/Teal(데이터 계열) · Gray(보조) ===== */
+/* ===== KT 브랜드 토큰: Red #FE2E36는 강조에만, 데이터는 회색 계열 ===== */
 :root{
-  --red:#FE2E36;--purple:#AA50FF;--blue:#00A5FF;--teal:#00BEAC;--gray-d:#4C4C4E;--gray-l:#A2A4A3;
+  --red:#FE2E36;
   --bg:#F4F4F5;--card:#FFFFFF;--line:#E6E6E8;--line2:#F1F1F2;--t:#000000;--m:#4C4C4E;--f:#A2A4A3;--hover:#FAFAFA;--soft:#F1F1F2;--track:#EDEDEE;
+  --g1:#4C4C4E;--g2:#A2A4A3;--g3:#D6D7D7;--heat:76,76,78;
   --acc-bg:#FFE9EA;--acc-t:#D9141D;--sel:#FFF4F4;--tip:#FFFFFF;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);
-  --blue-bg:#E5F6FF;--blue-t:#0079BD;--teal-bg:#E0F7F4;--teal-t:#00897C;--pur-bg:#F4EAFF;--pur-t:#7E2AD6;
-  --s1:var(--blue);--s2:var(--purple);--s3:var(--teal);--up:var(--teal-t);--dn:var(--acc-t);
 }
 :root[data-theme="dark"]{
   --bg:#000000;--card:#141415;--line:#2A2A2D;--line2:#1E1E20;--t:#FFFFFF;--m:#C4C5C6;--f:#7C7E7F;--hover:#1B1B1D;--soft:#232326;--track:#2A2A2D;
+  --g1:#D9DADB;--g2:#8A8C8B;--g3:#4C4C4E;--heat:255,255,255;
   --acc-bg:rgba(254,46,54,.16);--acc-t:#FF6B71;--sel:rgba(254,46,54,.09);--tip:#1E1E20;--shadow:0 0 0 1px #1F1F22;
-  --blue-bg:rgba(0,165,255,.16);--blue-t:#5CC6FF;--teal-bg:rgba(0,190,172,.16);--teal-t:#3FE0CF;--pur-bg:rgba(170,80,255,.18);--pur-t:#C995FF;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'KT Flow','Pretendard','Malgun Gothic','Apple SD Gothic Neo','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--t);font-size:13px;min-width:1100px;transition:background .2s}
 button,select,input{font:inherit;color:inherit}
 select,input{background:var(--card);color:var(--t)}
-.app{display:grid;grid-template-columns:290px 1fr;gap:20px;padding:20px;max-width:1560px;margin:0 auto}
+.app{display:grid;grid-template-columns:270px 1fr;gap:20px;padding:20px;max-width:1560px;margin:0 auto}
 .card{background:var(--card);border-radius:10px;box-shadow:var(--shadow)}
 .pad{padding:16px 18px}
 h3{font-size:14px;display:flex;align-items:center;gap:8px}
 .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}
 .lnk{color:var(--acc-t);font-size:12px;background:none;border:0;cursor:pointer}
-.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--acc-bg);color:var(--acc-t);border:0;cursor:pointer}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--t);color:var(--card);border:0;cursor:pointer}
 .chip.off{background:var(--soft);color:var(--m)}
 .soft{display:inline-block;font-size:11px;padding:3px 8px;border-radius:5px;font-weight:bold;white-space:nowrap}
-.sb{background:var(--blue-bg);color:var(--blue-t)}.so{background:var(--acc-bg);color:var(--acc-t)}.sr{background:var(--red);color:#fff}.sg{background:var(--teal-bg);color:var(--teal-t)}.sx{background:var(--soft);color:var(--m)}.sp{background:var(--pur-bg);color:var(--pur-t)}
+.so{background:var(--acc-bg);color:var(--acc-t)}.sr{background:var(--red);color:#fff}.sx{background:var(--soft);color:var(--m)}.sk{background:var(--t);color:var(--card)}
 .btn{font-size:12px;padding:7px 12px;border-radius:7px;border:1px solid var(--line);background:var(--card);cursor:pointer;white-space:nowrap}
 .btn.pri{background:var(--red);color:#fff;border-color:var(--red);font-weight:bold}
 .btn:disabled{opacity:.4;cursor:default}
 .inp{border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.5px}
-.up{color:var(--up)}.dn{color:var(--dn)}
+.up{color:var(--t)}.dn{color:var(--acc-t)}
 /* 왼쪽 패널 */
 .panel{align-self:start;position:sticky;top:20px}
 .panel section{padding:16px 18px;border-bottom:1px solid var(--line)}
@@ -42,13 +41,15 @@ h3{font-size:14px;display:flex;align-items:center;gap:8px}
 .panel h4{font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .logo{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px}
 .logo b{display:flex;align-items:center;gap:8px}.logo b::before{content:'';width:10px;height:18px;background:var(--red);border-radius:2px}
+.job{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.job button{border:0;background:var(--card);padding:9px 0;cursor:pointer;color:var(--m);font-size:13px}
+.job button.on{background:var(--red);color:#fff;font-weight:bold}
 .yr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
 .yr button{padding:7px 0;border-radius:6px;color:var(--m);background:none;border:0;cursor:pointer;font-size:12px}
-.yr button:hover{background:var(--hover)}.yr .on{background:var(--red);color:#fff;font-weight:bold}.yr .cmp{background:var(--acc-bg);color:var(--acc-t)}
+.yr button:hover{background:var(--hover)}.yr .on{background:var(--t);color:var(--card);font-weight:bold}.yr .cmp{background:var(--soft);color:var(--t);font-weight:bold}
 .yr button:disabled{color:var(--line);cursor:default;background:none}
 .hint{font-size:11px;color:var(--f);margin-top:8px;line-height:1.5}.hint b{color:var(--m)}
-.donuts{display:flex;justify-content:space-around;text-align:center;font-size:11.5px;color:var(--m)}
-.tree{max-height:330px;overflow:auto}
+.tree{max-height:360px;overflow:auto}
 .tree .row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px;cursor:pointer;user-select:none}
 .tree .row.c{padding-left:24px}.tree .n{margin-left:auto;font-size:11px;color:var(--f)}
 .tree .tg{width:14px;color:var(--m);font-size:10px;text-align:center}
@@ -64,17 +65,15 @@ h3{font-size:14px;display:flex;align-items:center;gap:8px}
 .seg button{border:0;background:var(--card);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--m)}
 .seg button.on{background:var(--t);color:var(--card);font-weight:bold}
 .theme button{display:inline-flex;align-items:center;gap:6px}.theme i{width:10px;height:10px;border-radius:50%;border:1px solid var(--f)}
-/* KPI */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
-.kpi{border-top:3px solid transparent}.kpi:first-child{border-top-color:var(--red)}
-.kpi .h{display:flex;gap:10px;align-items:center;font-weight:bold;font-size:12.5px}.kpi .h i{width:28px;height:28px;border-radius:8px;background:var(--soft);display:grid;place-items:center;font-style:normal;color:var(--red);font-size:13px}
-.kpi .n{font-size:25px;font-weight:800;margin:12px 0 6px;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.kpi p{font-size:11.5px;color:var(--m);line-height:1.5;min-height:34px}
-.prog{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:11px;color:var(--m);white-space:nowrap}.prog div{flex:1;height:5px;background:var(--track);border-radius:3px}.prog i{display:block;height:100%;background:var(--red);border-radius:3px}
-/* 차트 */
-.charts{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px}
-.lg{display:flex;gap:16px;justify-content:center;font-size:11px;color:var(--m);margin-top:4px}.lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
-svg text{font-family:inherit}
+/* 산업군 카드 */
+.inds{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.ind{padding:14px 16px;cursor:pointer;border-top:3px solid transparent;transition:transform .1s}
+.ind:hover{transform:translateY(-1px)}
+.ind.on{border-top-color:var(--red)}
+.ind .h{display:flex;justify-content:space-between;font-size:13px;font-weight:bold}.ind .h span{font-size:11px;color:var(--f);font-weight:normal}
+.ind .n{font-size:24px;font-weight:800;margin:10px 0 6px;white-space:nowrap}.ind .n small{font-size:13px;font-weight:600;margin-left:2px}
+.ind .s{font-size:11.5px;color:var(--m);display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
+.ind.dim{opacity:.55}
 /* 표 */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 12px;padding:0 18px}
 .tabs button{border:0;background:none;padding:10px 12px;font-size:13px;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -86,16 +85,20 @@ td{padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap;font
 .r{text-align:right}
 tbody tr:hover td{background:var(--hover)}
 tr.total td{font-weight:bold;background:var(--soft)}
+tr.grp td{font-weight:bold;border-top:1px solid var(--line)}
+tr.sub td:first-child{padding-left:28px;color:var(--m)}
 tr.thin td{color:var(--f)}
-tr.go{cursor:pointer}tr.go td:first-child::after{content:' ›';color:var(--f)}
+tr.go{cursor:pointer}
 tr.sel td{background:var(--sel)}
 tr.closed td{color:var(--f)}
-td.cy{background:var(--sel);font-weight:bold}td.cp{background:var(--hover)}
+td.cy{background:var(--soft);font-weight:bold}td.cp{background:var(--hover)}
 .st{border-left:3px solid;padding-left:8px;font-size:12px}
 .wt{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--soft);color:var(--m);margin-right:3px}
 .bar{position:relative;height:10px;background:var(--track);border-radius:5px;min-width:110px}
 .bar i{position:absolute;top:0;bottom:0;border-radius:3px}.bar b{position:absolute;top:-3px;bottom:-3px;left:50%;width:1px;background:var(--f)}
 .dv{font-size:10.5px;color:var(--m);text-align:center;margin-top:2px}
+.mix{display:flex;height:10px;border-radius:3px;overflow:hidden;min-width:120px}.mix i{display:block;height:100%}
+.lg{display:flex;gap:14px;font-size:11px;color:var(--m)}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .tools{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--m);position:relative}
 .colpick{position:absolute;right:0;top:38px;width:210px;background:var(--tip);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:12px 14px;z-index:5;color:var(--t)}
 .colpick .row{display:flex;gap:8px;align-items:center;padding:5px 0;cursor:pointer;font-size:12px}
@@ -108,12 +111,13 @@ td.cy{background:var(--sel);font-weight:bold}td.cp{background:var(--hover)}
 </style></head>
 <body>
 <div class="app">
-<!-- ===== 왼쪽 패널 (C안) ===== -->
+<!-- ===== 왼쪽 패널 ===== -->
 <aside class="card panel">
   <section><div class="logo"><b>인건비 통계</b><span class="soft sx">가상 데이터</span></div></section>
-  <section><h4>기준 연도 <span style="font-size:11px;color:var(--f);font-weight:normal">클릭: 기준 · Shift+클릭: 비교</span></h4><div class="yr" id="years"></div>
+  <section><h4>직군</h4><div class="job" id="job"><button data-j="상담사">상담사</button><button data-j="관리자">관리자</button><button data-j="">전체</button></div>
+    <div class="hint">관리자 = 급여테이블에서 ‘리더그룹’으로 묶인 직무(팀장·파트장 등). 기본은 상담사입니다.</div></section>
+  <section><h4>기준 연도 <span style="font-size:11px;color:var(--f);font-weight:normal">Shift+클릭: 비교 연도</span></h4><div class="yr" id="years"></div>
     <div class="hint" id="yearHint"></div></section>
-  <section><h4>통계 저장 현황 <span class="soft sb" id="saveYear"></span></h4><div class="donuts"><div><svg width="88" height="88" id="d1"></svg><div>저장 완료</div></div><div><svg width="88" height="88" id="d2"></svg><div>검사 통과</div></div></div></section>
   <section><h4>분류 선택 <button class="lnk" id="clearCls">전체 해제</button></h4><div class="tree" id="tree"></div></section>
   <section><h4>근무유형 · 지역</h4><div class="chips" id="wtChips"></div>
     <select class="inp" id="fReg" style="width:100%;margin-top:10px"></select></section>
@@ -128,18 +132,21 @@ td.cy{background:var(--sel);font-weight:bold}td.cp{background:var(--hover)}
     <button class="btn pri" id="xls">엑셀 다운로드</button>
   </div>
 
-  <div class="kpis" id="kpis"></div>
+  <div class="inds" id="inds"></div>
 
-  <div class="charts">
-    <div class="card pad"><div class="ch"><h3 id="stackTitle"></h3><span class="soft sx" id="stackUnit"></span></div><svg id="stack" width="100%" height="230"></svg>
-      <div class="lg"><span><i style="background:var(--s1)"></i>기본급</span><span><i style="background:var(--s2)"></i>고정 수당</span><span><i style="background:var(--s3)"></i>B등급 업적수당</span></div></div>
-    <div class="card pad"><div class="ch"><h3>인당 평균 총임금 추이</h3><span class="soft sx" id="trendUnit"></span></div><svg id="trend" width="100%" height="230"></svg>
-      <div class="lg" id="trendLg"></div></div>
+  <div class="card pad" style="margin-bottom:16px">
+    <div class="ch"><h3 id="subTitle"></h3>
+      <span class="lg"><span><i style="background:var(--g1)"></i>기본급</span><span><i style="background:var(--g2)"></i>고정 수당</span><span><i style="background:var(--g3)"></i>B등급 업적수당</span></span></div>
+    <table id="subs"></table>
   </div>
 
   <div class="card pad">
-    <div class="tabs" id="tabs"><button data-t="list" class="on">센터 목록</button><button data-t="pivot">구분별 비교</button><button data-t="heat">교차표</button></div>
-    <div id="vList">
+    <div class="tabs" id="tabs"><button data-t="pivot" class="on">구분별 비교</button><button data-t="list">센터 목록</button><button data-t="heat">교차표</button></div>
+    <div id="vPivot">
+      <div class="ch"><h3 id="pivotTitle"></h3><span class="seg" id="dim"><button data-d="cls" class="on">산업군</button><button data-d="reg">지역</button><button data-d="wt">근무유형</button></span></div>
+      <table id="pivot"></table>
+    </div>
+    <div id="vList" hidden>
       <div class="ch"><h3 id="listTitle"></h3>
         <div class="tools">표시 <select class="inp" id="pageSize"><option>15</option><option>30</option><option value="9999">전체</option></select>
           <input class="inp" id="q" type="search" placeholder="센터명·지역 검색" style="width:170px">
@@ -150,16 +157,12 @@ td.cy{background:var(--sel);font-weight:bold}td.cp{background:var(--hover)}
       <table id="list"></table>
       <div class="pager" id="pager"></div>
     </div>
-    <div id="vPivot" hidden>
-      <div class="ch"><h3 id="pivotTitle"></h3><span class="seg" id="dim"><button data-d="cls" class="on">산업군</button><button data-d="reg">지역</button><button data-d="wt">근무유형</button></span></div>
-      <table id="pivot"></table>
-    </div>
     <div id="vHeat" hidden>
-      <div class="ch"><h3 id="hmTitle"></h3><span style="font-size:11px;color:var(--m)">같은 근무유형 평균 대비 <span class="soft so">낮음</span> <span class="soft sx">비슷</span> <span class="soft sb">높음</span> · 흐린 글씨: 센터 5개 미만</span></div>
+      <div class="ch"><h3 id="hmTitle"></h3><span style="font-size:11px;color:var(--m)">같은 근무유형 평균 대비 <span class="soft so">낮음</span> <span class="soft sx">비슷</span> <span class="soft sk">높음</span> · 흐린 글씨: 센터 5개 미만</span></div>
       <table class="hm" id="hm"></table>
     </div>
   </div>
-  <div class="foot">산출: 인당 월 총임금 = 월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당) · 연 = 월 × 12 · 평균 = Σ(직무별 월 총임금 × 인원) ÷ Σ인원 · 근무유형 = 직무별 기본급 수식의 월 소정시간 · 최저임금 여유 = 직무별 기본급 ÷ (최저시급 × 소정시간) − 1 의 센터 내 최솟값 · 운영 중 = 기준 연도 스냅샷이 있는 센터 · 센터 5개 미만 구분은 참고용 · 상여·퇴직급여·법정부담금 제외</div>
+  <div class="foot">산출: 인당 월 총임금 = 월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당) · 연 = 월 × 12 · 평균 = Σ(직무별 월 총임금 × 인원) ÷ Σ인원 · 직군 = 직무 블록(리더그룹 → 관리자, 그 외 → 상담사) · 근무유형 = 직무별 기본급 수식의 월 소정시간 · 최저임금 여유 = 직무별 기본급 ÷ (최저시급 × 소정시간) − 1 의 센터 내 최솟값 · 운영 중 = 기준 연도 스냅샷이 있는 센터 · 센터 5개 미만 구분은 참고용 · 상여·퇴직급여·법정부담금 제외</div>
 </main>
 </div>
 
@@ -174,7 +177,7 @@ const TREE = {
 };
 const IND = Object.keys(TREE), SUB_IND = Object.fromEntries(IND.flatMap(i => Object.keys(TREE[i].subs).map(s => [s, i])));
 
-/* ================= 가상 데이터: 160개 센터 × 2020~2026 ================= */
+/* ================= 가상 데이터: 160개 센터 × 2020~2026 × 직군(상담사·관리자) ================= */
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 const WT = ['주5일(209h)', '주4일(167h)', '단시간(≤130h)', '교대·야간'], WT_S = { '주5일(209h)':'주5', '주4일(167h)':'주4', '단시간(≤130h)':'단시간', '교대·야간':'교대' };
 const REG = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
@@ -191,46 +194,51 @@ for(let c = 1; c <= 160; c++){
   const k = TREE[ind].k * TREE[ind].subs[sub] * regK(reg) * (0.94 + rnd() * 0.12);
   const wts = ['주5일(209h)'].concat(WT.slice(1).filter(() => rnd() < 0.3));
   const start = rnd() < 0.75 ? 2020 : 2020 + Math.floor(rnd() * 6), end = rnd() < 0.07 ? 2025 : 2026;
-  const g = 0.025 + rnd() * 0.025, perfR = 0.06 + rnd() * 0.06, fixR = 0.14 + rnd() * 0.06;
+  const g = 0.025 + rnd() * 0.025, perfR = 0.06 + rnd() * 0.06, fixR = 0.14 + rnd() * 0.06, mgrK = 1.30 + rnd() * 0.18;
   const margin = Object.fromEntries(YEARS.map(y => [y, +(0.5 + rnd() * 11).toFixed(1)]));
-  CENTERS.push({ center, ind, sub, reg, wts, start, end, margin, unsaved:rnd() < 0.05, failed:rnd() < 0.03 });
+  CENTERS.push({ center, ind, sub, reg, wts, start, end, margin });
   wts.forEach(wt => {
     const heads0 = wt === '주5일(209h)' ? 30 + Math.round(rnd() * 150) : 5 + Math.round(rnd() * 30);
-    YEARS.filter(y => y >= start && y <= end).forEach(y => {
-      const monthly = Math.round(2620000 * k * wtK[wt] * Math.pow(1 + g, y - 2026) / 1000) * 1000;
-      const perf = Math.round(monthly * perfR / 1000) * 1000, fixed = Math.round(monthly * fixR / 1000) * 1000;
-      ROWS.push({ year:y, center, ind, sub, reg, zone:ZONE_OF[reg], wt, heads:Math.max(1, Math.round(heads0 * (0.9 + rnd() * 0.2))), monthly, base:monthly - perf - fixed, fixed, perf });
-    });
+    /* 관리자는 주5일·교대 근무에만, 상담사 인원의 약 8~12% */
+    const jobs = [['상담사', 1, heads0]];
+    if(wt === '주5일(209h)' || wt === '교대·야간') jobs.push(['관리자', mgrK, Math.max(2, Math.round(heads0 * (0.08 + rnd() * 0.04)))]);
+    jobs.forEach(([job, jk, h0]) => YEARS.filter(y => y >= start && y <= end).forEach(y => {
+      const monthly = Math.round(2620000 * k * jk * wtK[wt] * Math.pow(1 + g, y - 2026) / 1000) * 1000;
+      const perf = Math.round(monthly * perfR * (job === '관리자' ? 1.3 : 1) / 1000) * 1000, fixed = Math.round(monthly * fixR / 1000) * 1000;
+      ROWS.push({ year:y, center, ind, sub, reg, zone:ZONE_OF[reg], wt, job, heads:Math.max(1, Math.round(h0 * (0.9 + rnd() * 0.2))), monthly, base:monthly - perf - fixed, fixed, perf });
+    }));
   });
 }
-const CENTER_OF = Object.fromEntries(CENTERS.map(c => [c.center, c]));
 
 /* ================= 상태 ================= */
 const $ = id => document.getElementById(id);
 const MIN_N = 5;
-const st = { year:2026, cmp:2025, subs:new Set(), open:new Set(['금융']), wts:new Set(WT), reg:'', unit:'y', tab:'list', dim:'cls',
+const st = { job:'상담사', year:2026, cmp:2025, subs:new Set(), open:new Set(), wts:new Set(WT), reg:'', unit:'y', tab:'pivot', dim:'cls',
   q:'', closed:false, sortKey:'avg', sortDir:-1, pageSize:15, page:0,
   cols:new Set(['reg', 'wt', 'heads', 'cmp', 'avg', 'yoy', 'margin', 'dev']) };
 const COLS = [
   ['reg', '지역'], ['cls', '분류'], ['wt', '근무유형'], ['heads', '인원'], ['base', '기본급(월)'], ['fixed', '고정 수당(월)'], ['perf', 'B등급 업적수당(월)'],
-  ['cmp', '비교 연도'], ['avg', '기준 연도 총임금'], ['yoy', '증감률'], ['margin', '최저임금 여유'], ['rank', '순위'], ['dev', '선택 평균 대비']
+  ['cmp', '비교 연도'], ['avg', '기준 연도 총임금'], ['yoy', '인상률'], ['margin', '최저임금 여유'], ['rank', '순위'], ['dev', '선택 평균 대비']
 ];
 
 /* ================= 공통 계산 ================= */
+const K = n => getComputedStyle(document.documentElement).getPropertyValue('--' + n).trim();
 function agg(rows){
   let h = 0, s = 0, b = 0, f = 0, p = 0; const cs = new Set();
   rows.forEach(r => { h += r.heads; s += r.monthly * r.heads; b += r.base * r.heads; f += r.fixed * r.heads; p += r.perf * r.heads; cs.add(r.center); });
   return { heads:h, n:cs.size, avg:h ? s / h : null, base:h ? b / h : null, fixed:h ? f / h : null, perf:h ? p / h : null };
 }
+const inJob = r => !st.job || r.job === st.job;
 const inCls = r => !st.subs.size || st.subs.has(r.sub);
 const inWt = r => st.wts.has(r.wt), inReg = r => !st.reg || r.reg === st.reg;
-const scoped = (ex = []) => ROWS.filter(r => (ex.includes('cls') || inCls(r)) && (ex.includes('wt') || inWt(r)) && (ex.includes('reg') || inReg(r)));
+/* ex: 이 필터는 적용하지 않음(비교 축으로 쓰일 때) */
+const scoped = (ex = []) => ROWS.filter(r => inJob(r) && (ex.includes('cls') || inCls(r)) && (ex.includes('wt') || inWt(r)) && (ex.includes('reg') || inReg(r)));
 const yearOf = (rows, y) => rows.filter(r => r.year === y);
-const fmt = v => v == null ? '–' : st.unit === 'y' ? `${Math.round(v * 12 / 10000).toLocaleString()}만` : `${Math.round(v / 10000).toLocaleString()}만`;
+const fmt = v => v == null ? '–' : `${Math.round(v * (st.unit === 'y' ? 12 : 1) / 10000).toLocaleString()}만`;
 const pct = (a, b) => a != null && b ? (a / b - 1) * 100 : null;
 const pctS = p => p == null ? '–' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`;
-const unitL = () => st.unit === 'y' ? '연, 원' : '월, 원';
-/* 선택 상태를 읽기 쉬운 이름으로 */
+const unitL = () => st.unit === 'y' ? '연' : '월';
+const jobL = () => st.job || '전체 직군';
 function scope(){
   if(!st.subs.size) return { name:'전체 산업', ind:null, path:[] };
   const inds = [...new Set([...st.subs].map(s => SUB_IND[s]))];
@@ -242,35 +250,26 @@ function scope(){
   }
   return { name:`산업군 ${inds.length}개 선택`, ind:null, path:[`산업군 ${inds.length}개`] };
 }
-/* 비교 축: 한 산업군 안이면 세부유형, 아니면 산업군 */
 const clsAxis = () => { const sc = scope(); return sc.ind ? { key:'sub', label:`${sc.ind} 세부유형`, opts:Object.keys(TREE[sc.ind].subs), ind:sc.ind } : { key:'ind', label:'산업군', opts:IND }; };
-/* 테마 색: CSS 토큰을 읽어 SVG·인라인 스타일에 사용 */
-const K = n => getComputedStyle(document.documentElement).getPropertyValue('--' + n).trim();
-const statusOf = d => d >= 3 ? ['평균 이상', K('teal')] : d > -3 ? ['평균 수준', K('gray-l')] : d > -7 ? ['평균 미만', K('purple')] : ['점검 필요', K('red')];
+const statusOf = d => d >= 3 ? ['평균 이상', K('g1')] : d > -3 ? ['평균 수준', K('g3')] : d > -7 ? ['평균 미만', '#FF9AA0'] : ['점검 필요', K('red')];
 function devBar(dv, thin){
-  const w = Math.min(50, Math.abs(dv) / 0.10 * 50), c = thin ? K('f') : dv >= 0 ? K('teal') : K('red');
-  return `<div class="bar"><b></b><i style="left:${dv >= 0 ? 50 : 50 - w}%;width:${w}%;background:${c}"></i></div><div class="dv">${dv >= 0 ? '+' : ''}${(dv * 100).toFixed(1)}%</div>`;
+  const w = Math.min(50, Math.abs(dv) / 0.10 * 50), c = thin ? K('g3') : dv >= 0 ? K('g1') : K('red');
+  return `<div class="bar"><b></b><i style="left:${dv >= 0 ? 50 : 50 - w}%;width:${w}%;background:${c};opacity:${dv >= 0 || thin ? 1 : .7}"></i></div><div class="dv">${dv >= 0 ? '+' : ''}${(dv * 100).toFixed(1)}%</div>`;
 }
+const mixBar = a => a.avg ? `<div class="mix" title="기본급 ${fmt(a.base)} · 고정 수당 ${fmt(a.fixed)} · 업적수당 ${fmt(a.perf)}"><i style="width:${a.base / a.avg * 100}%;background:var(--g1)"></i><i style="width:${a.fixed / a.avg * 100}%;background:var(--g2)"></i><i style="width:${a.perf / a.avg * 100}%;background:var(--g3)"></i></div>` : '';
 
 /* ================= 렌더 ================= */
 function render(){
-  renderPanel(); renderTop();
-  const rows = scoped(), cur = agg(yearOf(rows, st.year)), cmp = agg(yearOf(rows, st.cmp));
-  renderKpis(rows, cur, cmp);
-  renderStack(); renderTrend();
-  if(st.tab === 'list') renderList(cur.avg);
+  renderPanel(); renderTop(); renderInds(); renderSubs();
   if(st.tab === 'pivot') renderPivot();
+  if(st.tab === 'list') renderList(agg(yearOf(scoped(), st.year)).avg);
   if(st.tab === 'heat') renderHeat();
 }
 
 function renderPanel(){
+  [...$('job').children].forEach(b => b.classList.toggle('on', b.dataset.j === st.job));
   $('years').innerHTML = YEARS.concat([2027]).map(y => `<button data-y="${y}" class="${y === st.year ? 'on' : y === st.cmp ? 'cmp' : ''}" ${y > 2026 ? 'disabled' : ''}>${y}</button>`).join('');
   $('yearHint').innerHTML = `기준 <b>${st.year}</b> · 비교 <b>${st.cmp}</b> (${st.year - st.cmp}년 전)`;
-  const live = CENTERS.filter(c => c.start <= st.year && c.end >= st.year && (!st.subs.size || st.subs.has(c.sub)));
-  const saved = live.filter(c => !(st.year === 2026 && c.unsaved)), passed = saved.filter(c => !(st.year === 2026 && c.failed));
-  $('saveYear').textContent = st.year;
-  donut('d1', saved.length, live.length, K('red')); donut('d2', passed.length, saved.length, K('teal'));
-  /* 분류 트리 */
   const cnt = s => CENTERS.filter(c => c.sub === s && c.start <= st.year && c.end >= st.year).length;
   $('tree').innerHTML = IND.map(i => {
     const subs = Object.keys(TREE[i].subs), on = subs.filter(s => st.subs.has(s)).length, open = st.open.has(i);
@@ -279,84 +278,63 @@ function renderPanel(){
   }).join('');
   $('wtChips').innerHTML = WT.map(w => `<button class="chip ${st.wts.has(w) ? '' : 'off'}" data-wt="${w}">${WT_S[w]}${st.wts.has(w) ? ' ✓' : ''}</button>`).join('');
 }
-function donut(id, a, b, col){
-  const r = 34, c = 2 * Math.PI * r;
-  $(id).innerHTML = `<circle cx="44" cy="44" r="${r}" fill="none" stroke="${K('track')}" stroke-width="7"/><circle cx="44" cy="44" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${b ? c * a / b : 0} ${c}" transform="rotate(-90 44 44)"/><text x="44" y="49" font-size="13" font-weight="bold" text-anchor="middle" fill="${K('t')}">${a}/${b}</text>`;
-}
 function renderTop(){
   const sc = scope();
-  $('crumb').innerHTML = `<a data-go="">전체 산업</a>${sc.path.map((p, i) => `<span>›</span>${i === sc.path.length - 1 ? `<b>${p}</b>` : `<a data-go="${p}">${p}</a>`}`).join('')}
-    <span class="soft sb" style="margin-left:6px">${st.year} vs ${st.cmp}</span>${st.wts.size < WT.length ? `<span class="soft sx">${[...st.wts].map(w => WT_S[w]).join('·')}</span>` : ''}${st.reg ? `<span class="soft sx">${st.reg}</span>` : ''}`;
+  $('crumb').innerHTML = `<span class="soft sr">${jobL()}</span><a data-go="">전체 산업</a>${sc.path.map((p, i) => `<span>›</span>${i === sc.path.length - 1 ? `<b>${p}</b>` : `<a data-go="${p}">${p}</a>`}`).join('')}
+    <span class="soft sx" style="margin-left:6px">${st.year} vs ${st.cmp}</span>${st.wts.size < WT.length ? `<span class="soft sx">${[...st.wts].map(w => WT_S[w]).join('·')}</span>` : ''}${st.reg ? `<span class="soft sx">${st.reg}</span>` : ''}`;
 }
 
-function renderKpis(rows, cur, cmp){
-  const sc = scope(), yo = pct(cur.avg, cmp.avg);
-  const allY = yearOf(ROWS.filter(r => inWt(r) && inReg(r)), st.year);
-  const centerAvgs = rows => { const m = {}; rows.forEach(r => { (m[r.center] = m[r.center] || []).push(r); }); return Object.values(m).map(rs => agg(rs).avg).sort((a, b) => a - b); };
-  const allC = centerAvgs(allY), mine = centerAvgs(yearOf(rows, st.year));
-  const pctile = cur.avg ? Math.round(allC.filter(v => v <= cur.avg).length / allC.length * 100) : 0;
-  const med = mine.length ? mine[Math.floor(mine.length / 2)] : null, gap = mine.length ? (mine.at(-1) / mine[0] - 1) * 100 : 0;
-  const live = CENTERS.filter(c => c.start <= st.year && c.end >= st.year && (!st.subs.size || st.subs.has(c.sub)) && (!st.reg || c.reg === st.reg) && c.wts.some(w => st.wts.has(w)));
-  const saved = live.filter(c => !(st.year === 2026 && c.unsaved)).length;
-  const mg = live.map(c => c.margin[st.year]), mgAvg = mg.length ? mg.reduce((a, b) => a + b, 0) / mg.length : 0, low = mg.filter(v => v < 2).length;
-  const allAvg = agg(allY).avg;
-  $('kpis').innerHTML = `
-  <div class="card pad kpi"><div class="h"><i>₩</i>인당 평균 ${st.unit === 'y' ? '연' : '월'} 총임금</div><div class="n">${fmt(cur.avg)}<span class="soft ${yo >= 0 ? 'sg' : 'sr'}">${pctS(yo)}</span></div>
-    <p>${sc.name} · ${st.cmp}년 ${fmt(cmp.avg)}${sc.path.length ? ` · 전체 산업 대비 ${pctS(pct(cur.avg, allAvg))}` : ''}</p><div class="prog"><div><i style="width:${pctile}%"></i></div>전체 센터 중 백분위 ${pctile}</div></div>
-  <div class="card pad kpi"><div class="h"><i>▦</i>운영 센터 · 인원</div><div class="n">${cur.n}개<span class="soft sb">${cur.heads.toLocaleString()}명</span></div>
-    <p>${st.year}년 통계 저장 ${saved}개 · 미저장 ${live.length - saved}개</p><div class="prog"><div><i style="width:${live.length ? saved / live.length * 100 : 0}%"></i></div>저장 ${saved}/${live.length}</div></div>
-  <div class="card pad kpi"><div class="h"><i>≡</i>센터 중위수</div><div class="n">${fmt(med)}<span class="soft sx">평균 ${pctS(pct(med, cur.avg))}</span></div>
-    <p>센터별 평균의 가운데 값 · 최고 ${fmt(mine.at(-1))} / 최저 ${fmt(mine[0])}</p><div class="prog"><div><i style="width:${Math.min(100, gap * 3)}%"></i></div>최고·최저 격차 ${gap.toFixed(1)}%</div></div>
-  <div class="card pad kpi"><div class="h"><i>!</i>최저임금 여유</div><div class="n">+${mgAvg.toFixed(1)}%<span class="soft ${low ? 'so' : 'sg'}">${low ? `주의 ${low}곳` : '양호'}</span></div>
-    <p>센터별 최솟값의 평균 · 2% 미만은 다음 해 인상 시 미달 가능</p><div class="prog"><div><i style="width:${live.length ? (live.length - low) / live.length * 100 : 0}%;background:${low ? 'var(--red)' : 'var(--teal)'}"></i></div>2% 미만 ${low}곳</div></div>`;
+/* 상단: 산업군 5개 카드 (금액 + 비교 연도 금액·인상률) */
+function renderInds(){
+  const pr = scoped(['cls']), sel = new Set([...st.subs].map(s => SUB_IND[s]));
+  $('inds').innerHTML = IND.map(i => {
+    const rs = pr.filter(r => r.ind === i), c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)), yo = pct(c.avg, p.avg);
+    return `<div class="card ind ${sel.has(i) ? 'on' : sel.size ? 'dim' : ''}" data-pick="${i}"><div class="h">${i}<span>${c.n}개 센터 · ${c.heads.toLocaleString()}명</span></div>
+      <div class="n">${c.avg ? Math.round(c.avg * (st.unit === 'y' ? 12 : 1) / 10000).toLocaleString() : '–'}<small>만원</small></div>
+      <div class="s"><span>${st.cmp}년 ${fmt(p.avg)}원</span><b class="${yo >= 0 ? 'up' : 'dn'}">${yo == null ? '–' : `${yo >= 0 ? '▲' : '▼'} ${Math.abs(yo).toFixed(1)}%`}</b></div></div>`;
+  }).join('');
 }
 
-/* 세부유형(또는 산업군)별 임금 구성 누적 막대 */
-function renderStack(){
-  const ax = clsAxis(), pr = yearOf(scoped(['cls']), st.year).filter(r => !ax.ind || r.ind === ax.ind);
-  const data = ax.opts.map(o => ({ o, a:agg(pr.filter(r => r[ax.key] === o)) })).filter(x => x.a.n);
-  $('stackTitle').textContent = `${ax.label}별 임금 구성 (${st.year})`;
-  $('stackUnit').textContent = `인당 ${st.unit === 'y' ? '연' : '월'}, 만원`;
-  const sv = $('stack'), W = sv.clientWidth || 600, H = 230, B = 28, T = 18, L = 40, m = st.unit === 'y' ? 12 : 1;
-  const stepV = m === 12 ? 1000 : 100, max = Math.ceil(Math.max(...data.map(x => x.a.avg)) * m / 10000 * 1.1 / stepV) * stepV, y = v => T + (H - T - B) * (1 - v / max);
-  const ticks = Array.from({ length:max / stepV + 1 }, (_, i) => i * stepV);
-  let s = ticks.map(v => `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="${K('line2')}"/><text x="${L - 6}" y="${y(v) + 4}" font-size="10" fill="${K('f')}" text-anchor="end">${v.toLocaleString()}</text>`).join('');
-  const stp = (W - L) / Math.max(1, data.length), bw = Math.min(34, stp * 0.5);
-  data.forEach(({ o, a }, i) => {
-    const x = L + stp * i + stp / 2 - bw / 2, sel = st.subs.has(o) || (ax.key === 'ind' && Object.keys(TREE[o].subs).some(z => st.subs.has(z))), thin = a.n < MIN_N;
-    let acc = 0;
-    [[a.base, K('s1')], [a.fixed, K('s2')], [a.perf, K('s3')]].forEach(([v, c], j) => { const vv = v * m / 10000; s += `<rect x="${x}" y="${y(acc + vv)}" width="${bw}" height="${y(acc) - y(acc + vv)}" fill="${c}" opacity="${thin ? .45 : 1}" ${j === 2 ? 'rx="3"' : ''}/>`; acc += vv; });
-    s += `<text x="${x + bw / 2}" y="${y(acc) - 6}" font-size="11" font-weight="bold" text-anchor="middle" fill="${sel ? K('red') : K('t')}">${Math.round(acc).toLocaleString()}</text>`;
-    s += `<text x="${x + bw / 2}" y="${H - 10}" font-size="11" text-anchor="middle" fill="${sel ? K('red') : K('m')}" font-weight="${sel ? 'bold' : 'normal'}" style="cursor:pointer" data-pick="${o}">${o}${thin ? '*' : ''}</text>`;
-  });
-  sv.innerHTML = s;
+/* 산업군·세부유형 표 */
+function renderSubs(){
+  const pr = scoped(['cls']), sc = scope(), sel = new Set([...st.subs].map(s => SUB_IND[s]));
+  const inds = sel.size ? IND.filter(i => sel.has(i)) : IND;
+  const all = agg(yearOf(pr, st.year)).avg;
+  $('subTitle').innerHTML = `산업군·세부유형별 인당 평균 ${unitL()} 총임금 <span class="soft sx">${jobL()} · ${st.year}</span>`;
+  const row = (name, rs, cls, pick) => {
+    const c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)), thin = c.n && c.n < MIN_N, yo = pct(c.avg, p.avg);
+    if(!c.n && !p.n) return '';
+    return `<tr class="go ${cls}${thin ? ' thin' : ''}${st.subs.has(pick) || (cls === 'grp' && sc.ind === pick && sc.path.length === 1) ? ' sel' : ''}" data-pick="${pick}">
+      <td>${name}${thin ? ' <span class="soft sx">표본 부족</span>' : ''}</td><td class="r">${c.n || '–'}</td><td class="r">${c.heads ? c.heads.toLocaleString() : '–'}</td>
+      <td class="r">${fmt(c.base)}</td><td class="r">${fmt(c.fixed)}</td><td class="r">${fmt(c.perf)}</td><td>${mixBar(c)}</td>
+      <td class="r" style="color:var(--m)">${fmt(p.avg)}</td><td class="r cy">${fmt(c.avg)}</td>
+      <td class="r ${yo >= 0 ? 'up' : 'dn'}">${pctS(yo)}</td><td style="width:140px">${c.avg && all ? devBar(c.avg / all - 1, thin) : ''}</td></tr>`;
+  };
+  $('subs').innerHTML = `<thead><tr><th>산업군 / 세부유형</th><th class="r">센터</th><th class="r">인원</th><th class="r">기본급</th><th class="r">고정 수당</th><th class="r">업적수당</th><th>구성</th>
+    <th class="r">${st.cmp} 총임금</th><th class="r">${st.year} 총임금</th><th class="r">인상률</th><th>전체 산업 대비</th></tr></thead>
+    <tbody>${sel.size ? '' : row('전체 산업', pr, 'total', '')}${inds.map(i => row(i, pr.filter(r => r.ind === i), 'grp', i)
+      + Object.keys(TREE[i].subs).map(s => row(s, pr.filter(r => r.sub === s), 'sub', s)).join('')).join('')}</tbody>`;
 }
 
-/* 선택 범위 vs 상위 범위(또는 전체) 추이 */
-function renderTrend(){
-  const sc = scope(), mine = scoped(), m = st.unit === 'y' ? 12 : 1;
-  const parentRows = sc.ind && sc.path.length > 1 ? ROWS.filter(r => r.ind === sc.ind && inWt(r) && inReg(r)) : ROWS.filter(r => inWt(r) && inReg(r));
-  const parentName = sc.ind && sc.path.length > 1 ? `${sc.ind} 전체` : '전체 산업';
-  const P = YEARS.map(y => agg(yearOf(mine, y)).avg), F = YEARS.map(y => agg(yearOf(parentRows, y)).avg);
-  $('trendUnit').textContent = `인당 ${st.unit === 'y' ? '연' : '월'}, 만원`;
-  $('trendLg').innerHTML = `<span><i style="background:var(--red)"></i>${sc.name}</span>${sc.path.length ? `<span><i style="background:var(--gray-l)"></i>${parentName}</span>` : ''}`;
-  const sv = $('trend'), W = sv.clientWidth || 540, H = 230, B = 28, T = 14, L = 46;
-  const vals = P.concat(sc.path.length ? F : []).filter(Boolean).map(v => v * m / 10000), stepV = st.unit === 'y' ? 200 : 20, lo = Math.floor(Math.min(...vals) * 0.98 / stepV) * stepV, hi = Math.ceil(Math.max(...vals) * 1.02 / stepV) * stepV;
-  const ya = v => T + (H - T - B) * (1 - (v * m / 10000 - lo) / (hi - lo)), xa = i => L + (W - L - 24) * i / (YEARS.length - 1);
-  let a = [0, 1, 2, 3].map(t => { const v = lo + (hi - lo) * t / 3, yy = T + (H - T - B) * (1 - t / 3); return `<line x1="${L}" x2="${W - 14}" y1="${yy}" y2="${yy}" stroke="${K('line2')}"/><text x="${L - 6}" y="${yy + 4}" font-size="10" fill="${K('f')}" text-anchor="end">${Math.round(v).toLocaleString()}</text>`; }).join('');
-  const pts = arr => arr.map((v, i) => v == null ? null : [xa(i), ya(v)]).filter(Boolean);
-  const path = p => p.map((q, i) => i ? `C${(p[i - 1][0] + q[0]) / 2},${p[i - 1][1]} ${(p[i - 1][0] + q[0]) / 2},${q[1]} ${q[0]},${q[1]}` : `M${q[0]},${q[1]}`).join(' ');
-  const pp = pts(P);
-  a += `<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${K('red')}" stop-opacity=".22"/><stop offset="1" stop-color="${K('red')}" stop-opacity="0"/></linearGradient></defs>`;
-  if(pp.length) a += `<path d="${path(pp)} L${pp.at(-1)[0]},${H - B} L${pp[0][0]},${H - B}Z" fill="url(#g)"/>`;
-  if(sc.path.length) a += `<path d="${path(pts(F))}" fill="none" stroke="${K('gray-l')}" stroke-width="2" stroke-dasharray="5 4"/>`;
-  a += `<path d="${path(pp)}" fill="none" stroke="${K('red')}" stroke-width="2.5"/>`;
-  YEARS.forEach((yy, i) => { a += `<text x="${xa(i)}" y="${H - 8}" font-size="10.5" text-anchor="middle" fill="${yy === st.year ? K('t') : K('m')}" font-weight="${yy === st.year ? 'bold' : 'normal'}">${yy}</text>`; });
-  [st.cmp, st.year].forEach(yy => { const i = YEARS.indexOf(yy); if(P[i] == null) return; const x = xa(i), y = ya(P[i]);
-    a += `<line x1="${x}" x2="${x}" y1="${y}" y2="${H - B}" stroke="${K('red')}" stroke-dasharray="3 3" opacity="${yy === st.year ? 1 : .4}"/><circle cx="${x}" cy="${y}" r="${yy === st.year ? 5 : 4}" fill="${K('card')}" stroke="${K('red')}" stroke-width="2.5"/>`; });
-  const ci = YEARS.indexOf(st.year), x = xa(ci), y = ya(P[ci] || lo), tx = x - 138 < L ? x + 12 : x - 138, ty = Math.min(H - B - 50, y + 40);
-  a += `<g transform="translate(${tx},${ty})"><rect width="126" height="44" rx="6" fill="${K('tip')}" stroke="${K('line')}" style="filter:drop-shadow(0 4px 8px rgba(0,0,0,.15))"/><text x="12" y="20" font-size="13" font-weight="bold" fill="${K('t')}">${fmt(P[ci])}원</text><text x="12" y="35" font-size="10.5" fill="${K('m')}">${st.year} · ${st.cmp} 대비 ${pctS(pct(P[ci], P[YEARS.indexOf(st.cmp)]))}</text></g>`;
-  sv.innerHTML = a;
+/* ---------- 구분별 비교 (연도별) ---------- */
+function pivotSpec(){
+  if(st.dim === 'cls'){ const ax = clsAxis(); return { key:ax.key, label:ax.label, opts:ax.opts, rows:scoped(['cls']).filter(r => !ax.ind || r.ind === ax.ind), go:true }; }
+  return st.dim === 'reg' ? { key:'reg', label:'지역', opts:REG, rows:scoped(['reg']) } : { key:'wt', label:'근무유형', opts:WT, rows:scoped(['wt']) };
+}
+function renderPivot(){
+  const sp = pivotSpec(), show = YEARS.slice(-5), sc = scope();
+  $('pivotTitle').innerHTML = `${st.dim === 'cls' ? '' : `${sc.name} · `}${sp.label}별 인당 평균 ${unitL()} 총임금 — 연도별 <span class="soft sx">${jobL()}</span>`;
+  const tot = show.map(y => agg(yearOf(sp.rows, y)));
+  const list = sp.opts.map(o => { const rs = sp.rows.filter(r => r[sp.key] === o); return { o, ys:show.map(y => agg(yearOf(rs, y))), c:agg(yearOf(rs, st.year)), p:agg(yearOf(rs, st.cmp)) }; }).filter(x => x.ys.some(a => a.n));
+  const tc = agg(yearOf(sp.rows, st.year)), tp = agg(yearOf(sp.rows, st.cmp));
+  list.sort((a, b) => ((b.c.n >= MIN_N) - (a.c.n >= MIN_N)) || (b.c.avg || 0) - (a.c.avg || 0));
+  const row = (name, ys, c, p, cls, go) => { const thin = c.n && c.n < MIN_N;
+    return `<tr class="${cls || ''}${thin ? ' thin' : ''}"${go ? ` data-pick="${go}"` : ''}><td>${name}${thin ? ' <span class="soft sx">표본 부족</span>' : ''}</td><td class="r">${c.n || '–'}</td><td class="r">${c.heads ? c.heads.toLocaleString() : '–'}</td>
+      ${ys.map((a, i) => `<td class="r ${show[i] === st.year ? 'cy' : show[i] === st.cmp ? 'cp' : ''}">${fmt(a.avg)}</td>`).join('')}
+      <td class="r ${!thin && c.avg >= p.avg ? 'up' : !thin && p.avg ? 'dn' : ''}">${pctS(pct(c.avg, p.avg))}</td><td style="width:150px">${c.avg && tc.avg ? devBar(c.avg / tc.avg - 1, thin) : ''}</td></tr>`; };
+  const totName = st.dim === 'cls' ? (clsAxis().ind ? `${clsAxis().ind} 전체` : '전체 산업') : `${sc.name} 전체`;
+  $('pivot').innerHTML = `<thead><tr><th>${sp.label}</th><th class="r">센터</th><th class="r">인원</th>${show.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">${st.cmp}→${st.year}</th><th>${totName} 대비</th></tr></thead>
+    <tbody>${row(totName, tot, tc, tp, 'total')}${list.map(x => row(x.o, x.ys, x.c, x.p, `${sp.go ? 'go' : ''}${st.subs.has(x.o) ? ' sel' : ''}`, sp.go ? x.o : '')).join('')}</tbody>`;
 }
 
 /* ---------- 센터 목록 ---------- */
@@ -366,7 +344,7 @@ function centerItems(){
   const items = pool.filter(c => st.closed || c.end >= st.year).filter(c => !st.q || c.center.includes(st.q) || c.reg.includes(st.q)).map(c => {
     const rs = rows.filter(r => r.center === c.center), a = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)), last = agg(yearOf(rs, c.end));
     return { c, a, p, last, live:c.end >= st.year, yoy:pct(a.avg, p.avg), margin:c.end >= st.year ? c.margin[st.year] : null };
-  });
+  }).filter(x => !x.live || x.a.n);
   const ranked = items.filter(x => x.live && x.a.avg).sort((x, y) => y.a.avg - x.a.avg);
   ranked.forEach((x, i) => { x.rank = i + 1; });
   const val = { avg:x => x.a.avg, cmp:x => x.p.avg, heads:x => x.a.heads, yoy:x => x.yoy, margin:x => x.margin, rank:x => x.rank, dev:x => x.a.avg, base:x => x.a.base, fixed:x => x.a.fixed, perf:x => x.a.perf, name:x => x.c.center, reg:x => x.c.reg, cls:x => x.c.sub };
@@ -376,19 +354,19 @@ function centerItems(){
 }
 function renderList(scopeAvg){
   const { items, ranked, pool, sc } = centerItems();
-  const live = pool.filter(c => c.end >= st.year).length;
+  const live = items.filter(x => x.live).length;
   const pages = Math.max(1, Math.ceil(items.length / st.pageSize)); st.page = Math.min(st.page, pages - 1);
   const shown = items.slice(st.page * st.pageSize, (st.page + 1) * st.pageSize);
-  $('listTitle').innerHTML = `${sc.name} 센터 목록 <span class="soft sb">운영 중 ${live}</span>${pool.length > live ? `<span class="soft sx">종료 ${pool.length - live}</span>` : ''}`;
+  $('listTitle').innerHTML = `${sc.name} 센터 목록 <span class="soft sk">운영 중 ${live}</span>${pool.length > pool.filter(c => c.end >= st.year).length ? `<span class="soft sx">종료 ${pool.length - pool.filter(c => c.end >= st.year).length}</span>` : ''}<span class="soft sx">${jobL()}</span>`;
   const C = COLS.filter(([k]) => st.cols.has(k)), num = new Set(['heads', 'base', 'fixed', 'perf', 'cmp', 'avg', 'yoy', 'margin', 'rank']);
-  const head = k => ({ cmp:`${st.cmp} 총임금`, avg:`${st.year} 총임금`, yoy:`${st.cmp}→${st.year}`, dev:`${sc.name} 평균 대비` })[k] || COLS.find(c => c[0] === k)[1];
+  const head = k => ({ cmp:`${st.cmp} 총임금`, avg:`${st.year} 총임금`, yoy:'인상률', dev:`${sc.name} 평균 대비` })[k] || COLS.find(c => c[0] === k)[1];
   const th = (k, l, cls) => `<th class="s ${cls || ''}" data-sort="${k}">${l}${st.sortKey === k ? `<span class="ar"> ${st.sortDir < 0 ? '▼' : '▲'}</span>` : ''}</th>`;
   const cell = (k, x) => {
     if(!x.live) return ({ reg:x.c.reg, cls:x.c.sub, cmp:fmt(x.last.avg) })[k] ?? '–';
     const d = x.a.avg && scopeAvg ? (x.a.avg / scopeAvg - 1) * 100 : 0;
-    return ({ reg:x.c.reg, cls:`${x.c.sub}`, wt:x.c.wts.filter(w => st.wts.has(w)).map(w => `<span class="wt">${WT_S[w]}</span>`).join(''), heads:x.a.heads.toLocaleString(),
+    return ({ reg:x.c.reg, cls:x.c.sub, wt:x.c.wts.filter(w => st.wts.has(w)).map(w => `<span class="wt">${WT_S[w]}</span>`).join(''), heads:x.a.heads.toLocaleString(),
       base:fmt(x.a.base), fixed:fmt(x.a.fixed), perf:fmt(x.a.perf), cmp:`<span style="color:var(--m)">${fmt(x.p.avg)}</span>`, avg:`<b>${fmt(x.a.avg)}</b>`,
-      yoy:`<span class="${x.yoy > 0 ? 'up' : x.yoy < 0 ? 'dn' : ''}">${pctS(x.yoy)}</span>`,
+      yoy:`<span class="${x.yoy >= 0 ? 'up' : 'dn'}">${pctS(x.yoy)}</span>`,
       margin:`<span class="soft ${x.margin < 2 ? 'sr' : x.margin < 4 ? 'so' : 'sx'}">+${x.margin}%</span>`, rank:`${x.rank} / ${ranked.length}`, dev:devBar(d / 100) })[k];
   };
   $('list').innerHTML = `<thead><tr>${th('name', '센터')}<th>상태</th>${C.map(([k, l]) => k === 'wt' ? `<th>${l}</th>` : th(k, head(k), num.has(k) ? 'r' : '')).join('')}</tr></thead>
@@ -400,38 +378,16 @@ function renderList(scopeAvg){
   $('colpick').innerHTML = `<h5>표시할 열 (엑셀·CSV에도 반영)</h5>${COLS.map(([k, l]) => `<div class="row" data-col="${k}"><span class="cb ${st.cols.has(k) ? 'on' : ''}"></span>${l}</div>`).join('')}`;
 }
 
-/* ---------- 구분별 비교 (연도별) ---------- */
-function pivotSpec(){
-  if(st.dim === 'cls'){ const ax = clsAxis(); return { key:ax.key, label:ax.label, opts:ax.opts, rows:scoped(['cls']).filter(r => !ax.ind || r.ind === ax.ind), go:true }; }
-  return st.dim === 'reg' ? { key:'reg', label:'지역', opts:REG, rows:scoped(['reg']) } : { key:'wt', label:'근무유형', opts:WT, rows:scoped(['wt']).filter(r => r.wt) };
-}
-function renderPivot(){
-  const sp = pivotSpec(), show = YEARS.slice(-5), ci = show.indexOf(st.year), sc = scope();
-  $('pivotTitle').textContent = `${st.dim === 'cls' ? '' : `${sc.name} · `}${sp.label}별 인당 평균 총임금 (단위: ${unitL()})`;
-  const tot = show.map(y => agg(yearOf(sp.rows, y)));
-  const list = sp.opts.map(o => ({ o, ys:show.map(y => agg(yearOf(sp.rows.filter(r => r[sp.key] === o), y))) })).filter(x => x.ys.some(a => a.n));
-  const yi = YEARS.indexOf(st.year), cur = x => agg(yearOf(sp.rows.filter(r => r[sp.key] === x.o), st.year));
-  list.forEach(x => { x.c = cur(x); x.p = agg(yearOf(sp.rows.filter(r => r[sp.key] === x.o), st.cmp)); });
-  const tc = agg(yearOf(sp.rows, st.year)), tp = agg(yearOf(sp.rows, st.cmp));
-  list.sort((a, b) => ((b.c.n >= MIN_N) - (a.c.n >= MIN_N)) || (b.c.avg || 0) - (a.c.avg || 0));
-  const row = (name, ys, c, p, cls, go) => { const thin = c.n && c.n < MIN_N;
-    return `<tr class="${cls || ''}${thin ? ' thin' : ''}"${go ? ` data-pick="${go}"` : ''}><td>${name}${thin ? ' <span class="soft sx">표본 부족</span>' : ''}</td><td class="r">${c.n || '–'}</td><td class="r">${c.heads ? c.heads.toLocaleString() : '–'}</td>
-      ${ys.map((a, i) => `<td class="r ${show[i] === st.year ? 'cy' : show[i] === st.cmp ? 'cp' : ''}">${fmt(a.avg)}</td>`).join('')}
-      <td class="r ${!thin && c.avg > p.avg ? 'up' : !thin && p.avg ? 'dn' : ''}">${pctS(pct(c.avg, p.avg))}</td><td style="width:150px">${c.avg && tc.avg ? devBar(c.avg / tc.avg - 1, thin) : ''}</td></tr>`; };
-  const totName = st.dim === 'cls' ? (clsAxis().ind ? `${clsAxis().ind} 전체` : '전체 산업') : `${sc.name} 전체`;
-  $('pivot').innerHTML = `<thead><tr><th>${sp.label}</th><th class="r">센터</th><th class="r">인원</th>${show.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">${st.cmp}→${st.year}</th><th>${totName} 대비</th></tr></thead>
-    <tbody>${row(totName, tot, tc, tp, 'total')}${list.map(x => row(x.o, x.ys, x.c, x.p, `${sp.go ? 'go' : ''}${st.subs.has(x.o) ? ' sel' : ''}`, sp.go ? x.o : '')).join('')}</tbody>`;
-}
-
 /* ---------- 교차표 ---------- */
 function renderHeat(){
   const ax = st.dim === 'reg' ? { key:'zone', label:'권역', opts:Object.keys(ZONES) } : clsAxis();
-  const yr = yearOf(ROWS.filter(r => inReg(r) && (ax.key === 'zone' ? inCls(r) : !ax.ind || r.ind === ax.ind)), st.year);
-  $('hmTitle').textContent = `${ax.label} × 근무유형 (${st.year}, 단위: ${unitL()})`;
+  const yr = yearOf(ROWS.filter(r => inJob(r) && inReg(r) && (ax.key === 'zone' ? inCls(r) : !ax.ind || r.ind === ax.ind)), st.year);
+  $('hmTitle').innerHTML = `${ax.label} × 근무유형 (${st.year}, 인당 ${unitL()}) <span class="soft sx">${jobL()}</span>`;
+  const rgb = K('heat');
   const cell = (rs, w) => { const a = agg(rs); if(!a.n) return '<td class="nx">–</td>';
     if(a.n < MIN_N) return `<td class="na">${fmt(a.avg)}<small>${a.n}개</small></td>`;
     const dv = a.avg / agg(yr.filter(r => r.wt === w)).avg - 1, t = Math.min(1, Math.abs(dv) / 0.12);
-    const bg = Math.abs(dv) < 0.015 ? K('soft') : dv > 0 ? `rgba(0,165,255,${t * .4})` : `rgba(254,46,54,${t * .32})`;
+    const bg = Math.abs(dv) < 0.015 ? K('soft') : dv > 0 ? `rgba(${rgb},${t * .3})` : `rgba(254,46,54,${t * .3})`;
     return `<td style="background:${bg}">${fmt(a.avg)}<small>${a.n}개</small></td>`; };
   $('hm').innerHTML = `<thead><tr><th>${ax.label}</th>${WT.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody>${
     ax.opts.filter(o => yr.some(r => r[ax.key] === o)).map(o => `<tr><td>${o}</td>${WT.map(w => cell(yr.filter(r => r[ax.key] === o && r.wt === w), w)).join('')}</tr>`).join('')}</tbody>`;
@@ -440,11 +396,15 @@ function renderHeat(){
 /* ================= 이벤트 ================= */
 const pickCls = name => {
   st.page = 0;
-  if(!name){ st.subs.clear(); }
+  const sc = scope();
+  if(!name || (sc.path.length === 1 && sc.ind === name) || (st.subs.size === 1 && st.subs.has(name))){
+    if(name && SUB_IND[name]){ st.subs = new Set(Object.keys(TREE[SUB_IND[name]].subs)); } else st.subs.clear();
+  }
   else if(TREE[name]){ st.subs = new Set(Object.keys(TREE[name].subs)); st.open.add(name); }
   else if(SUB_IND[name]){ st.subs = new Set([name]); st.open.add(SUB_IND[name]); }
   render();
 };
+$('job').onclick = e => { const b = e.target.closest('[data-j]'); if(b){ st.job = b.dataset.j; st.page = 0; render(); } };
 $('years').onclick = e => { const b = e.target.closest('button[data-y]'); if(!b || b.disabled) return; const y = +b.dataset.y;
   if(e.shiftKey){ if(y !== st.year) st.cmp = y; } else { st.year = y; if(st.cmp >= y) st.cmp = y - 1 >= YEARS[0] ? y - 1 : y; } render(); };
 $('tree').onclick = e => {
@@ -454,14 +414,13 @@ $('tree').onclick = e => {
   else { const subs = Object.keys(TREE[r.dataset.ind].subs), all = subs.every(s => st.subs.has(s)); subs.forEach(s => all ? st.subs.delete(s) : st.subs.add(s)); st.open.add(r.dataset.ind); }
   render();
 };
-$('clearCls').onclick = () => pickCls('');
+$('clearCls').onclick = () => { st.subs.clear(); render(); };
 $('wtChips').onclick = e => { const b = e.target.closest('[data-wt]'); if(!b) return; const w = b.dataset.wt;
   if(st.wts.has(w) && st.wts.size === 1) return; st.wts.has(w) ? st.wts.delete(w) : st.wts.add(w); st.page = 0; render(); };
 $('fReg').innerHTML = `<option value="">지역 전체</option>${REG.map(r => `<option>${r}</option>`).join('')}`;
 $('fReg').onchange = e => { st.reg = e.target.value; st.page = 0; render(); };
-$('crumb').onclick = e => { const a = e.target.closest('[data-go]'); if(a) pickCls(a.dataset.go); };
-$('stack').onclick = e => { const t = e.target.closest('[data-pick]'); if(t) pickCls(t.dataset.pick); };
-$('pivot').onclick = e => { const t = e.target.closest('[data-pick]'); if(t) pickCls(t.dataset.pick); };
+$('crumb').onclick = e => { const a = e.target.closest('[data-go]'); if(!a) return; if(!a.dataset.go){ st.subs.clear(); render(); } else { st.subs = new Set(Object.keys(TREE[a.dataset.go].subs)); render(); } };
+['inds', 'subs', 'pivot'].forEach(id => { $(id).onclick = e => { const t = e.target.closest('[data-pick]'); if(t && t.dataset.pick) pickCls(t.dataset.pick); }; });
 const seg = (id, key) => $(id).onclick = e => { const b = e.target.closest('button'); if(!b) return;
   [...$(id).children].forEach(x => x.classList.toggle('on', x === b)); st[key] = b.dataset.u || b.dataset.d; render(); };
 seg('unit', 'unit'); seg('dim', 'dim');
@@ -477,7 +436,6 @@ $('list').onclick = e => { const t = e.target.closest('[data-sort]'); if(!t) ret
 $('colBtn').onclick = e => { e.stopPropagation(); $('colpick').hidden = !$('colpick').hidden; };
 $('colpick').onclick = e => { e.stopPropagation(); const r = e.target.closest('[data-col]'); if(!r) return; const k = r.dataset.col; st.cols.has(k) ? st.cols.delete(k) : st.cols.add(k); render(); };
 document.addEventListener('click', () => { $('colpick').hidden = true; });
-window.addEventListener('resize', () => { renderStack(); renderTrend(); });
 
 /* ================= 내보내기 ================= */
 function listAoa(){
@@ -487,40 +445,45 @@ function listAoa(){
     base:x.a.base && Math.round(x.a.base), fixed:x.a.fixed && Math.round(x.a.fixed), perf:x.a.perf && Math.round(x.a.perf),
     cmp:(x.live ? x.p.avg : x.last.avg) && Math.round(x.live ? x.p.avg : x.last.avg), avg:x.a.avg && Math.round(x.a.avg),
     yoy:x.yoy == null ? null : +(x.yoy / 100).toFixed(4), margin:x.margin == null ? null : x.margin / 100, rank:x.rank || null })[k];
-  return [['센터', '운영 상태', ...C.map(([k, l]) => ({ cmp:`${st.cmp} 인당 월 총임금`, avg:`${st.year} 인당 월 총임금`, yoy:`${st.cmp}→${st.year} 증감률` })[k] || l), `${st.year} 인당 연 총임금`, `${sc.name} 평균 대비`],
+  return [['센터', '운영 상태', ...C.map(([k, l]) => ({ cmp:`${st.cmp} 인당 월 총임금`, avg:`${st.year} 인당 월 총임금`, yoy:`${st.cmp}→${st.year} 인상률` })[k] || l), `${st.year} 인당 연 총임금`, `${sc.name} 평균 대비`],
     ...items.map(x => [x.c.center, x.live ? '운영 중' : `${x.c.end}년 종료`, ...C.map(([k]) => v(k, x)), x.a.avg ? Math.round(x.a.avg * 12) : null, x.a.avg && scopeAvg ? +(x.a.avg / scopeAvg - 1).toFixed(4) : null])];
 }
-const filterText = () => `필터: 분류 ${scope().name} / 근무유형 ${st.wts.size === WT.length ? '전체' : [...st.wts].map(w => WT_S[w]).join('·')} / 지역 ${st.reg || '전체'} / 기준 ${st.year} · 비교 ${st.cmp}`;
+const filterText = () => `필터: 직군 ${jobL()} / 분류 ${scope().name} / 근무유형 ${st.wts.size === WT.length ? '전체' : [...st.wts].map(w => WT_S[w]).join('·')} / 지역 ${st.reg || '전체'} / 기준 ${st.year} · 비교 ${st.cmp}`;
 $('csv').onclick = () => {
   const csv = '﻿' + listAoa().map(r => r.map(v => v == null ? '' : /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v).join(',')).join('\r\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' })); a.download = `센터목록_${scope().name}_${st.year}.csv`; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' })); a.download = `센터목록_${jobL()}_${scope().name}_${st.year}.csv`; a.click();
 };
 $('xls').onclick = () => {
   const wb = XLSX.utils.book_new(), filt = filterText(), yh = YEARS.flatMap(y => [`${y} 센터`, `${y} 인원`, `${y} 월 평균`]);
   const sheet = (name, title, head, body, wch) => { const ws = XLSX.utils.aoa_to_sheet([[title], [filt], [], head, ...body]); ws['!cols'] = head.map((_, i) => ({ wch:i < (wch || 1) ? 16 : 11 })); XLSX.utils.book_append_sheet(wb, ws, name); };
   const yc = rs => { const ys = YEARS.map(y => agg(yearOf(rs, y))); return ys.some(a => a.n) ? ys.flatMap(a => [a.n || null, a.heads || null, a.avg && Math.round(a.avg)]) : null; };
-  /* 요약 */
-  const rows = scoped(), c = agg(yearOf(rows, st.year)), p = agg(yearOf(rows, st.cmp));
-  sheet('요약', `${scope().name} 요약`, ['항목', '값'], [[`${st.year} 인당 월 총임금`, Math.round(c.avg)], [`${st.year} 인당 연 총임금`, Math.round(c.avg * 12)], [`${st.cmp} 인당 월 총임금`, p.avg && Math.round(p.avg)],
-    ['증감률', p.avg ? +(c.avg / p.avg - 1).toFixed(4) : null], ['운영 센터', c.n], ['인원', c.heads], ['기본급(월)', Math.round(c.base)], ['고정 수당(월)', Math.round(c.fixed)], ['B등급 업적수당(월)', Math.round(c.perf)]], 1);
   const clsRows = scoped(['cls']);
-  sheet('산업군별', '인당 평균 월 총임금 — 산업군별 (원)', ['산업군', ...yh], IND.map(i => { const v = yc(clsRows.filter(r => r.ind === i)); return v && [i, ...v]; }).filter(Boolean));
-  sheet('세부유형별', '인당 평균 월 총임금 — 산업군·세부유형별 (원)', ['산업군', '세부유형', ...yh], IND.flatMap(i => Object.keys(TREE[i].subs).map(s => { const v = yc(clsRows.filter(r => r.sub === s)); return v && [i, s, ...v]; })).filter(Boolean), 2);
-  sheet('지역별', '인당 평균 월 총임금 — 지역별 (원)', ['지역', ...yh], REG.map(g => { const v = yc(scoped(['reg']).filter(r => r.reg === g)); return v && [g, ...v]; }).filter(Boolean));
-  sheet('근무유형별', '인당 평균 월 총임금 — 근무유형별 (원)', ['근무유형', ...yh], WT.map(w => { const v = yc(scoped(['wt']).filter(r => r.wt === w)); return v && [w, ...v]; }).filter(Boolean));
-  const ax = clsAxis(), yr = yearOf(ROWS.filter(r => inReg(r) && (!ax.ind || r.ind === ax.ind)), st.year);
+  /* 화면 상단과 같은 산업군·세부유형 표 */
+  const sumRow = (lv1, lv2, rs) => { const c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)); if(!c.n && !p.n) return null;
+    return [lv1, lv2, c.n, c.heads, c.base && Math.round(c.base), c.fixed && Math.round(c.fixed), c.perf && Math.round(c.perf), p.avg && Math.round(p.avg), c.avg && Math.round(c.avg), c.avg && Math.round(c.avg * 12), p.avg && c.avg ? +(c.avg / p.avg - 1).toFixed(4) : null]; };
+  sheet('산업군·세부유형', `산업군·세부유형별 인당 평균 총임금 — ${st.year} (원)`, ['산업군', '세부유형', '센터', '인원', '기본급(월)', '고정 수당(월)', '업적수당(월)', `${st.cmp} 월 총임금`, `${st.year} 월 총임금`, `${st.year} 연 총임금`, '인상률'],
+    [sumRow('전체 산업', '', clsRows), ...IND.flatMap(i => [sumRow(i, '(소계)', clsRows.filter(r => r.ind === i)), ...Object.keys(TREE[i].subs).map(s => sumRow(i, s, clsRows.filter(r => r.sub === s)))])].filter(Boolean), 2);
+  sheet('산업군별 연도', '인당 평균 월 총임금 — 산업군별 연도 추이 (원)', ['산업군', ...yh], IND.map(i => { const v = yc(clsRows.filter(r => r.ind === i)); return v && [i, ...v]; }).filter(Boolean));
+  sheet('지역별 연도', '인당 평균 월 총임금 — 지역별 연도 추이 (원)', ['지역', ...yh], REG.map(g => { const v = yc(scoped(['reg']).filter(r => r.reg === g)); return v && [g, ...v]; }).filter(Boolean));
+  sheet('근무유형별 연도', '인당 평균 월 총임금 — 근무유형별 연도 추이 (원)', ['근무유형', ...yh], WT.map(w => { const v = yc(scoped(['wt']).filter(r => r.wt === w)); return v && [w, ...v]; }).filter(Boolean));
+  const jr = ['상담사', '관리자'].map(j => { const rs = ROWS.filter(r => r.job === j && inCls(r) && inWt(r) && inReg(r)), c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp));
+    return [j, c.n, c.heads, p.avg && Math.round(p.avg), c.avg && Math.round(c.avg), c.avg && Math.round(c.avg * 12), p.avg ? +(c.avg / p.avg - 1).toFixed(4) : null]; });
+  sheet('직군 비교', `직군별 인당 평균 총임금 — ${scope().name} ${st.year} (원)`, ['직군', '센터', '인원', `${st.cmp} 월`, `${st.year} 월`, `${st.year} 연`, '인상률'], jr);
+  const ax = clsAxis(), yr = yearOf(ROWS.filter(r => inJob(r) && inReg(r) && (!ax.ind || r.ind === ax.ind)), st.year);
   sheet('교차표', `${ax.label} × 근무유형 — ${st.year} 인당 평균 월 총임금 (원)`, [ax.label, ...WT], ax.opts.map(o => [o, ...WT.map(w => { const a = agg(yr.filter(r => r[ax.key] === o && r.wt === w)); return a.n ? Math.round(a.avg) : null; })]));
   const la = listAoa(); sheet('센터 목록', `${scope().name} 센터 목록 — ${st.year} (화면에 표시한 열 기준)`, la[0], la.slice(1), 2);
-  const raw = XLSX.utils.json_to_sheet(ROWS.map(r => ({ 연도:r.year, 센터:r.center, 산업군:r.ind, 세부유형:r.sub, 지역:r.reg, 권역:r.zone, 근무유형:r.wt, 인원:r.heads, 기본급:r.base, 고정수당:r.fixed, B등급업적수당:r.perf, 인당월총임금:r.monthly, 인당연총임금:r.monthly * 12 })));
+  const raw = XLSX.utils.json_to_sheet(ROWS.map(r => ({ 연도:r.year, 센터:r.center, 산업군:r.ind, 세부유형:r.sub, 지역:r.reg, 권역:r.zone, 근무유형:r.wt, 직군:r.job, 인원:r.heads, 기본급:r.base, 고정수당:r.fixed, B등급업적수당:r.perf, 인당월총임금:r.monthly, 인당연총임금:r.monthly * 12 })));
   raw['!autofilter'] = { ref:raw['!ref'] }; XLSX.utils.book_append_sheet(wb, raw, '센터별 원자료');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['항목', '정의'],
     ['인당 월 총임금', '월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당)'], ['연 환산', '월 × 12 (상여·퇴직급여·법정부담금 제외)'],
-    ['평균', 'Σ(직무별 월 총임금 × 인원) ÷ Σ인원'], ['근무유형', '직무별 기본급 수식의 월 소정시간으로 자동 분류'], ['산업군·세부유형', '센터 정보(설정 화면 분류 목록)에서 지정'],
-    ['최저임금 여유', '직무별 기본급 ÷ (최저시급 × 소정시간) − 1 의 센터 내 최솟값'], ['상태', '선택 범위 평균 대비 +3% 이상 평균 이상 / ±3% 평균 수준 / −7%까지 평균 미만 / 그 아래 점검 필요'],
+    ['평균', 'Σ(직무별 월 총임금 × 인원) ÷ Σ인원'], ['직군', '직무 블록이 리더그룹이면 관리자, 그 외 상담사'], ['근무유형', '직무별 기본급 수식의 월 소정시간으로 자동 분류'],
+    ['산업군·세부유형', '센터 정보(설정 화면 분류 목록)에서 지정'], ['최저임금 여유', '직무별 기본급 ÷ (최저시급 × 소정시간) − 1 의 센터 내 최솟값'],
+    ['상태', '선택 범위 평균 대비 +3% 이상 평균 이상 / ±3% 평균 수준 / −7%까지 평균 미만 / 그 아래 점검 필요'],
     ['운영 중', '기준 연도 스냅샷이 있는 센터'], ['표본 기준', `센터 ${MIN_N}개 미만 구분은 참고용`], ['생성 일시', new Date().toLocaleString('ko-KR')]]), '산출 기준');
-  XLSX.writeFile(wb, `인건비_수준_통계_${scope().name}_${st.year}.xlsx`);
+  XLSX.writeFile(wb, `인건비_수준_통계_${jobL()}_${scope().name}_${st.year}.xlsx`);
 };
 
+/* ================= 테마 (이 브라우저에만 기억, 없어도 동작) ================= */
 function setTheme(t){
   document.documentElement.dataset.theme = t;
   [...$('theme').children].forEach(b => b.classList.toggle('on', b.dataset.th === t));
@@ -529,6 +492,6 @@ function setTheme(t){
 let savedTheme = 'light'; try{ savedTheme = localStorage.getItem('statsTheme') || 'light'; }catch(e){}
 setTheme(new URLSearchParams(location.search).get('theme') || savedTheme);
 $('theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ setTheme(b.dataset.th); render(); } };
-pickCls('');
+render();
 </script>
 </body></html>

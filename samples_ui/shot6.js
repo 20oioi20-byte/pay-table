@@ -1,0 +1,15 @@
+const { chromium } = require('playwright');
+(async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport:{ width:1480, height:950 }, deviceScaleFactor:1.25, acceptDownloads:true });
+await p.route('**/xlsx.full.min.js', r => r.fulfill({ path: process.argv[3] }));
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('file://' + __dirname + '/stats_prototype.html?theme=light'); await p.waitForTimeout(300);
+await p.screenshot({ path: __dirname + '/s8_1_all_white.png', fullPage:true });
+await p.click('#inds [data-pick="금융"]'); await p.waitForTimeout(150);
+await p.click('#subs tr[data-pick="보험"]'); await p.waitForTimeout(150);
+await p.click('#tabs button[data-t="list"]'); await p.waitForTimeout(150);
+await p.screenshot({ path: __dirname + '/s8_2_insurance_white.png', fullPage:true });
+await p.click('#theme button[data-th="dark"]'); await p.click('#job button[data-j="관리자"]'); await p.click('#tabs button[data-t="pivot"]'); await p.click('#clearCls'); await p.waitForTimeout(150);
+await p.screenshot({ path: __dirname + '/s8_3_manager_black.png', fullPage:true });
+await p.click('#tabs button[data-t="heat"]');
+const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#xls')]); await dl.saveAs(process.argv[2]);
+console.log('errors', errs, dl.suggestedFilename()); await b.close(); })();
