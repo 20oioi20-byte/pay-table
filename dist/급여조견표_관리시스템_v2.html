@@ -1040,8 +1040,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 .rp2 .kicker{ color:#FE2E36; font-weight:bold; font-size:9.5pt; margin:0; }
 .rp2 h1{ font-size:18pt; margin:4pt 0 4pt; font-weight:bold; color:#000000; }
 .rp2 .meta{ color:#4C4C4E; font-size:8.5pt; margin:0 0 10pt; padding-bottom:8pt; border-bottom:2pt solid #000000; }
-.rp2 h2{ font-size:12pt; font-weight:bold; margin:13pt 0 5pt; padding:0 0 3pt; border-bottom:1pt solid #A2A4A3; color:#000000; }
-.rp2 h3{ font-size:10.5pt; font-weight:bold; margin:10pt 0 4pt; color:#000000; }
+.rp2 h2{ font-size:12pt; font-weight:bold; margin:10pt 0 4pt; padding:0 0 3pt; border-bottom:1pt solid #A2A4A3; color:#000000; }
+.rp2 h3{ font-size:10.5pt; font-weight:bold; margin:8pt 0 3pt; color:#000000; }
 .rp2 table{ border-collapse:collapse; width:100%; margin:4pt 0 6pt; }
 .rp2 th{ background:#F1F1F2; color:#4C4C4E; font-weight:bold; font-size:8.5pt; padding:4pt 5pt; border-top:1pt solid #4C4C4E; border-bottom:1pt solid #A2A4A3; text-align:left; white-space:nowrap; }
 .rp2 td{ font-size:9pt; padding:3pt 5pt; border-bottom:.5pt solid #D6D7D7; }
@@ -1055,12 +1055,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 .rp2 .chart svg{ max-width:100%; height:auto; }
 .rp2 ul{ margin:4pt 0 6pt 14pt; padding:0; } .rp2 li{ margin:0 0 2pt; font-size:8.5pt; }
 .rp2 table.ask{ margin:8pt 0 4pt; }
-.rp2 .ask td{ border-top:2pt solid #FE2E36; border-bottom:2pt solid #FE2E36; padding:9pt 10pt; background:#FFF4F4; vertical-align:middle; }
+.rp2 .ask td{ border-top:2pt solid #FE2E36; border-bottom:2pt solid #FE2E36; padding:6pt 10pt; background:#FFF4F4; vertical-align:middle; }
 .rp2 .ask .al{ font-size:10.5pt; font-weight:bold; width:18%; white-space:nowrap; }
 .rp2 .ask .av{ font-size:28pt; font-weight:bold; color:#FE2E36; width:22%; white-space:nowrap; }
 .rp2 .ask .ad{ font-size:9.5pt; color:#000000; line-height:1.7; }
 .rp2 .ask .hl{ color:#FE2E36; font-size:11pt; }
-.rp2 .rkpi td{ border:1pt solid #D6D7D7; padding:7pt 8pt; vertical-align:top; width:33%; }
+.rp2 .rkpi td{ border:1pt solid #D6D7D7; padding:5pt 8pt; vertical-align:top; width:33%; }
 .rp2 .rkpi .l{ font-size:8.5pt; color:#4C4C4E; } .rp2 .rkpi .v{ font-size:16pt; font-weight:bold; } .rp2 .rkpi .s{ font-size:8.5pt; color:#4C4C4E; }
 .rp2 .rkpi .v.neg{ color:#D9141D; } .rp2 .rkpi .v.hlv{ color:#FE2E36; }
 @media print{
@@ -4640,7 +4640,7 @@ loadSystem().then(()=>{ refreshNavCounts(); });
 </script>
 <script>
 /* 관리자 설정: build_v2.py 인자로 바꿉니다 */
-window.V2_CONFIG = {"appVersion": "2.6.1", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
+window.V2_CONFIG = {"appVersion": "2.6.2", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
 /* ============================================================
    급여관리 시스템 v2 전용 스크립트 (급여조견표_관리시스템_v2.html 에만 들어감)
    - 첫 실행 안내(이름 → 폴더 받기 → 폴더 연결) 후에는 사용자가 설정할 것이 없음
@@ -6926,7 +6926,13 @@ window.V2_CONFIG = {"appVersion": "2.6.1", "folderName": "급여조견표", "tea
     /* 연도별: 이 센터의 해마다 마지막 저장본 */
     const byY = new Map(); SNAPS.filter(s => s.center === snap.center && s.period <= period).forEach(s => { const k = +s.period.slice(0, 4), c = byY.get(k); if(!c || s.period > c.period || (s.period === c.period && s.version > c.version)) byY.set(k, s); });
     const yrs = [...byY.keys()].sort().slice(-6), trend = yrs.slice(1).map((yy, i) => { const a = groupPay(byY.get(yy), '상담사'), p = groupPay(byY.get(yrs[i]), '상담사'); return { y:yy, wage: a && p ? a.monthly / p.monthly - 1 : null, mw: mwRate(yy) }; });
-    return { snap, y, policy, levels, groups, m, auto, r, manual: tmp.labor !== '', now, next, est, rate: est ? est.all.rate : now.T ? next.T / now.T - 1 : 0, csHeads: cs ? cs.me.heads : 0, pr, b, mg, trend,
+    /* 인상하지 않으면: 내년 최저시급(전망) × 기본급 시간수 − 현재 기본급 = 1인 월 부족액 */
+    const mwNext = mwOf(y) * (1 + m);
+    const risk = snap.jobs.map(j => { const base = num((j.items || {})['기본급']), hrs = payOf(j).hours, need = mwNext * hrs, hd = headsOf(snap, j);
+      return { name: j.name, heads: hd, base, need, short: Math.max(0, need - base), margin: base && need ? base / need - 1 : null }; })
+      .filter(x => x.base && x.heads > 0);
+    const riskTot = risk.reduce((a, x) => a + x.short * x.heads, 0);
+    return { snap, y, policy, levels, groups, m, auto, r, mwNext, risk, riskTot, manual: tmp.labor !== '', now, next, est, rate: est ? est.all.rate : now.T ? next.T / now.T - 1 : 0, csHeads: cs ? cs.me.heads : 0, pr, b, mg, trend,
       hasHeads: snap.jobs.some(j => typeof j.heads === 'number') };
   }
 
@@ -6942,19 +6948,23 @@ window.V2_CONFIG = {"appVersion": "2.6.1", "folderName": "급여조견표", "tea
   function chartCompare(A){
     const g = A.groups[0], rows = g.lv.map(l => ({ label:l.label, med:l.med, n:`${l.n}곳` }));
     if(g.mk) rows.push({ label:'채용시장', med:g.mk, n:`${SETTINGS.market.filter(m => m.laborType !== '관리자').length}건` });
-    const W = 640, rowH = 30, T = 24, L = 150, R = 110, H = T + rows.length * rowH + 6;
-    const vals = rows.map(r => r.med).concat(g.me.monthly).filter(Boolean), lo = Math.floor(Math.min(...vals) * 0.9 / 100000) * 100000, hi = Math.max(...vals) * 1.02;
+    const after = g.me.monthly * (1 + A.r);   // 직접인건비 인상률만큼 임금이 오른 뒤
+    const W = 640, rowH = 26, T = 22, L = 150, R = 130, H = T + rows.length * rowH + 20;
+    const vals = rows.map(r => r.med).concat(g.me.monthly, after).filter(Boolean), lo = Math.floor(Math.min(...vals) * 0.9 / 100000) * 100000, hi = Math.max(...vals) * 1.02;
     const x = v => L + (v - lo) / (hi - lo) * (W - L - R);
     let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="KT Flow, Malgun Gothic, sans-serif" font-size="11"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
     rows.forEach((r, i) => {
       const yy = T + i * rowH, d = g.me.monthly / r.med - 1;
       s += `<text x="0" y="${yy + 18}" fill="#000000" font-weight="bold">${esc(r.label)}</text><text x="${L - 8}" y="${yy + 18}" text-anchor="end" fill="#A2A4A3" font-size="10">${r.n}</text>`;
       s += `<rect x="${L}" y="${yy + 6}" width="${Math.max(0, x(r.med) - L)}" height="16" fill="#D6D7D7"/><text x="${x(r.med) + 6}" y="${yy + 18}" fill="#4C4C4E" font-size="10.5">${man(r.med)}</text>`;
-      s += `<text x="${W}" y="${yy + 18}" text-anchor="end" fill="${d < 0 ? '#D9141D' : '#000000'}" font-weight="bold">${pc(d)}</text>`;
+      const d2 = after / r.med - 1;
+      s += `<text x="${W - 62}" y="${yy + 18}" text-anchor="end" fill="${d < 0 ? '#D9141D' : '#4C4C4E'}" font-size="10.5">${pc(d)}</text><text x="${W - 50}" y="${yy + 18}" text-anchor="middle" fill="#A2A4A3" font-size="10">→</text>`;
+      s += `<text x="${W}" y="${yy + 18}" text-anchor="end" fill="${d2 < 0 ? '#D9141D' : '#000000'}" font-weight="bold">${pc(d2)}</text>`;
     });
     /* 센터명 라벨은 선 왼쪽에 붙여 오른쪽 '차이' 머리글과 겹치지 않게 */
     s += `<line x1="${x(g.me.monthly)}" x2="${x(g.me.monthly)}" y1="${T - 4}" y2="${H - 2}" stroke="#FE2E36" stroke-width="2"/><text x="${x(g.me.monthly) - 4}" y="${T - 9}" text-anchor="end" fill="#FE2E36" font-weight="bold">${esc(A.snap.center)} ${man(g.me.monthly)}</text>`;
-    s += `<text x="${W}" y="${T - 9}" text-anchor="end" fill="#A2A4A3" font-size="10">중위수 대비</text>`;
+    s += `<line x1="${x(after)}" x2="${x(after)}" y1="${T - 4}" y2="${H - 18}" stroke="#FE2E36" stroke-width="2" stroke-dasharray="4 3"/><text x="${x(after) + 4}" y="${H - 4}" text-anchor="start" fill="#FE2E36" font-weight="bold">인상 후 ${man(after)} (${pc(A.r)})</text>`;
+    s += `<text x="${W}" y="${T - 9}" text-anchor="end" fill="#A2A4A3" font-size="10">중위수 대비 현재 → 인상 후</text>`;
     return s + `</svg>`;
   }
 
@@ -6964,7 +6974,7 @@ window.V2_CONFIG = {"appVersion": "2.6.1", "folderName": "급여조견표", "tea
     const row = (label, a, b, cls) => `<tr class="${cls || ''}"><td class="nw">${label}</td><td class="r">${w0(a)}</td><td class="r">${w0(b)}</td><td class="r"><b>${w0(b - a)}</b></td><td class="r">${w0((b - a) * 12)}</td><td class="r">${a ? pc(b / a - 1, 2) : '–'}</td></tr>`;
     return `<table class="ask"><tr>
   <td class="al">견적 단가 인상률</td><td class="av">${pc0(e.rate, 2)}</td>
-  <td class="ad">월 견적 총액 <b>${w0(N.T)}원 → ${w0(X.T)}원</b><br>월 <b class="hl">+${w0(d)}원</b> · 연 <b class="hl">+${w0(d * 12)}원</b>${ro ? `<br>${esc(ro.name)} 1인 월 단가 ${w0(ro.now.T)}원 → ${w0(ro.next.T)}원 (+${w0(ro.next.T - ro.now.T)}원)` : ''}</td>
+  <td class="ad">월 견적 총액 <b>${w0(N.T)}원 → ${w0(X.T)}원</b><br>월 <b class="hl">+${w0(d)}원</b> · 연 <b class="hl">+${w0(d * 12)}원</b>${ro ? `<br>${esc(ro.name)} 1인 월 단가 ${w0(ro.now.T)} → ${w0(ro.next.T)}원` : ''}</td>
 </tr></table>
 <h2>금액 변화 — 견적서 기준 (원)</h2>
 <table><tr><th>구분</th><th class="r">현재(월)</th><th class="r">인상 후(월)</th><th class="r">증가(월)</th><th class="r">증가(연)</th><th class="r">증가율</th></tr>
@@ -6977,6 +6987,22 @@ window.V2_CONFIG = {"appVersion": "2.6.1", "folderName": "급여조견표", "tea
   ${row('총합계', N.T, X.T, 'me')}
 </table>
 <p class="note">직접인건비 ${pc(A.r)} 인상(${A.manual ? '직접 입력' : `최저임금 전망 ${pc0(A.m)} + 격차 해소`}) → 견적 총액 ${pc(e.rate, 2)} · ${esc(A.est.sheet)} 시트 · 연 = 월 × 12${e.diff != null && Math.abs(e.diff) > 0.005 ? ` · <b class="neg">항목 합계가 시트 총합계와 ${pc(e.diff)} 차이</b>` : ''}</p>`;
+  }
+
+  /* 인상하지 않으면: 내년 최저임금(전망) 미달액 */
+  function riskBlock(A){
+    /* 기본급·기준이 같은 직무는 한 줄로 묶음 (예: 상담1 외 3개 직무) */
+    const grp = new Map();
+    A.risk.filter(x => x.short > 0).forEach(x => { const k = `${Math.round(x.base)}|${Math.round(x.need)}`, g = grp.get(k);
+      if(g){ g.heads += x.heads; g.n++; } else grp.set(k, { ...x, n:1 }); });
+    const rows = [...grp.values()].map(g => ({ ...g, name: g.n > 1 ? `${g.name} 외 ${g.n - 1}개 직무` : g.name })).sort((a, b) => b.short * b.heads - a.short * a.heads);
+    const head = `<h3>인상하지 않으면 — ${A.y + 1}년 최저임금(전망 ${pc(A.m)}, 시급 ${w0(A.mwNext)}원) 미달액</h3>`;
+    if(!rows.length) return head + `<p class="note">내년 최저임금 전망을 반영해도 모든 직무 기본급이 기준 이상입니다 (최소 여유 ${pc(Math.min(...A.risk.map(x => x.margin)))}).</p>`;
+    const top = rows.slice(0, 2), rest = rows.slice(2), restSum = rest.reduce((a, x) => a + x.short * x.heads, 0), restHeads = rest.reduce((a, x) => a + x.heads, 0);
+    return head + `<table><tr><th>직무</th><th class="r">정원</th><th class="r">현재 기본급</th><th class="r">내년 최저 기준</th><th class="r">1인 부족(월)</th><th class="r">부족 합계(월)</th></tr>
+${top.map(x => `<tr><td class="nw">${esc(x.name)}</td><td class="r">${w0(x.heads)}</td><td class="r">${w0(x.base)}</td><td class="r">${w0(x.need)}</td><td class="r neg">${w0(x.short)}</td><td class="r">${w0(x.short * x.heads)}</td></tr>`).join('')}
+${rest.length ? `<tr><td class="nw">그 외 ${rest.reduce((a, x) => a + x.n, 0)}개 직무</td><td class="r">${w0(restHeads)}</td><td></td><td></td><td></td><td class="r">${w0(restSum)}</td></tr>` : ''}
+<tr class="me"><td class="nw">계</td><td class="r">${w0(rows.reduce((a, x) => a + x.heads, 0))}</td><td colspan="3">연 ${w0(A.riskTot * 12)}원 · 법정부담 포함 연 ${w0(A.riskTot * 12 * (1 + A.b))}원</td><td class="r">${w0(A.riskTot)}</td></tr></table>`;
   }
 
   /* ---------- 보고서 본문 (화면·Word 공통) ---------- */
@@ -7007,11 +7033,11 @@ ${A.est ? estBlock(A) : `<table class="ask"><tr>
   <td><div class="l">① 상담사 임금 수준</div><div class="v ${neg(cs.me.monthly / cs.ref.med - 1)}">${pc(cs.me.monthly / cs.ref.med - 1)}</div><div class="s">${esc(cs.ref.label)} 중위수 ${man(cs.ref.med)} 대비<br>${esc(C.center)} ${man(cs.me.monthly)}</div></td>
   ${C.quote && C.quote.received ? `<td><div class="l">② 견적 대비 급여 지급</div><div class="v ${C.quote.paid > C.quote.received ? 'neg' : ''}">${pc(C.quote.paid / C.quote.received - 1)}</div><div class="s">견적 가용 ${w0(C.quote.received)}원<br>급여 지급 ${w0(C.quote.paid)}원 (월)</div></td>`
     : `<td><div class="l">② 내년 최저임금 전망</div><div class="v">${pc(A.m)}</div><div class="s">최근 3년 평균 ${pc(mwAvg3(A.y))}<br>${A.y}년 최저시급 ${w0(mwOf(A.y))}원</div></td>`}
-  <td><div class="l">③ 필요 직접인건비 인상률</div><div class="v hlv">${pc(A.r)}</div><div class="s">${A.manual ? `자동 계산값 ${pc(A.auto)}` : '최저임금 전망 + 비교 기준 격차'}<br>목표: ${esc(POLICY_LABEL[A.policy] || '')}</div></td>
+  <td><div class="l">③ 필요 직접인건비 인상률</div><div class="v hlv">${pc(A.r)}</div><div class="s">${A.manual ? `자동 계산값 ${pc(A.auto)}` : '최저임금 전망 + 비교 기준 격차'}</div></td>
 </tr></table>
-<h3>상담사 월 총임금 — 비교 집단 중위수와 ${esc(C.center)}</h3>
+${riskBlock(A)}
+<h3>상담사 월 총임금 — 비교 집단 중위수 대비 현재와 인상 후</h3>
 <div class="chart">${chartCompare(A)}</div>
-<p class="note">세부 수치는 2쪽 참고</p>
 </div>`;
     const gx = g => A.groups.find(x => x.g === g), GS = ['상담사', '관리자', '전체'].filter(gx);
     const page2 = `<div class="page">

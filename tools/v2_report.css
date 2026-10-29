@@ -9,8 +9,8 @@
 .rp2 .kicker{ color:#FE2E36; font-weight:bold; font-size:9.5pt; margin:0; }
 .rp2 h1{ font-size:18pt; margin:4pt 0 4pt; font-weight:bold; color:#000000; }
 .rp2 .meta{ color:#4C4C4E; font-size:8.5pt; margin:0 0 10pt; padding-bottom:8pt; border-bottom:2pt solid #000000; }
-.rp2 h2{ font-size:12pt; font-weight:bold; margin:13pt 0 5pt; padding:0 0 3pt; border-bottom:1pt solid #A2A4A3; color:#000000; }
-.rp2 h3{ font-size:10.5pt; font-weight:bold; margin:10pt 0 4pt; color:#000000; }
+.rp2 h2{ font-size:12pt; font-weight:bold; margin:10pt 0 4pt; padding:0 0 3pt; border-bottom:1pt solid #A2A4A3; color:#000000; }
+.rp2 h3{ font-size:10.5pt; font-weight:bold; margin:8pt 0 3pt; color:#000000; }
 .rp2 table{ border-collapse:collapse; width:100%; margin:4pt 0 6pt; }
 .rp2 th{ background:#F1F1F2; color:#4C4C4E; font-weight:bold; font-size:8.5pt; padding:4pt 5pt; border-top:1pt solid #4C4C4E; border-bottom:1pt solid #A2A4A3; text-align:left; white-space:nowrap; }
 .rp2 td{ font-size:9pt; padding:3pt 5pt; border-bottom:.5pt solid #D6D7D7; }
@@ -24,12 +24,12 @@
 .rp2 .chart svg{ max-width:100%; height:auto; }
 .rp2 ul{ margin:4pt 0 6pt 14pt; padding:0; } .rp2 li{ margin:0 0 2pt; font-size:8.5pt; }
 .rp2 table.ask{ margin:8pt 0 4pt; }
-.rp2 .ask td{ border-top:2pt solid #FE2E36; border-bottom:2pt solid #FE2E36; padding:9pt 10pt; background:#FFF4F4; vertical-align:middle; }
+.rp2 .ask td{ border-top:2pt solid #FE2E36; border-bottom:2pt solid #FE2E36; padding:6pt 10pt; background:#FFF4F4; vertical-align:middle; }
 .rp2 .ask .al{ font-size:10.5pt; font-weight:bold; width:18%; white-space:nowrap; }
 .rp2 .ask .av{ font-size:28pt; font-weight:bold; color:#FE2E36; width:22%; white-space:nowrap; }
 .rp2 .ask .ad{ font-size:9.5pt; color:#000000; line-height:1.7; }
 .rp2 .ask .hl{ color:#FE2E36; font-size:11pt; }
-.rp2 .rkpi td{ border:1pt solid #D6D7D7; padding:7pt 8pt; vertical-align:top; width:33%; }
+.rp2 .rkpi td{ border:1pt solid #D6D7D7; padding:5pt 8pt; vertical-align:top; width:33%; }
 .rp2 .rkpi .l{ font-size:8.5pt; color:#4C4C4E; } .rp2 .rkpi .v{ font-size:16pt; font-weight:bold; } .rp2 .rkpi .s{ font-size:8.5pt; color:#4C4C4E; }
 .rp2 .rkpi .v.neg{ color:#D9141D; } .rp2 .rkpi .v.hlv{ color:#FE2E36; }
 @media print{

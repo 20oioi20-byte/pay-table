@@ -173,6 +173,12 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
     `견적서 기준: 월 ${E && Math.round(E.T).toLocaleString()} → ${E && Math.round(E.T2).toLocaleString()} (단가 ${E && (E.rate * 100).toFixed(2)}%, 연 +${E && Math.round((E.T2 - E.T) * 12).toLocaleString()}원, ${E && E.role} 1인)`);
   const p1 = await p.$eval('#reportDoc .page', e => e.innerText);
   ok(p1.includes(s2.center) && !p1.includes('우리 센터') && /연 \+[\d,]+원/.test(p1) && p1.includes('견적서 기준'), '1쪽: 센터명 표기 · 견적서 기준 금액 변화 · 연 증가액');
+  const RK = await p.evaluate(() => { const a = window.__v2report.analyze(), s = a.snap, exp = s.jobs.reduce((t, j) => { const base = (j.items || {})['기본급'] || 0, h = window.__v2pay(j).hours, hd = typeof j.heads === 'number' ? j.heads : 0;
+    return t + (base && hd > 0 ? Math.max(0, a.mwNext * h - base) * hd : 0); }, 0);
+    const pg = document.querySelector('#reportDoc .page'); return { tot:a.riskTot, exp, txt: pg.innerText.includes('인상하지 않으면'), dashed: pg.querySelectorAll('svg line[stroke-dasharray="4 3"]').length, h: pg.scrollHeight }; });
+  ok(Math.abs(RK.tot - RK.exp) < 1 && RK.tot > 0 && RK.txt, `1쪽 ①: 인상하지 않으면 내년 최저임금 미달 월 ${Math.round(RK.tot).toLocaleString()}원`);
+  ok(RK.dashed === 1, '1쪽 ②: 비교 차트에 인상 후 위치(점선)');
+  ok(RK.h <= 1124, `1쪽이 A4 한 장 안 (${RK.h}px)`);
   const w = await p.evaluate(async () => { const r = await window.__v2report.buildWord(); return { parts:r.parts.length, head:r.mht.slice(0, 17), pb:/page-break-before:always/.test(r.html) }; });
   ok(w.head === 'MIME-Version: 1.0' && w.parts >= 1 && w.pb, `Word(MHTML) 저장: 차트 ${w.parts}개 · 쪽 나눔`);
   if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_p2.png') });
