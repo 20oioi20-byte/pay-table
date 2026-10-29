@@ -37,3 +37,15 @@
   .rp2 .page:last-child{ break-after:auto; }
 }
 .rep-price label[hidden]{ display:none; }
+/* 1쪽: 근거 표 · 산출 흐름 */
+.rp2 table.why td{ vertical-align:top; padding:6pt 6pt; border-bottom:.5pt solid #D6D7D7; font-size:9.5pt; line-height:1.5; }
+.rp2 .why td.wt{ font-weight:bold; white-space:nowrap; }
+.rp2 .why .no{ display:inline-block; width:14pt; height:14pt; line-height:14pt; text-align:center; background:#FE2E36; color:#FFFFFF; font-size:8.5pt; margin-right:4pt; border-radius:7pt; }
+.rp2 .why td.wm{ color:#000000; }
+.rp2 .why .src{ font-size:7.5pt; color:#A2A4A3; margin-top:2pt; }
+.rp2 table.flow{ margin:4pt 0 4pt; }
+.rp2 .flow td{ border:0; text-align:center; vertical-align:middle; padding:0; }
+.rp2 .flow td.fb{ border:1pt solid #D6D7D7; background:#F1F1F2; padding:5pt 4pt; }
+.rp2 .flow td.res{ border:1.5pt solid #FE2E36; background:#FFF4F4; }
+.rp2 .flow .fl{ font-size:8pt; color:#4C4C4E; } .rp2 .flow .fv{ font-size:12.5pt; font-weight:bold; } .rp2 .flow td.res .fv{ color:#FE2E36; }
+.rp2 .flow td.fo{ width:16pt; font-size:12pt; font-weight:bold; color:#4C4C4E; }

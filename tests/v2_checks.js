@@ -172,17 +172,20 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   ok(E && Math.abs(E.T - eT) < 1 && E.sheetT === eT && Math.abs(E.T2 - eT2) < 1 && E.hidden,
     `견적서 기준: 월 ${E && Math.round(E.T).toLocaleString()} → ${E && Math.round(E.T2).toLocaleString()} (단가 ${E && (E.rate * 100).toFixed(2)}%, 연 +${E && Math.round((E.T2 - E.T) * 12).toLocaleString()}원, ${E && E.role} 1인)`);
   const p1 = await p.$eval('#reportDoc .page', e => e.innerText);
-  ok(p1.includes(s2.center) && !p1.includes('우리 센터') && /연 \+[\d,]+원/.test(p1) && p1.includes('견적서 기준'), '1쪽: 센터명 표기 · 견적서 기준 금액 변화 · 연 증가액');
+  ok(p1.includes(s2.center) && !p1.includes('우리 센터') && /연 \+[\d,]+원/.test(p1) && p1.includes('견적 항목'), '1쪽: 센터명 표기 · 견적 항목 금액 변화 · 연 증가액');
+  const why = await p.$$eval('#reportDoc .page:first-child table.why tr', t => t.slice(1).map(r => r.cells[0].innerText.replace(/^\d/, '').trim() + ':' + (r.cells[2].querySelector('.src') ? 'src' : '-')));
+  ok(why.join(',') === '법정 최저임금:src,원가 구조:src,시장 임금 수준:src', '1쪽 근거 3가지(사실·의미·출처): ' + why.join(' / '));
+  ok(/최저임금 전망[\s\S]*직접인건비[\s\S]*견적 단가/.test(await p.$eval('#reportDoc table.flow', e => e.innerText)) || await p.$eval('#reportDoc table.flow', e => e.innerText.includes('입력')), '1쪽 인상률 산출 흐름');
   const RK = await p.evaluate(() => { const a = window.__v2report.analyze(), s = a.snap, exp = s.jobs.reduce((t, j) => { const base = (j.items || {})['기본급'] || 0, h = window.__v2pay(j).hours, hd = typeof j.heads === 'number' ? j.heads : 0;
     return t + (base && hd > 0 ? Math.max(0, a.mwNext * h - base) * hd : 0); }, 0);
-    const pg = document.querySelector('#reportDoc .page'); return { tot:a.riskTot, exp, txt: pg.innerText.includes('인상하지 않으면'), dashed: pg.querySelectorAll('svg line[stroke-dasharray="4 3"]').length, h: pg.scrollHeight }; });
-  ok(Math.abs(RK.tot - RK.exp) < 1 && RK.tot > 0 && RK.txt, `1쪽 ①: 인상하지 않으면 내년 최저임금 미달 월 ${Math.round(RK.tot).toLocaleString()}원`);
-  ok(RK.dashed === 1, '1쪽 ②: 비교 차트에 인상 후 위치(점선)');
+    const pg = document.querySelector('#reportDoc .page'); return { tot:a.riskTot, exp, txt: pg.innerText.includes('지급 의무'), dashed: pg.querySelectorAll('svg line[stroke-dasharray="4 3"]').length, h: pg.scrollHeight }; });
+  ok(Math.abs(RK.tot - RK.exp) < 1 && RK.tot > 0 && RK.txt, `1쪽 근거①: 내년 최저임금 미달 월 ${Math.round(RK.tot).toLocaleString()}원`);
   ok(RK.h <= 1124, `1쪽이 A4 한 장 안 (${RK.h}px)`);
   const w = await p.evaluate(async () => { const r = await window.__v2report.buildWord(); return { parts:r.parts.length, head:r.mht.slice(0, 17), pb:/page-break-before:always/.test(r.html) }; });
-  ok(w.head === 'MIME-Version: 1.0' && w.parts >= 1 && w.pb, `Word(MHTML) 저장: 차트 ${w.parts}개 · 쪽 나눔`);
+  ok(w.head === 'MIME-Version: 1.0' && w.pb, `Word(MHTML) 저장 · 쪽 나눔`);
   if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_p2.png') });
-    fs.writeFileSync(path.join(process.env.SHOTS, 'report.doc'), await p.evaluate(async () => (await window.__v2report.buildWord()).mht)); }
+    fs.writeFileSync(path.join(process.env.SHOTS, 'report.doc'), await p.evaluate(async () => (await window.__v2report.buildWord()).mht));
+    await p.fill('#repLabor', ''); await p.dispatchEvent('#repLabor', 'change'); await (await p.$('#reportDoc .page')).screenshot({ path: path.join(process.env.SHOTS, 'report_p1_auto.png') }); }
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   await b.close(); srv.close();
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');
