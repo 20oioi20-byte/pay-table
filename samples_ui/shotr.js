@@ -1,0 +1,14 @@
+const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
+(async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport:{ width:1280, height:900 }, deviceScaleFactor:1.25, acceptDownloads:true });
+const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
+await p.goto('file://' + __dirname + '/report_prototype.html'); await p.waitForTimeout(300);
+await p.screenshot({ path: __dirname + '/r1_internal.png', fullPage:true });
+await p.click('#fSrc button[data-v="ext"]'); await p.waitForTimeout(150);
+await p.screenshot({ path: __dirname + '/r2_external.png', fullPage:true });
+const out = process.argv[2];
+const r = await p.evaluate(async () => { const w = await buildWord(); return { mht:w.mht, html:w.html, parts:w.parts }; });
+fs.writeFileSync(path.join(out, 'report.doc'), r.mht);
+fs.mkdirSync(path.join(out, 'report_files'), { recursive:true });
+r.parts.forEach(x => fs.writeFileSync(path.join(out, 'report_files', x.name), Buffer.from(x.png, 'base64')));
+fs.writeFileSync(path.join(out, 'report.htm'), r.html);
+console.log('errors', errs, 'parts', r.parts.length, 'mht', r.mht.length); await b.close(); })();
