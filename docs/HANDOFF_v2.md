@@ -1,4 +1,4 @@
-# 급여관리 시스템(인건비 자동화) 인수인계 (저장소용 · 회사 주소 제외) — 2026-10-29 기준 v2.5.0
+# 급여관리 시스템(인건비 자동화) 인수인계 (저장소용 · 회사 주소 제외) — 2026-10-29 기준 v2.6.0
 
 > 새 대화의 첫 메시지로 이 문서를 그대로 붙여넣고, 맨 아래 "다음 작업 요청"을 이어서 보내면 됩니다.
 
@@ -56,6 +56,14 @@
 ## 6. 통계·보고서 현재 구현(정교화 대상)
 - 스냅샷(통계 저장 1건) 필드: center, centerType, period(YYYY-MM), version, savedAt, requestId, savedBy, answers{centerType, consultType, workPattern, period, reason, contract1y, region}, before[{job, before, after}], jobs[{name, block, laborType, items{6항목}, stdPaySum, overtime, night, telecom, monthlyTotal, gradeB, compareMonthly, hours, fixedPay, hourly}], checks
 - **v2.5.0 화면:** 디자인은 KT 화이트 고정(`tools/v2_skin.css`). 급여 통계는 stats_prototype 기준 새 화면(`tools/v2_stats.js`·`v2_stats.css`): 직군(리더그룹=관리자)·기준/비교 연도·산업군›세부유형 트리·근무유형·지역 필터, 산업군 카드, 구분별 비교/센터 목록/교차표, 엑셀·CSV. 평균은 센터별 직무 평균의 단순 평균(인원 정보 없음). 통계 저장에 세부유형·지역 선택 추가, 기준정보에 '산업군 · 세부유형' 편집 추가. [이전 화면]으로 기존 통계 화면 보기 가능
+- **v2.6.0 견적 대비 직접인건비** (`tools/v2_quote.js`): Office Script가 이름에 '견적'·'대비'·'대사'가 든 시트 값을 `extra:[{name,values}]`(A1 기준)로 함께 보냄(스크립트 2종 교체 필요, 일반 엑셀은 직접 읽음)
+  - 받는 금액 = '견적대비 비교' 시트 '월 보수 가용 범위'(없으면 견적서 '직접인건비 소계' × 인원 × (1−실비 청구 비율 입력))
+  - 급여설계 = Σ 직무 (통상임금 소계 + 초과근무수당) × 인원 + 업적수당(비교 시트 등급별 인원 → 없으면 B등급 × 인원 → B 없음·0원이면 1인 업적수당 직접 입력). 시트와 같은 방식(통신비·야간 제외)
+  - 직무 짝: 비교 시트 '호봉별 총원' 숫자 열, 이름=호봉 행(없으면 윗줄), 그룹=윗줄 병합 이름 → 이름 같고 그룹 비슷한 것. 실제 파일 3건 검증: 1건 완전 일치, 1건 0.1%(시트에 없는 직무 입력 필요), 1건 1.0%(엑셀 시트의 상담 초과근무 칸이 비어 있음 → 화면에 직무별 '엑셀 값' 표시)
+  - 입력값은 센터별로 기억(kv quoteInputs). 입력 누락이면 KPI '입력 필요', 저장 시 quote.incomplete → 통계 견적 대비에서 제외
+  - 스냅샷: `quote{received,paid,gap,rate,recvSrc,quoteTotal,sheetPaid,sheetGap,realRatio,missing,incomplete,jobs[],roles[]}`, 직무별 `heads`, B 입력 시 `perf`·`perfManual`·monthlyTotal 보정
+  - 통계 '견적 대비' 탭: 초과율 순위·판정(5% 초과 주의)·비교 연도 초과율·산업군별, 센터 메모(분류+내용, kv centerMemos + 공유 폴더 04_스냅샷/메모/<id>.json, kind PAYMEMO), 엑셀 '견적 대비'·'센터 메모' 시트. 메모 분류는 기준정보에서 편집(SETTINGS.memoCats)
+  - 통계 평균: 직무별 인원이 있으면 센터 안에서 인원 가중
 - (이전) 통계: 기준 시점별 센터 최신본, 센터유형·상담유형별 시급(=compareMonthly ÷ 월소정근로시간) 비교, 유형 중위수 대비 편차, 백분위, 최저임금 여유, 센터 추이
 - 보고서: 목표 기준(유형 중위수 / 상위40% / 채용시장 중위수 / 둘 중 높은 값), 필요 인상액·연간 비용(법정부담률 18.5% 가정), Word(.doc)·HTML 출력, 채용시장 표본은 수기 입력(고용24 API는 맨 마지막)
 - **v2.5.0에서 해결:** (예전 문제)  실제 양식에서는 등급 행이 '업적수당 금액'이라 `gradeB`가 월급여가 아님 → `compareMonthly = gradeB ?? monthlyTotal`이 **업적수당만으로 시급을 계산**함(데모 양식은 등급 행이 총액이라 문제 없었음). 실제 양식의 '월 보수 합계'(B등급 기준) 또는 소계+B등급 업적수당을 써야 함 → v2.5.0부터 저장 시 `perf`(B등급 업적수당), `compareMonthly = monthlyTotal`(월 보수 합계), `wHours`(직무별 소정시간)를 기록. 이미 저장된 스냅샷은 새 통계 화면이 같은 규칙으로 다시 계산(보고서는 다시 저장한 스냅샷부터 반영)

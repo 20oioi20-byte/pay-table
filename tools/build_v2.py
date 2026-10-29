@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.5.0'
+APP_VERSION = '2.6.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -185,7 +185,7 @@ def main():
     s = must_replace(s, '<html lang="ko">', '<html lang="ko" data-skin="kt-light">')
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
            'links': links}
-    js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8') + '\n' + (ROOT / 'tools' / 'v2_stats.js').read_text(encoding='utf-8')
+    js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8') + '\n' + (ROOT / 'tools' / 'v2_stats.js').read_text(encoding='utf-8') + '\n' + (ROOT / 'tools' / 'v2_quote.js').read_text(encoding='utf-8')
     i = s.rindex('</body>')
     s = (s[:i] + '<script>\n/* 관리자 설정: build_v2.py 인자로 바꿉니다 */\nwindow.V2_CONFIG = '
          + json.dumps(cfg, ensure_ascii=False) + ';\n' + js + '\n</script>\n' + s[i:])

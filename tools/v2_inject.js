@@ -301,8 +301,8 @@
   handleFile = async function(file){
     if(/\.json$/i.test(file.name)) return origHandleFile(file);
     const plain = (await isZip(file)) || (await readsLocally(file));
-    if(plain){ const g = await gridsFromXlsx(file); beforeData = g.before; curGrid = g.cur; }
-    else { beforeData = null; curGrid = null; }
+    if(plain){ const g = await gridsFromXlsx(file); beforeData = g.before; curGrid = g.cur; extraSheets = g.extra; }
+    else { beforeData = null; curGrid = null; extraSheets = null; }
     if(uploadMode() !== 'auto'){
       if(plain){ qPanel.hidden = true; return origHandleFile(file); }
       return uploadMode() === 'web' ? showWebUpload(file) : showPasteGuide(file);
@@ -953,8 +953,9 @@
   handleLinkedJsonFile = function(file){
     file.text().then(t => {
       try{ const p = JSON.parse(t.replace(/^﻿/, '')); beforeData = Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
-        curGrid = Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null; }
-      catch(e){ beforeData = null; curGrid = null; }
+        curGrid = Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
+        extraSheets = Array.isArray(p.extra) ? p.extra : null; }
+      catch(e){ beforeData = null; curGrid = null; extraSheets = null; }
       origLinked(file);
     });
   };
@@ -963,6 +964,7 @@
     const p = pastedPayload(text);
     beforeData = p && Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
     curGrid = p && Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
+    extraSheets = p && Array.isArray(p.extra) ? p.extra : null;
     const r = origPasted(text);
     if(p && $('v2State').dataset.state === 'paste'){
       setJob('done', '붙여넣기로 읽었습니다. 아래에서 검사 결과와 조견표를 확인하세요. Excel에서 스크립트를 한 번 더 실행해 임시 시트를 지워 주세요.');
@@ -1111,6 +1113,7 @@
      curGrid = { values, formulas|null, start }  (엑셀 업로드·자동연동 JSON·붙여넣기 모두)
      ============================================================ */
   let curGrid = null;
+  let extraSheets = null;   // v2.6: 견적서·견적대비 비교 시트 값 [{ name, values }]
   async function gridsFromXlsx(file){
     try{
       const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type:'array', cellFormula:true });
@@ -1127,8 +1130,13 @@
       };
       const after = wb.SheetNames.find(n => n.includes('급여테이블') && n.includes('변경후')) || wb.SheetNames.find(n => n.includes('급여테이블'));
       const prev = wb.SheetNames.find(n => n.includes('급여테이블') && n.includes('변경전'));
-      return { cur: after ? grab(wb.Sheets[after]) : null, before: prev ? grab(wb.Sheets[prev]) : null };
-    }catch(e){ return { cur:null, before:null }; }
+      const extra = wb.SheetNames.filter(n => !n.includes('급여테이블') && /견적|대비|대사/.test(n)).map(n => {
+        const ws = wb.Sheets[n], rg = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+        rg.s = { r:0, c:0 };   // A1부터: 셀 위치를 엑셀과 같게
+        return { name:n, values: XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true, range:rg }) };
+      });
+      return { cur: after ? grab(wb.Sheets[after]) : null, before: prev ? grab(wb.Sheets[prev]) : null, extra };
+    }catch(e){ return { cur:null, before:null, extra:null }; }
   }
   const colNum = s => s.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
   const colName = n => { let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
@@ -1414,5 +1422,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
 })();

@@ -2,6 +2,7 @@
  * 급여조견표 자동연동 스크립트 v2 (Power Automate '스크립트 실행' 동작에서 호출)
  *
  * 급여테이블(변경후) 값·수식과 변경전 시트 값을 JSON 텍스트로 돌려줍니다. 원본 파일은 바꾸지 않습니다.
+ * v2.6: 견적서·견적대비 비교 시트 값도 extra로 함께 보냅니다(직접인건비 비교).
  * v1(급여테이블_자동연동.ts)은 그대로 두고, v2 시스템에서만 이 스크립트를 씁니다.
  *
  * 주의: Power Automate에서 실행할 때 Excel 개체 배열에 find/map 같은 콜백 함수를 쓰면
@@ -48,6 +49,24 @@ function main(workbook: ExcelScript.Workbook): string {
     start: start,
     values: used.getValues(),
     formulas: used.getFormulas(),
-    before: beforeValues
+    before: beforeValues,
+    extra: extraSheets(sheets)
   });
+}
+
+/* v2.6: 견적서·견적대비 비교처럼 이름에 '견적'·'대비'·'대사'가 들어간 시트는 값만 함께 보냄 (직접인건비 비교용) */
+function extraSheets(sheets: ExcelScript.Worksheet[]): { name: string; values: (string | number | boolean)[][] }[] {
+  const out: { name: string; values: (string | number | boolean)[][] }[] = [];
+  for (let i = 0; i < sheets.length; i++) {
+    const name = sheets[i].getName();
+    if (name.indexOf("급여테이블") >= 0) continue;
+    if (name.indexOf("견적") < 0 && name.indexOf("대비") < 0 && name.indexOf("대사") < 0) continue;
+    const used = sheets[i].getUsedRange(true);
+    if (!used) continue;
+    const area = used.getAddress().split("!").pop() || "A1";
+    // A1부터 읽어 셀 위치(행·열)가 엑셀과 같게 맞춤
+    const last = area.indexOf(":") >= 0 ? area.split(":")[1] : area;
+    out.push({ name: name, values: sheets[i].getRange("A1:" + last.replace(/\$/g, "")).getValues() });
+  }
+  return out;
 }

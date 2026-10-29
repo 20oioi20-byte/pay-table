@@ -26,6 +26,7 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
 
   /* 가상 실양식을 자동연동 JSON처럼 만들어 넣는 도우미 (mutate로 수식·변경전 값을 바꿔 시험) */
   const load = (mutate) => p.evaluate(([b64, mutate]) => {
+    document.getElementById('fileMeta').textContent = '';   // 이전 불러오기 표시를 지워 waitParsed가 새 결과를 기다리게
     const bin = atob(b64), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     const wb = XLSX.read(u, { type:'array', cellFormula:true });
     const grid = n => { const ws = wb.Sheets[n], rg = XLSX.utils.decode_range(ws['!ref']);
@@ -33,7 +34,10 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
       for(let r = rg.s.r; r <= rg.e.r; r++){ const row = []; for(let c = rg.s.c; c <= rg.e.c; c++){ const x = ws[XLSX.utils.encode_cell({ r, c })]; row.push(x && x.f ? '=' + x.f : ''); } formulas.push(row); }
       return { values, formulas }; };
     const cur = grid('급여테이블(변경후)'), prev = grid('급여테이블(변경전)');
-    const payload = { v:2, kind:'PAYTABLE', sheet:'급여테이블(변경후)', file:'시험.xlsx', start:'A1', values: cur.values, formulas: cur.formulas, before: prev.values };
+    const extra = wb.SheetNames.filter(n => !n.includes('급여테이블') && /견적|대비|대사/.test(n)).map(n => {
+      const rg = XLSX.utils.decode_range(wb.Sheets[n]['!ref']); rg.s = { r:0, c:0 };
+      return { name:n, values: XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:'', raw:true, range:rg }) }; });
+    const payload = { v:2, kind:'PAYTABLE', sheet:'급여테이블(변경후)', file:'시험.xlsx', start:'A1', values: cur.values, formulas: cur.formulas, before: prev.values, extra };
     if(mutate) (new Function('p', mutate))(payload);
     handleLinkedJsonFile(new File([JSON.stringify(payload)], '시험.json'));
   }, [FIXTURE, mutate || '']);
@@ -107,6 +111,37 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   ok((await p.$$('#sList tbody .s-cname')).length === 1, '센터 목록 1곳');
   await p.click('#sOld'); ok(await p.isVisible('#statsBody') || await p.isVisible('#statsEmpty'), '[이전 화면]으로 원래 통계 화면');
   await p.click('#v2StBack button'); ok(await p.isVisible('#sApp'), '[새 통계 화면으로 보기]로 복귀');
+
+  console.log('6. 견적 대비 직접인건비: 통계 저장 · 견적 대비 탭 · 센터 메모');
+  ok(snap.quote && Math.round(snap.quote.received) === 58122400, `저장된 받는 직접인건비 = 월 보수 가용 범위 (${snap.quote && Math.round(snap.quote.received)})`);
+  ok(snap.jobs.every(j => j.heads > 0), '직무별 인원 저장(견적대비 비교 시트): ' + snap.jobs.map(j => j.heads).join(','));
+  await p.click('#sTabs [data-t="quote"]');
+  const qrow = await p.$$eval('#sQuote tbody tr', trs => trs.map(t => t.textContent));
+  ok(qrow.length === 1 && /초과/.test(qrow[0]), '견적 대비 탭: 센터 1곳 · 초과 판정');
+  await p.click('#sQuote [data-memo]');
+  ok(await p.isVisible('#sMemo'), '메모 창 열림');
+  await p.fill('#sMemoText', '재계약 단가 인상 전 선반영(시험)'); await p.click('#sMemoSave'); await p.waitForTimeout(200);
+  ok((await p.textContent('#sMemoList')).includes('선반영(시험)'), '메모 저장·이력 표시');
+  await p.click('#sMemoClose');
+  ok((await p.textContent('#sQuote tbody')).includes('선반영'), '목록에 최근 메모 표시');
+
+  console.log('7. 견적 대비 카드: 엑셀 계산과 일치 · B등급 없음은 직접 입력');
+  await p.evaluate(() => switchAppTab('create'));
+  await load(); await waitParsed(); await p.waitForSelector('#v2Quote:not([hidden]) .v2-qkpi');
+  let R = await p.evaluate(() => window.__v2quote.result);
+  ok(Math.round(R.received) === 58122400 && Math.round(R.paid) === 58860090, `받는 ${Math.round(R.received)} · 급여설계 ${Math.round(R.paid)} (엑셀 시트와 같은 값)`);
+  ok(Math.abs(R.rate - 1.27) < 0.01 && (await p.textContent('#v2QBody')).includes('일치'), `초과율 +${R.rate.toFixed(2)}% · 엑셀 '견적대비 비교'와 일치`);
+  await load(`p.extra = p.extra.filter(s => s.name === '견적서'); p.values[43][4] = 0;`);   /* 비교 시트 없음 + 상담1 B등급 0원 */
+  await waitParsed(); await p.waitForTimeout(200);
+  R = await p.evaluate(() => window.__v2quote.result);
+  ok(Math.round(R.received) === 59920000, `비교 시트 없으면 견적서 직접인건비 소계 × 인원 (${Math.round(R.received)})`);
+  ok(await p.isVisible('#v2QBody input[data-qp="상담1"]') && R.missing.length === 7, `B등급 0원 직무는 업적수당 입력칸 · 인원 입력 필요 ${R.missing.length}개`);
+  const hs = { '수습':3, '상담1':8, '상담2':6, '상담3':3, '팀장':2, '강사':1, '센터장':1 };
+  for(const [k, v] of Object.entries(hs)){ await p.fill(`#v2QBody input[data-qh="${k}"]`, String(v)); await p.press(`#v2QBody input[data-qh="${k}"]`, 'Tab'); }
+  await p.fill('#v2QBody input[data-qp="상담1"]', '50000'); await p.press('#v2QBody input[data-qp="상담1"]', 'Tab');
+  R = await p.evaluate(() => window.__v2quote.result);
+  const c1 = R.jobs.find(x => x.key === '상담1');
+  ok(R.missing.length === 0 && c1.perfTotal === 400000 && c1.src === '직접 입력', `입력 반영: 상담1 업적수당 50,000 × 8명 = ${c1.perfTotal}`);
   if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v24_done.png') });
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   await b.close(); srv.close();

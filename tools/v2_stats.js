@@ -83,13 +83,14 @@
       if(s.period >= c.last){ Object.assign(c, m, { last:s.period }); }
       c.years.add(year);
       let minMargin = null;
+      const allHeads = s.jobs.every(j => j.heads > 0);   // 견적대비 비교 시트의 직무별 인원이 있으면 센터 안에서 인원 가중
       s.jobs.forEach(j => {
         const p = payParts(j); if(!p.monthly) return;
         const hours = j.wHours || j.hours || 209, wt = workType(hours, pattern);
         c.wts.add(wt);
         const b = basicPay(j), mg = b ? (b / (mwOf(year) * hours) - 1) * 100 : null;
         if(mg != null && (minMargin == null || mg < minMargin)) minMargin = mg;
-        ROWS.push({ year, center:s.center, ind:m.ind, sub:m.sub, reg:m.reg, zone:ZONE_OF[m.reg] || '미지정', wt, job:jobGroup(j), jobName:j.name, ...p });
+        ROWS.push({ year, center:s.center, ind:m.ind, sub:m.sub, reg:m.reg, zone:ZONE_OF[m.reg] || '미지정', wt, job:jobGroup(j), jobName:j.name, w: allHeads ? j.heads : 1, ...p });
       });
       if(minMargin != null) c.margin[year] = +minMargin.toFixed(1);
     }
@@ -101,7 +102,7 @@
     const IND = Object.keys(tree);
     const SUB_IND = Object.fromEntries(IND.flatMap(i => tree[i].map(s => [s, i])));
     const REGS = REG.filter(r => ROWS.some(x => x.reg === r)).concat(ROWS.some(x => x.reg === '미지정') ? ['미지정'] : []);
-    D = { ROWS, CENTERS, YEARS, TREE:tree, IND, SUB_IND, REGS };
+    D = { ROWS, CENTERS, YEARS, TREE:tree, IND, SUB_IND, REGS, PICK:pick };
   }
 
   /* ---------- 상태 ---------- */
@@ -115,10 +116,10 @@
 
   /* ---------- 공통 계산 ---------- */
   const K = n => getComputedStyle($('v2St')).getPropertyValue('--' + n).trim();
-  /* 평균 = 센터별(직무 평균)의 단순 평균 — 급여테이블에 인원이 없어 센터마다 같은 비중 */
+  /* 평균 = 센터별 직무 평균(직무별 인원이 있으면 인원 가중)의 단순 평균 — 센터마다 같은 비중 */
   function agg(rows){
     const by = new Map();
-    rows.forEach(r => { let c = by.get(r.center); if(!c){ c = { m:0, b:0, f:0, p:0, k:0 }; by.set(r.center, c); } c.m += r.monthly; c.b += r.base; c.f += r.fixed; c.p += r.perf; c.k++; });
+    rows.forEach(r => { let c = by.get(r.center); if(!c){ c = { m:0, b:0, f:0, p:0, k:0 }; by.set(r.center, c); } const w = r.w || 1; c.m += r.monthly * w; c.b += r.base * w; c.f += r.fixed * w; c.p += r.perf * w; c.k += w; });
     const n = by.size; if(!n) return { heads:0, n:0, avg:null, base:null, fixed:null, perf:null };
     let m = 0, b = 0, f = 0, p = 0; by.forEach(c => { m += c.m / c.k; b += c.b / c.k; f += c.f / c.k; p += c.p / c.k; });
     return { heads:rows.length, n, avg:m / n, base:b / n, fixed:f / n, perf:p / n };
@@ -172,7 +173,7 @@
         <div class="s-card s-gridh"><h3 id="sGridTitle"></h3><span class="lg2" id="sGridLg"></span></div>
         <div class="s-grid" id="sGrid"></div>
         <div class="s-card s-pad">
-          <div class="s-tabs" id="sTabs"><button type="button" data-t="pivot" class="on">구분별 비교</button><button type="button" data-t="list">센터 목록</button><button type="button" data-t="heat">교차표</button></div>
+          <div class="s-tabs" id="sTabs"><button type="button" data-t="pivot" class="on">구분별 비교</button><button type="button" data-t="list">센터 목록</button><button type="button" data-t="heat">교차표</button><button type="button" data-t="quote">견적 대비</button></div>
           <div id="sVPivot">
             <div class="s-ch"><h3 id="sPivotTitle"></h3><span class="s-seg" id="sDim"><button type="button" data-d="cls" class="on">산업군</button><button type="button" data-d="reg">지역</button><button type="button" data-d="wt">근무유형</button></span></div>
             <div class="s-tw"><table class="s-tbl" id="sPivot"></table></div>
@@ -188,12 +189,18 @@
             <div class="s-tw"><table class="s-tbl" id="sList"></table></div>
             <div class="s-pager" id="sPager"></div>
           </div>
+          <div id="sVQuote" hidden>
+            <div class="s-ch"><h3 id="sQTitle"></h3><span style="font-size:11px;color:var(--m)">초과율 = 급여설계 직접인건비 ÷ 받는 직접인건비(월 보수 가용 범위) − 1 · <span class="s-soft sr">초과 주의</span> 5% 초과 <span class="s-soft so">초과</span> <span class="s-soft sx">여유</span></span></div>
+            <div class="s-tw"><table class="s-tbl" id="sQuote"></table></div>
+            <div class="s-ch" style="margin-top:18px"><h3>산업군별 견적 대비</h3></div>
+            <div class="s-tw"><table class="s-tbl" id="sQuoteInd"></table></div>
+          </div>
           <div id="sVHeat" hidden>
             <div class="s-ch"><h3 id="sHmTitle"></h3><span style="font-size:11px;color:var(--m)">같은 근무유형 평균 대비 <span class="s-soft so">낮음</span> <span class="s-soft sx">비슷</span> <span class="s-soft sk">높음</span> · 흐린 글씨: 센터 ${MIN_N}개 미만</span></div>
             <div class="s-tw"><table class="s-tbl s-hm" id="sHm"></table></div>
           </div>
         </div>
-        <div class="s-foot">산출: 인당 월 총임금 = 월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당) · 연 = 월 × 12 · 평균 = 센터별 직무 평균의 단순 평균(급여테이블에 인원 정보가 없어 센터마다 같은 비중) · 직군 = 직무 블록(리더그룹 → 관리자, 그 외 → 상담사) · 근무유형 = 직무별 기본급 수식의 월 소정시간 · 최저임금 여유 = 직무별 기본급 ÷ (그해 최저시급 × 소정시간) − 1 의 센터 내 최솟값 · 운영 중 = 기준 연도에 저장된 급여테이블이 있는 센터 · 센터 ${MIN_N}개 미만 구분은 참고용 · 상여·퇴직급여·법정부담금 제외</div>
+        <div class="s-foot">산출: 인당 월 총임금 = 월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당) · 연 = 월 × 12 · 평균 = 센터별 직무 평균(견적대비 비교 시트의 직무별 인원이 있으면 인원 가중)의 단순 평균(센터마다 같은 비중) · 직군 = 직무 블록(리더그룹 → 관리자, 그 외 → 상담사) · 근무유형 = 직무별 기본급 수식의 월 소정시간 · 최저임금 여유 = 직무별 기본급 ÷ (그해 최저시급 × 소정시간) − 1 의 센터 내 최솟값 · 운영 중 = 기준 연도에 저장된 급여테이블이 있는 센터 · 센터 ${MIN_N}개 미만 구분은 참고용 · 상여·퇴직급여·법정부담금 제외</div>
       </main>
     </div></div>`);
 
@@ -210,10 +217,11 @@
     [...st.subs].forEach(s => { if(!D.SUB_IND[s]) st.subs.delete(s); });
     if(st.reg && !D.REGS.includes(st.reg)) st.reg = '';
     renderPanel(); renderTop(); renderGrid();
-    $('sVList').hidden = st.tab !== 'list'; $('sVPivot').hidden = st.tab !== 'pivot'; $('sVHeat').hidden = st.tab !== 'heat';
+    $('sVList').hidden = st.tab !== 'list'; $('sVPivot').hidden = st.tab !== 'pivot'; $('sVHeat').hidden = st.tab !== 'heat'; $('sVQuote').hidden = st.tab !== 'quote';
     if(st.tab === 'pivot') renderPivot();
     if(st.tab === 'list') renderList(agg(yearOf(scoped(), st.year)).avg);
     if(st.tab === 'heat') renderHeat();
+    if(st.tab === 'quote') renderQuote();
   }
 
   function renderPanel(){
@@ -340,6 +348,106 @@
       opts.map(o => `<tr><td>${h(o)}</td>${WT.map(w => cell(yr.filter(r => r[ax.key] === o && r.wt === w), w)).join('')}</tr>`).join('') || `<tr><td colspan="5" class="s-empty">기준 연도 자료가 없습니다.</td></tr>`}</tbody>`;
   }
 
+  /* ---------- 견적 대비 (센터별 초과 설계) ---------- */
+  function quoteItems(){
+    return D.CENTERS.filter(c => (!st.subs.size || st.subs.has(c.sub)) && (!st.reg || c.reg === st.reg)).map(c => {
+      const s = D.PICK.get(c.center + '|' + st.year), q = s && s.quote;
+      if(!q || !(q.received > 0) || q.incomplete) return null;
+      const ps = D.PICK.get(c.center + '|' + st.cmp), pq = ps && ps.quote;
+      return { c, s, q, prev: pq && pq.received > 0 ? pq.rate : null };
+    }).filter(Boolean).sort((a, b) => b.q.rate - a.q.rate);
+  }
+  const qStatus = r => r > 5 ? ['초과 주의', 'sr'] : r > 0 ? ['초과', 'so'] : ['여유', 'sx'];
+  function rateBar(r){
+    const w = Math.min(50, Math.abs(r) / 10 * 50);
+    return `<div class="s-bar"><b></b><i style="left:${r >= 0 ? 50 : 50 - w}%;width:${w}%;background:${r > 0 ? K('red') : K('g2')}"></i></div><div class="s-dv">${r > 0 ? '+' : ''}${r.toFixed(1)}%</div>`;
+  }
+  const fmtS = v => v == null ? '–' : `${v > 0 ? '+' : ''}${fmt(v)}`;
+  function renderQuote(){
+    const items = quoteItems(), sc = scope(), over = items.filter(x => x.q.rate > 0);
+    const skipped = D.CENTERS.filter(c => { const s = D.PICK.get(c.center + '|' + st.year); return s && s.quote && s.quote.incomplete && (!st.subs.size || st.subs.has(c.sub)) && (!st.reg || c.reg === st.reg); }).length;
+    const avg = items.length ? items.reduce((a, x) => a + x.q.rate, 0) / items.length : null;
+    $('sQTitle').innerHTML = `${h(sc.name)} 견적 대비 직접인건비 (${st.year}, ${unitL()}) <span class="s-soft sk">분석 ${items.length}곳</span><span class="s-soft sr">초과 ${over.length}곳</span>${avg != null ? `<span class="s-soft sx">평균 ${avg > 0 ? '+' : ''}${avg.toFixed(1)}%</span>` : ''}${over.length ? `<span class="s-soft so">최대 ${h(over[0].c.center)} +${over[0].q.rate.toFixed(1)}%</span>` : ''}${skipped ? `<span class="s-soft sx" title="인원·업적수당 입력이 빠진 채 저장되어 제외">입력 누락 제외 ${skipped}곳</span>` : ''}`;
+    $('sQuote').innerHTML = `<thead><tr><th class="r">순위</th><th>센터</th><th>분류</th><th>지역</th><th class="r">받는 직접인건비</th><th class="r">급여설계 직접인건비</th><th class="r">차이</th><th>초과율</th><th class="r">${st.cmp || '비교'} 초과율</th><th>판정</th><th>메모</th></tr></thead><tbody>${
+      items.map((x, i) => { const s = qStatus(x.q.rate), m = memosOf(x.c.center)[0];
+        return `<tr><td class="r">${i + 1}</td><td><button type="button" class="s-cname" data-rep="${h(x.c.center)}" title="이 센터 보고서 만들기">${h(x.c.center)}</button></td>
+          <td>${h(x.c.ind)} › ${h(x.c.sub)}</td><td>${h(x.c.reg)}</td><td class="r">${fmt(x.q.received)}</td><td class="r">${fmt(x.q.paid)}</td>
+          <td class="r ${x.q.gap > 0 ? 's-dn' : ''}">${fmtS(x.q.gap)}</td><td style="width:150px">${rateBar(x.q.rate)}</td><td class="r" style="color:var(--m)">${x.prev == null ? '–' : `${x.prev > 0 ? '+' : ''}${x.prev.toFixed(1)}%`}</td>
+          <td><span class="s-soft ${s[1]}">${s[0]}</span></td>
+          <td class="s-memo-cell"><button type="button" class="s-memo-btn" data-memo="${h(x.c.center)}">${m ? `<span class="s-wt">${h(m.cat)}</span>${h(m.text.length > 22 ? m.text.slice(0, 22) + '…' : m.text)}` : '<span style="color:var(--f)">+ 메모</span>'}</button></td></tr>`; }).join('')
+      || `<tr><td colspan="11" class="s-empty">${st.year}년에 견적 대비 정보가 저장된 센터가 없습니다. 견적서 시트가 있는 급여테이블을 올려 [통계에 저장]하면 쌓입니다.</td></tr>`}</tbody>`;
+    const byInd = D.IND.map(i => { const xs = items.filter(x => x.c.ind === i); if(!xs.length) return null;
+      const rec = xs.reduce((a, x) => a + x.q.received, 0), paid = xs.reduce((a, x) => a + x.q.paid, 0);
+      return { i, n:xs.length, over:xs.filter(x => x.q.rate > 0).length, avg:xs.reduce((a, x) => a + x.q.rate, 0) / xs.length, tot:(paid / rec - 1) * 100, gap:(paid - rec) / xs.length }; }).filter(Boolean).sort((a, b) => b.avg - a.avg);
+    $('sQuoteInd').innerHTML = `<thead><tr><th>산업군</th><th class="r">센터</th><th class="r">초과 센터</th><th class="r">평균 초과율</th><th class="r">합계 기준 초과율</th><th class="r">센터당 평균 차이</th></tr></thead><tbody>${
+      byInd.map(x => `<tr class="${x.n < MIN_N ? 'thin' : ''}"><td>${h(x.i)}${x.n < MIN_N ? ' <span class="s-soft sx">표본 부족</span>' : ''}</td><td class="r">${x.n}</td><td class="r">${x.over}</td><td class="r ${x.avg > 0 ? 's-dn' : ''}">${x.avg > 0 ? '+' : ''}${x.avg.toFixed(1)}%</td><td class="r">${x.tot > 0 ? '+' : ''}${x.tot.toFixed(1)}%</td><td class="r">${fmtS(x.gap)}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="s-empty">자료 없음</td></tr>'}</tbody>`;
+  }
+
+  /* ---------- 센터 메모 (사유 기록) — 이 PC + 공유 폴더 04_스냅샷/메모 에 1건씩 저장 ---------- */
+  let MEMOS = [];
+  const memoCats = () => SETTINGS.memoCats || ['최저임금 인상 선반영', '재계약 대비 인상', '인력 유지·채용난', '고객사 요청', '기타'];
+  const memosOf = c => MEMOS.filter(m => m.center === c).sort((a, b) => b.at.localeCompare(a.at));
+  async function memoDir(){
+    const x = V2X(); if(!x.shareDir || !(await x.perm(x.shareDir, false))) return null;
+    try{ return await (await x.sub(x.SUB.snap, true)).getDirectoryHandle('메모', { create:true }); }catch(e){ return null; }
+  }
+  async function loadMemos(){
+    const x = V2X(); const local = (await x.kvGet('centerMemos')) || [], map = new Map(local.map(m => [m.id, m]));
+    const dir = await memoDir();
+    if(dir){
+      try{ for await (const e of dir.values()){
+        if(e.kind !== 'file' || !/\.json$/i.test(e.name)) continue;
+        try{ const m = JSON.parse((await (await e.getFile()).text()).replace(/^﻿/, '')); if(m.kind === 'PAYMEMO' && m.id) map.set(m.id, m); }catch(err){}
+      } }catch(err){}
+    }
+    MEMOS = [...map.values()].filter(m => !m.deleted);
+    x.kvSet('centerMemos', [...map.values()]);
+  }
+  async function addMemo({ center, period, cat, text }){
+    const x = V2X(), prof = x.profile;
+    const m = { kind:'PAYMEMO', v:1, id:`memo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, center, period: period || '', cat, text, at:new Date().toISOString(), by: prof ? prof.name : '' };
+    const all = (await x.kvGet('centerMemos')) || []; all.push(m); await x.kvSet('centerMemos', all); MEMOS.push(m);
+    const dir = await memoDir(); let filed = false;
+    if(dir){ try{ await x.writeFile(dir, m.id + '.json', JSON.stringify(m)); filed = true; }catch(e){} }
+    return filed;
+  }
+  window.__v2memo = { add: addMemo, load: loadMemos, of: memosOf };
+  document.body.insertAdjacentHTML('beforeend', `<div class="v2-memo" id="sMemo" hidden><div class="v2-memo-box" role="dialog" aria-modal="true" aria-labelledby="sMemoTitle">
+    <div class="v2-memo-h"><b id="sMemoTitle"></b><button type="button" class="btn-ghost btn-sm" id="sMemoClose">닫기</button></div>
+    <div class="v2-memo-q" id="sMemoQ"></div>
+    <div class="v2-memo-form"><select id="sMemoCat"></select><textarea id="sMemoText" rows="3" placeholder="초과(또는 여유) 설계 사유를 적어 주세요"></textarea>
+      <div class="btn-row"><span class="hint" id="sMemoMsg"></span><button type="button" class="btn-primary btn-sm" id="sMemoSave">메모 저장</button></div></div>
+    <ul class="v2-memo-list" id="sMemoList"></ul></div></div>`);
+  let memoCenter = '';
+  function openMemo(center){
+    memoCenter = center;
+    const s = D.PICK.get(center + '|' + st.year), q = s && s.quote;
+    $('sMemoTitle').textContent = `${center} · 메모`;
+    $('sMemoQ').innerHTML = q ? `${st.year}년 받는 직접인건비 월 ${Math.round(q.received).toLocaleString()}원 · 급여설계 ${Math.round(q.paid).toLocaleString()}원 · <b>${q.gap > 0 ? '초과' : '여유'} ${Math.abs(Math.round(q.gap)).toLocaleString()}원 (${q.rate > 0 ? '+' : ''}${q.rate.toFixed(1)}%)</b>` : '';
+    $('sMemoCat').innerHTML = memoCats().map(c => `<option>${h(c)}</option>`).join('');
+    $('sMemoText').value = ''; $('sMemoMsg').textContent = '';
+    drawMemoList(); $('sMemo').hidden = false; $('sMemoText').focus();
+  }
+  function drawMemoList(){
+    const list = memosOf(memoCenter);
+    $('sMemoList').innerHTML = list.map(m => `<li><div><span class="s-wt">${h(m.cat)}</span><small>${h(m.at.slice(0, 10))}${m.period ? ` · ${h(m.period)}` : ''}${m.by ? ` · ${h(m.by)}` : ''}</small></div><p>${h(m.text)}</p></li>`).join('') || '<li class="empty">아직 메모가 없습니다.</li>';
+  }
+  $('sMemoClose').onclick = () => { $('sMemo').hidden = true; };
+  $('sMemo').addEventListener('click', e => { if(e.target.id === 'sMemo') $('sMemo').hidden = true; });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('sMemo').hidden) $('sMemo').hidden = true; });
+  $('sMemoSave').onclick = async () => {
+    const text = $('sMemoText').value.trim(); if(!text){ $('sMemoMsg').textContent = '내용을 적어 주세요.'; return; }
+    const s = D.PICK.get(memoCenter + '|' + st.year);
+    const filed = await addMemo({ center:memoCenter, period: s ? s.period : String(st.year), cat:$('sMemoCat').value, text });
+    $('sMemoText').value = ''; $('sMemoMsg').textContent = filed ? '저장했습니다 (공유 폴더에도 기록).' : '저장했습니다 (이 PC에만 · 공유 폴더 연결 시 함께 기록).';
+    drawMemoList(); render();
+  };
+  $('sQuote').onclick = e => {
+    const mb = e.target.closest('[data-memo]'); if(mb){ openMemo(mb.dataset.memo); return; }
+    const rep = e.target.closest('[data-rep]'); if(rep){ reportState.center = rep.dataset.rep; switchAppTab('report'); }
+  };
+
   /* ---------- 이벤트 ---------- */
   const pickCls = name => {
     st.page = 0;
@@ -421,13 +529,19 @@
     sheet('직군 비교', `직군별 인당 평균 총임금 — ${scope().name} ${st.year} (원)`, ['직군', '센터', '직무', `${st.cmp || '비교'} 월`, `${st.year} 월`, `${st.year} 연`, '인상률'], jr);
     const ax = clsAxis(), yr = yearOf(D.ROWS.filter(r => inJob(r) && inReg(r) && (!ax.ind || r.ind === ax.ind)), st.year);
     sheet('교차표', `${ax.label} × 근무유형 — ${st.year} 인당 평균 월 총임금 (원)`, [ax.label, ...WT], ax.opts.map(o => [o, ...WT.map(w => { const a = agg(yr.filter(r => r[ax.key] === o && r.wt === w)); return a.n ? Math.round(a.avg) : null; })]));
+    const qi = quoteItems();
+    sheet('견적 대비', `견적 대비 직접인건비 — ${scope().name} ${st.year} (월, 원)`, ['순위', '센터', '산업군', '세부유형', '지역', '받는 직접인건비', '급여설계 직접인건비', '차이(설계−받는)', '초과율', '판정', '받는 금액 기준', '최근 메모 분류', '최근 메모'],
+      qi.map((x, i) => { const m = memosOf(x.c.center)[0]; return [i + 1, x.c.center, x.c.ind, x.c.sub, x.c.reg, Math.round(x.q.received), Math.round(x.q.paid), Math.round(x.q.gap), +(x.q.rate / 100).toFixed(4), qStatus(x.q.rate)[0], x.q.recvSrc || '', m ? m.cat : '', m ? m.text : '']; }), 2);
+    const mm = MEMOS.filter(m => qi.some(x => x.c.center === m.center) || D.CENTERS.some(c => c.center === m.center)).sort((a, b) => a.center.localeCompare(b.center) || b.at.localeCompare(a.at));
+    if(mm.length) sheet('센터 메모', '센터 메모 (사유 기록)', ['센터', '적용 시점', '분류', '내용', '작성일', '작성자'], mm.map(m => [m.center, m.period, m.cat, m.text, m.at.slice(0, 10), m.by]), 2);
     const la = listAoa(); sheet('센터 목록', `${scope().name} 센터 목록 — ${st.year} (화면에 표시한 열 기준)`, la[0], la.slice(1), 2);
     const raw = XLSX.utils.json_to_sheet(D.ROWS.map(r => ({ 연도:r.year, 센터:r.center, 산업군:r.ind, 세부유형:r.sub, 지역:r.reg, 권역:r.zone, 근무유형:r.wt, 직군:r.job, 직무:r.jobName, 기준급여소계:r.base, 고정수당:r.fixed, B등급업적수당:r.perf, 인당월총임금:r.monthly, 인당연총임금:r.monthly * 12 })));
     raw['!autofilter'] = { ref:raw['!ref'] }; XLSX.utils.book_append_sheet(wb, raw, '센터별 원자료');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['항목', '정의'],
       ['인당 월 총임금', '월 보수 합계(기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신 수당)'], ['연 환산', '월 × 12 (상여·퇴직급여·법정부담금 제외)'],
-      ['평균', '센터별 직무 평균의 단순 평균 (급여테이블에 인원 정보가 없어 센터마다 같은 비중)'], ['직군', '직무 블록이 리더그룹이면 관리자, 그 외 상담사'], ['근무유형', '직무별 기본급 수식의 월 소정시간으로 자동 분류(근무형태 답변이 교대·야간이면 교대·야간)'],
+      ['평균', '센터별 직무 평균(직무별 인원이 있으면 인원 가중)의 단순 평균 (센터마다 같은 비중)'], ['직군', '직무 블록이 리더그룹이면 관리자, 그 외 상담사'], ['근무유형', '직무별 기본급 수식의 월 소정시간으로 자동 분류(근무형태 답변이 교대·야간이면 교대·야간)'],
       ['산업군·세부유형', '통계 저장 때 고른 센터유형·세부유형 (기준정보 화면에서 목록 관리)'], ['최저임금 여유', '직무별 기본급 ÷ (그해 최저시급 × 소정시간) − 1 의 센터 내 최솟값'],
+      ['견적 대비', '받는 직접인건비 = 견적대비 비교 시트의 월 보수 가용 범위(없으면 견적서 직접인건비 소계 × 인원 × (1 − 실비 청구 비율)) · 급여설계 직접인건비 = Σ 직무별 (통상임금 소계 + 초과근무수당) × 인원 + 업적수당(등급별 인원, 없으면 B등급, B등급 없음·0원이면 직접 입력) · 초과율 = 급여설계 ÷ 받는 − 1'],
       ['상태', '선택 범위 평균 대비 +3% 이상 평균 이상 / ±3% 평균 수준 / −7%까지 평균 미만 / 그 아래 점검 필요'],
       ['운영 중', '기준 연도에 저장된 급여테이블이 있는 센터'], ['표본 기준', `센터 ${MIN_N}개 미만 구분은 참고용`], ['생성 일시', new Date().toLocaleString('ko-KR')]]), '산출 기준');
     const out = XLSX.write(wb, { bookType:'xlsx', type:'array' });
@@ -450,7 +564,8 @@
   }
   function setUi(old){ oldUi = old; try{ localStorage.setItem('paytable-stats-ui', old ? 'old' : 'new'); }catch(e){} applyUi(); renderStats(); }
   $('sOld').onclick = () => setUi(true);
-  renderStats = function(){ applyUi(); if(oldUi) origRenderStats(); else render(); };
+  let memoLoaded = false;
+  renderStats = function(){ applyUi(); if(oldUi){ origRenderStats(); return; } render(); if(!memoLoaded){ memoLoaded = true; loadMemos().then(() => { if(!oldUi) render(); }); } };
   applyUi();
   PAGES.stats.sub = '저장된 급여 데이터로 산업군·세부유형·지역·근무유형별 인건비 수준을 비교합니다';
 
@@ -498,10 +613,11 @@
   const setGrid = document.querySelector('#tabSettings .set-grid');
   if(setGrid){
     setGrid.insertAdjacentHTML('afterbegin', `<div class="panel v2-industry" style="grid-column:1/-1">
-      <div class="ph"><h2>산업군 · 세부유형</h2><button type="button" class="btn-primary btn-sm" id="v2IndSave">저장</button></div>
+      <div class="ph"><h2>산업군 · 세부유형 · 메모 분류</h2><button type="button" class="btn-primary btn-sm" id="v2IndSave">저장</button></div>
       <p class="hint">한 줄에 산업군 하나: <b>산업군: 세부유형, 세부유형, …</b> · 산업군은 센터유형과 같은 목록입니다(새 산업군을 적으면 센터유형에도 추가). 모든 사용자에게 적용하려면 저장 후 [모든 사용자에게 적용]을 눌러 주세요.</p>
-      <textarea id="v2IndText" spellcheck="false"></textarea><span class="hint" id="v2IndMsg"></span></div>`);
-    const fillInd = () => { const t = industryTree(); $('v2IndText').value = Object.entries(t).map(([k, v]) => `${k}: ${v.join(', ')}`).join('\n'); };
+      <textarea id="v2IndText" spellcheck="false"></textarea>
+      <label class="flabel" style="display:block;margin-top:10px">센터 메모 사유 분류 (쉼표로 구분) <input type="text" id="v2MemoCats" style="width:100%"></label><span class="hint" id="v2IndMsg"></span></div>`);
+    const fillInd = () => { const t = industryTree(); $('v2IndText').value = Object.entries(t).map(([k, v]) => `${k}: ${v.join(', ')}`).join('\n'); $('v2MemoCats').value = memoCats().join(', '); };
     $('v2IndSave').onclick = async () => {
       const tree = {};
       $('v2IndText').value.split('\n').forEach(line => {
@@ -510,6 +626,8 @@
       });
       if(!Object.keys(tree).length){ $('v2IndMsg').textContent = '형식을 확인해 주세요. 예) 금융: 보험, 은행, 카드'; return; }
       SETTINGS.industryTree = tree;
+      const cats = [...new Set($('v2MemoCats').value.split(/[,，]/).map(x => x.trim()).filter(Boolean))];
+      if(cats.length) SETTINGS.memoCats = cats;
       Object.keys(tree).forEach(k => { if(!SETTINGS.centerTypes.includes(k)) SETTINGS.centerTypes.push(k); });
       await saveSettings();
       $('v2IndMsg').textContent = `저장했습니다 · 산업군 ${Object.keys(tree).length}개`;

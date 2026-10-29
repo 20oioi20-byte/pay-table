@@ -139,11 +139,75 @@ def sheet(ws, rate):
     exceptions(ws)
 
 
+# ---------- v2.6: 견적서 · 견적대비 비교 (실제 파일과 같은 행·열 위치, 금액은 가상) ----------
+CMP_JOBS = [('센터장', 'Q', 72, 1, [0, 1, 0, 0, 0, 0]), ('팀장', 'D', 72, 2, [0, 1, 1, 0, 0, 0]), ('강사', 'E', 72, 1, [0, 0, 1, 0, 0, 0]),
+            ('수습', 'D', 41, 3, [0, 0, 0, 0, 0, 3]), ('상담1', 'E', 41, 8, [1, 2, 3, 1, 1, 0]), ('상담2', 'F', 41, 6, [1, 1, 3, 1, 0, 0]),
+            ('상담3', 'G', 41, 3, [0, 1, 2, 0, 0, 0])]
+
+
+def estimate(ws, center):
+    ws['B2'] = '○ 센터명 :'; ws['C2'] = center; ws['B3'] = '○ 계약기간 :'; ws['C3'] = '2026.01.01. ~ 2026.12.31.'
+    ws['J4'] = '(단위 : 원)'
+    for c, v in zip('BEFGHIJ', ['구분', '센터장', '팀장/강사', '일반상담', '심야상담', '계', '비고(산출근거)']):
+        ws[f'{c}5'] = v
+    ws['B6'] = '인원 ①'; ws['E6'] = 1; ws['F6'] = 3; ws['G6'] = 20; ws['I6'] = '=SUM(E6:H6)'; ws['J6'] = '계약 정원 기준'
+    ws['B7'] = '인건비'; ws['C7'] = '직접 인건비'
+    rows = [('기본급', [2160000, 2160000, 2160000]), ('초과수당', [130000, 100000, 40000]), ('연차수당', None),
+            ('식대/교통비', [150000, 150000, 150000]), ('직책/전문수당', [700000, 300000, None]),
+            ('성과급(인센티브)', [150000, 100000, 60000]), ('휴일근로수당', [0, 0, 0])]
+    for k, (lab, vals) in enumerate(rows):
+        r = 7 + k; ws[f'D{r}'] = lab; ws[f'I{r}'] = f'=SUMPRODUCT(E{r}:H{r},$E$6:$H$6)'
+        for c, v in zip('EFG', vals or []):
+            if v is not None: ws[f'{c}{r}'] = v
+    ws['D14'] = '직접인건비 소계'
+    for c in 'EFGH': ws[f'{c}14'] = f'=SUM({c}7:{c}13)'
+    ws['I14'] = '=SUMPRODUCT(E14:H14,$E$6:$H$6)'; ws['J14'] = '실비 청구 항목 등 표기'
+    ws['C15'] = '간접 인건비'; ws['D15'] = '퇴직충당금'; ws['J15'] = '(직접인건비)/12'
+    for c in 'EFG': ws[f'{c}15'] = f'=ROUND({c}14/12,0)'
+    ws['D26'] = '간접인건비 소계'; ws['B36'] = '일반관리비 ③ 값 반영⇒'; ws['B37'] = '기업이윤 ④   값 반영⇒'; ws['B40'] = '총합계(vat 포함)'
+    for c in 'EFG': ws[f'{c}34'] = 30000
+
+
+def compare(ws):
+    S = "'급여테이블(변경후)'!"
+    ws['B1'] = '급여테이블 견적 대사'; ws['B3'] = '* ERP상 직접비 총계(직전년도연간 인건비)'
+    ws['B5'] = '구분(연간)'; ws['J5'] = '급여 테이블'; ws['J6'] = '호봉'; ws['B7'] = '직접비'; ws['C7'] = '직접비 총계'; ws['F7'] = 0.03
+    ws['J7'] = '호봉별 총원'; ws['J8'] = '통상임금'; ws['J11'] = '초과근로/야근수당'; ws['J12'] = '소계'
+    ws['J13'] = '업적수당'; ws['K13'] = '등급'; ws['K21'] = '계'; ws['J22'] = '월 보수 합계'
+    for k, g in enumerate(['S', 'A', 'B', 'C', 'D', 'E', 'F']):
+        ws.cell(14 + k, 11, g)
+    for i, (name, col, sub, n, dist) in enumerate(CMP_JOBS):
+        c = 12 + i * 2; X, Y = L(c), L(c + 1)
+        ws.cell(6, c, name); ws.cell(7, c, n); ws.cell(13, c, '단가'); ws.cell(13, c + 1, '인원')
+        ws.cell(8, c, f'={S}{col}{sub}')
+        ws.cell(11, c, f'={S}{col}{sub + 7}')
+        ws.cell(12, c, f'=SUM({X}8:{Y}11)*{X}7')
+        for k in range(6):
+            ws.cell(14 + k, c, f'={S}{col}{sub + 1 + k}'); ws.cell(14 + k, c + 1, dist[k])
+        ws.cell(21, c, f'=SUMPRODUCT({X}14:{X}20,{Y}14:{Y}20)')
+        ws.cell(22, c, f'={X}12+{X}21')
+    last = L(12 + len(CMP_JOBS) * 2 - 1)
+    ws['K7'] = f'=SUM(L7:{last}7)'; ws['K12'] = f'=SUM(L12:{last}12)'; ws['K22'] = f'=SUM(L22:{last}22)'
+    ws['B17'] = '<표2>'; ws['B18'] = '구분'; ws['D18'] = '견적'; ws['B19'] = '직접비'
+    for c, v in zip('DEFGH', ['센터장', '팀장/강사', '상담사', '심야상담', '총계']):
+        ws[f'{c}19'] = v
+    ws['C20'] = '인원'; ws['D20'] = 1; ws['E20'] = 3; ws['F20'] = 20; ws['H20'] = '=SUM(D20:G20)'
+    ws['C21'] = '직접비 단가'
+    for c, e in zip('DEFG', 'EFGH'): ws[f'{c}21'] = f'=견적서!{e}14'
+    ws['C22'] = '직무별 직접비 계'
+    for c in 'DEFG': ws[f'{c}22'] = f'={c}20*{c}21'
+    ws['H22'] = '=SUM(D22:G22)'
+    ws['C23'] = '월 보수 가용 범위'; ws['G23'] = '=1-F7'; ws['H23'] = '=H22*G23'
+    ws['C24'] = 'Gap'; ws['H24'] = '=H23-K22'
+
+
 def main():
     wb = openpyxl.Workbook()
     before = wb.active; before.title = '급여테이블(변경전)'
     sheet(before, 0.9)
     sheet(wb.create_sheet('급여테이블(변경후)'), 1.0)
+    estimate(wb.create_sheet('견적서'), '가상시 민원상담콜센터')
+    compare(wb.create_sheet('견적대비 비교'))
     OUT.parent.mkdir(exist_ok=True)
     wb.save(OUT)
     recalc(OUT)

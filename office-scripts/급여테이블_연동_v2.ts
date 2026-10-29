@@ -6,6 +6,7 @@
  *            급여관리 시스템 화면 아무 곳에서나 Ctrl+V
  *  - 한 번 더 실행: '조견표연동' 시트를 지웁니다 (원본 파일에 남기지 않기 위해, 원본은 저장하지 않고 닫기)
  *
+ * v2.6: 견적서·견적대비 비교 시트 값도 extra로 함께 보냅니다(직접인건비 비교).
  * v1(급여테이블_연동.ts)과 같은 형식(PAYTABLE-V1 … END)이며, 값에 더해 수식과 변경전 시트 값도 담습니다.
  * Power Automate에서도 문제없도록 find/map 같은 콜백 대신 for 반복문만 씁니다.
  */
@@ -55,7 +56,8 @@ function main(workbook: ExcelScript.Workbook) {
     start: start,
     values: used.getValues(),
     formulas: used.getFormulas(),
-    before: before ? before.getRange(area).getValues() : null
+    before: before ? before.getRange(area).getValues() : null,
+    extra: extraSheets(sheets)
   });
   const b64 = toBase64Utf8(payload);
 
@@ -116,4 +118,21 @@ function toBase64Utf8(text: string): string {
     );
   }
   return parts.join("");
+}
+
+/* v2.6: 견적서·견적대비 비교처럼 이름에 '견적'·'대비'·'대사'가 들어간 시트는 값만 함께 보냄 (직접인건비 비교용) */
+function extraSheets(sheets: ExcelScript.Worksheet[]): { name: string; values: (string | number | boolean)[][] }[] {
+  const out: { name: string; values: (string | number | boolean)[][] }[] = [];
+  for (let i = 0; i < sheets.length; i++) {
+    const name = sheets[i].getName();
+    if (name.indexOf("급여테이블") >= 0) continue;
+    if (name.indexOf("견적") < 0 && name.indexOf("대비") < 0 && name.indexOf("대사") < 0) continue;
+    const used = sheets[i].getUsedRange(true);
+    if (!used) continue;
+    const area = used.getAddress().split("!").pop() || "A1";
+    // A1부터 읽어 셀 위치(행·열)가 엑셀과 같게 맞춤
+    const last = area.indexOf(":") >= 0 ? area.split(":")[1] : area;
+    out.push({ name: name, values: sheets[i].getRange("A1:" + last.replace(/\$/g, "")).getValues() });
+  }
+  return out;
 }

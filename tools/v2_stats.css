@@ -112,3 +112,34 @@
   @media (max-width:1280px){ #v2St .s-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
   #tabStats.v2-st-on > :not(#v2St){ display:none !important; }
   .v2-industry textarea{ width:100%; min-height:130px; font:inherit; font-size:13px; padding:10px; border:1px solid var(--line); border-radius:8px; }
+  /* ---------- v2.6 견적 대비 직접인건비 (조견표 생성 화면) ---------- */
+  .v2-quote .v2-qkpi{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:10px; }
+  .v2-quote .v2-qkpi > div{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:3px; }
+  .v2-quote .v2-qkpi span{ font-size:12px; color:var(--muted); } .v2-quote .v2-qkpi b{ font-size:20px; font-variant-numeric:tabular-nums; } .v2-quote .v2-qkpi small{ font-size:11.5px; color:var(--muted); }
+  .v2-quote .v2-qkpi > div.over{ border-color:#FE2E36; background:#FFF4F4; } .v2-quote .v2-qkpi > div.over b{ color:#D9141D; }
+  .v2-qst{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:5px; }
+  .v2-qst.sr{ background:#FE2E36; color:#fff; } .v2-qst.so{ background:#FFE9EA; color:#D9141D; } .v2-qst.sx{ background:#F1F1F2; color:#4C4C4E; }
+  .v2-qnote{ padding:12px 14px; border:1px dashed var(--line); border-radius:8px; color:var(--muted); font-size:13px; line-height:1.6; margin-bottom:10px; }
+  .v2-qwarn{ padding:8px 12px; border-radius:8px; background:#FFF4DE; color:#8a5a00; font-size:12.5px; }
+  .v2-qok{ color:#00A693; } .v2-qbad{ color:#D9141D; }
+  .v2-qtbl input{ width:110px; text-align:right; padding:5px 8px; border:1px solid #d5dbe4; border-radius:6px; font:inherit; }
+  .v2-qtbl tr.miss td{ background:#FFF8EC; } .v2-qtbl tr.sum td{ font-weight:700; border-top:1px solid var(--line); }
+  .v2-qsrc{ font-size:12px; color:var(--muted); }
+  .v2-qmemo{ display:flex; flex-direction:column; gap:6px; margin-top:12px; } .v2-qmemo label{ font-size:12.5px; color:var(--muted); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .v2-qmemo textarea{ width:100%; font:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; }
+  @media (max-width:1100px){ .v2-quote .v2-qkpi{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  /* 통계 › 견적 대비 · 센터 메모 */
+  #v2St .s-memo-btn{ border:0; background:none; padding:0; cursor:pointer; text-align:left; font-size:12px; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--t); }
+  #v2St .s-memo-btn:hover{ color:var(--acc-t); }
+  .v2-memo{ position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:60; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .v2-memo[hidden]{ display:none; }
+  .v2-memo-box{ background:#fff; border-radius:12px; width:min(560px,100%); max-height:86vh; overflow:auto; padding:18px 20px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  .v2-memo-h{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; } .v2-memo-h b{ font-size:15px; }
+  .v2-memo-q{ font-size:12.5px; color:#4C4C4E; margin-bottom:12px; line-height:1.6; }
+  .v2-memo-form{ display:flex; flex-direction:column; gap:8px; } .v2-memo-form select, .v2-memo-form textarea{ font:inherit; font-size:13px; padding:8px 10px; border:1px solid #E6E6E8; border-radius:8px; }
+  .v2-memo-form .btn-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .v2-memo-list{ list-style:none; margin:14px 0 0; padding:0; border-top:1px solid #E6E6E8; }
+  .v2-memo-list li{ padding:10px 0; border-bottom:1px solid #F1F1F2; } .v2-memo-list li.empty{ color:#A2A4A3; font-size:12.5px; }
+  .v2-memo-list li div{ display:flex; gap:8px; align-items:center; } .v2-memo-list small{ color:#A2A4A3; font-size:11px; }
+  .v2-memo-list p{ margin:4px 0 0; font-size:13px; white-space:pre-wrap; }
+  .v2-memo-list .s-wt{ display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:4px; background:#F1F1F2; color:#4C4C4E; }
