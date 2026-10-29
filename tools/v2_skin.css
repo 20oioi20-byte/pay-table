@@ -1,6 +1,5 @@
   /* ============================================================
      KT 브랜드 테마 (선택 시에만 적용 · [기본]을 고르면 원래 디자인)
-     html[data-skin="kt-light"] = KT 화이트, html[data-skin="kt-dark"] = KT 블랙
      조견표 캡처(.capture)·보고서 문서(.report-doc)는 출력 형식 유지를 위해 바꾸지 않음
      KT Red #FE2E36 · Black #000 · Dark Gray #4C4C4E · Light Gray #A2A4A3 · Purple #AA50FF · Blue #00A5FF · Teal #00BEAC
      ============================================================ */
@@ -41,56 +40,4 @@
   html[data-skin="kt-light"] .panel{ border-color:#E4E4E4; }
   html[data-skin="kt-light"] .topbar{ background:#fff; border-bottom:2px solid #000; }
 
-  /* KT 블랙: 검은 바탕 + 다크 그레이 카드 + 레드 포인트 */
-  html[data-skin="kt-dark"]{
-    color-scheme:dark;
-    --pri-soft:rgba(254,46,54,.16); --bg:#000000; --card:#141414; --line:#2B2B2D; --ink2:#F2F2F2; --muted:#A2A4A3;
-    --ok:#2BD4C0; --ok-soft:rgba(0,190,172,.14); --warn:#FFB547; --warn-soft:rgba(255,181,71,.13); --bad:#FF5A61; --bad-soft:rgba(254,46,54,.14);
-  }
-  html[data-skin="kt-dark"] body{ background:#000; color:#F2F2F2; }
-  html[data-skin="kt-dark"] .topbar{ background:#0A0A0A; border-bottom:1px solid #2B2B2D; }
-  html[data-skin="kt-dark"] .panel, html[data-skin="kt-dark"] .kpi, html[data-skin="kt-dark"] .stepper,
-  html[data-skin="kt-dark"] .filterbar, html[data-skin="kt-dark"] .v2-card, html[data-skin="kt-dark"] .v2-linkcard{ background:#141414; border-color:#2B2B2D; color:#F2F2F2; }
-  html[data-skin="kt-dark"] :is(input, select, textarea):not([type=checkbox]):not([type=radio]):not([type=range]){ background:#1C1C1E; color:#F2F2F2; border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] .btn-ghost, html[data-skin="kt-dark"] a.v2-link.btn-ghost, html[data-skin="kt-dark"] .v2-healthbtn, html[data-skin="kt-dark"] .v2-conn{ background:#1C1C1E; color:#F2F2F2; border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] .btn-ghost:hover{ background:#262628; }
-  html[data-skin="kt-dark"] .seg button{ background:#1C1C1E; color:#A2A4A3; border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] table.grid th{ background:#141414; }
-  html[data-skin="kt-dark"] table.grid td{ border-bottom-color:#232325; }
-  html[data-skin="kt-dark"] table.grid tr.go:hover td{ background:#1C1C1E; }
-  html[data-skin="kt-dark"] #dropzone, html[data-skin="kt-dark"] #pasteBox{ background:#0E0E0E; border-color:#3A3A3C; color:#D6D6D6; }
-  html[data-skin="kt-dark"] .job-chip{ background:#1C1C1E; color:#F2F2F2; border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] .job-chip.on{ background:#FE2E36; border-color:#FE2E36; }
-  html[data-skin="kt-dark"] .job-chip.on .chk{ background:#fff; color:#FE2E36; border-color:#fff; }
-  html[data-skin="kt-dark"] .job-chip .chk{ background:#2B2B2D; }
-  html[data-skin="kt-dark"] .notes-editor, html[data-skin="kt-dark"] .ck-item, html[data-skin="kt-dark"] .ot-note-box{ background:#141414; border-color:#2B2B2D; color:#F2F2F2; }
-  html[data-skin="kt-dark"] .hint{ color:#A2A4A3; }
-  html[data-skin="kt-dark"] .v2-help{ background:#1C1C1E; border-color:#4C4C4E; color:#A2A4A3; }
-  html[data-skin="kt-dark"] .v2-webstart{ background:rgba(254,46,54,.10); }
-  html[data-skin="kt-dark"] .v2-paste{ background:rgba(254,46,54,.08); color:#F2F2F2; }
-  html[data-skin="kt-dark"] .v2-banner{ background:rgba(255,181,71,.12); border-color:#6b5320; color:#FFD48A; }
-  html[data-skin="kt-dark"] svg.chart text{ fill:#A2A4A3; } html[data-skin="kt-dark"] svg.chart text.ink{ fill:#F2F2F2; }
-  html[data-skin="kt-dark"] svg.chart .gl{ stroke:#2B2B2D; }
-  /* 출력물 미리보기는 종이처럼 흰 바탕 유지 (PNG·Word 결과와 같게) */
-  html[data-skin="kt-dark"] .preview-frame{ background:#1C1C1E; border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] .report-doc{ background:#fff; color:#111827; }
-  html[data-skin="kt-dark"] .report-doc h1, html[data-skin="kt-dark"] .report-doc h2{ color:#111827; }
-
-  /* 테마 선택 */
-  .v2-skin{ display:inline-flex; margin-right:10px; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
-  .v2-skin button{ border:0; background:transparent; color:var(--muted); font:inherit; font-size:12px; font-weight:600; padding:5px 10px; cursor:pointer; }
-  .v2-skin button[aria-pressed="true"]{ background:var(--ink2); color:var(--card); }
-  html[data-skin^="kt"] .v2-skin button[aria-pressed="true"]{ background:#FE2E36; color:#fff; }
-  .v2-skin{ margin-left:12px; }
-  html[data-skin="kt-dark"] #dropzone strong, html[data-skin="kt-dark"] #dropzone b, html[data-skin="kt-dark"] #dropzone a{ color:#FF8A8F; }
   html[data-skin="kt-light"] #dropzone strong, html[data-skin="kt-light"] #dropzone b{ color:#000; }
-  /* 블랙: v1 공용 색(--navy 등)을 화면에서만 밝게, 조견표·보고서 안에서는 원래 값으로 되돌림 */
-  html[data-skin="kt-dark"]{ --navy:#FF8A8F; --navy-dark:#FE2E36; --ink:#F2F2F2; --border:#3A3A3C; --gray-bg:#1C1C1E; --blue:#5CC3FF; }
-  html[data-skin="kt-dark"] :is(.capture, .report-doc){ --navy:#1f3864; --navy-dark:#16294a; --gold:#e8b64c; --blue:#0047c8; --gray-bg:#f3f4f6; --border:#c9ccd1; --ink:#1a1a1a; color:#1a1a1a; }
-  html[data-skin="kt-dark"] .notes-editor [contenteditable], html[data-skin="kt-dark"] .notes-editor [contenteditable]:focus,
-  html[data-skin="kt-dark"] .notes-editor table.ed-table td[contenteditable]{ background:#1C1C1E; color:#F2F2F2; }
-  html[data-skin="kt-dark"] .notes-editor .ed-type{ background:rgba(254,46,54,.16); }
-  html[data-skin="kt-dark"] .notes-editor .btn-icon, html[data-skin="kt-dark"] #linkRecent button{ background:#2B2B2D; color:#F2F2F2; border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] .notes-editor table.ed-table :is(th, td){ border-color:#3A3A3C; }
-  html[data-skin="kt-dark"] .ot-note-box{ border-color:#3A3A3C !important; }
-  html[data-skin="kt-dark"] #fileMeta{ color:#A2A4A3; opacity:1; }

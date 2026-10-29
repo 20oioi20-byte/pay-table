@@ -1393,21 +1393,6 @@
   }
 
 
-  /* 화면 테마: 기본(원래 디자인) / KT 화이트 / KT 블랙 — 이 PC 브라우저에만 기억, 언제든 [기본]으로 되돌림 */
-  const SKINS = [['base', '기본'], ['kt-light', 'KT 화이트'], ['kt-dark', 'KT 블랙']];
-  const skinBox = document.createElement('div');
-  skinBox.className = 'v2-skin'; skinBox.setAttribute('role', 'group'); skinBox.setAttribute('aria-label', '화면 테마');
-  skinBox.innerHTML = SKINS.map(([k, l]) => `<button type="button" data-skin="${k}">${l}</button>`).join('');
-  $('v2Conn').before(skinBox);
-  function applySkin(k){
-    if(!SKINS.some(([x]) => x === k)) k = 'base';
-    if(k === 'base') document.documentElement.removeAttribute('data-skin'); else document.documentElement.setAttribute('data-skin', k);
-    try{ localStorage.setItem('paytable-skin', k); }catch(e){}
-    skinBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.skin === k)));
-  }
-  skinBox.addEventListener('click', e => { const b = e.target.closest('[data-skin]'); if(b) applySkin(b.dataset.skin); });
-  applySkin(document.documentElement.getAttribute('data-skin') || 'base');
-
   /* ---------- 시작 ---------- */
   (async () => {
     await loadSystem();
@@ -1429,5 +1414,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, get pending(){ return pending; }, get shareDir(){ return shareDir; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
 })();

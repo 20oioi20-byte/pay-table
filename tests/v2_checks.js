@@ -92,6 +92,21 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   await p.click('#snapSaveBtn'); await p.waitForTimeout(300);
   await p.waitForSelector('#v2Next [data-n="stats"]');
   ok(true, '완료 단계: 통계 보기·보고서·다른 파일 올리기');
+
+  console.log('5. 통계: 실제 양식 월 보수 합계(B등급) 기준 · 새 통계 화면');
+  const snap = await p.evaluate(() => SNAPS.at(-1));
+  const j0 = snap.jobs[0];
+  ok(j0.perf > 0 && j0.perf < j0.stdPaySum && j0.compareMonthly === j0.monthlyTotal, `비교 금액 = 월 보수 합계 (업적수당 ${j0.perf}, 합계 ${j0.monthlyTotal})`);
+  ok(Math.abs(j0.hourly - j0.monthlyTotal / j0.hours) < 0.01, '시급 = 월 보수 합계 ÷ 소정시간');
+  ok(snap.jobs.every(j => j.wHours > 0), '직무별 소정시간 저장: ' + snap.jobs.map(j => j.wHours).join(','));
+  await p.click('#v2Next [data-n="stats"]');
+  await p.waitForSelector('#sGrid .s-ic');
+  const big = await p.$eval('#sGrid .s-ic.tot big', e => e.textContent);
+  ok(big !== '–', `새 통계 화면 표시 (전체 평균 ${big}만원)`);
+  await p.click('#sTabs [data-t="list"]');
+  ok((await p.$$('#sList tbody .s-cname')).length === 1, '센터 목록 1곳');
+  await p.click('#sOld'); ok(await p.isVisible('#statsBody') || await p.isVisible('#statsEmpty'), '[이전 화면]으로 원래 통계 화면');
+  await p.click('#v2StBack button'); ok(await p.isVisible('#sApp'), '[새 통계 화면으로 보기]로 복귀');
   if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v24_done.png') });
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   await b.close(); srv.close();

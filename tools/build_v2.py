@@ -179,12 +179,13 @@ def main():
     s = must_replace(s, "기준급여합계와 수당(연장·야간·통신비) 합으로 설명되지 않습니다.", "기준급여합계 + B등급 업적수당 + 수당(연장·야간·통신비) 합으로 설명되지 않습니다.")
     i = s.index('</style>\n</head>')
     skin = (ROOT / 'tools' / 'v2_skin.css').read_text(encoding='utf-8')
-    s = s[:i] + V2_CSS + skin + s[i:]
-    # 테마를 화면 그리기 전에 적용(깜빡임 방지) — 저장값이 없으면 기본(원래 디자인)
-    s = must_replace(s, '</style>\n</head>', "</style>\n<script>try{var k=localStorage.getItem('paytable-skin');if(k&&k!=='base')document.documentElement.setAttribute('data-skin',k);}catch(e){}</script>\n</head>")
+    stats_css = (ROOT / 'tools' / 'v2_stats.css').read_text(encoding='utf-8')
+    s = s[:i] + V2_CSS + skin + stats_css + s[i:]
+    # 화면 디자인은 KT 화이트로 고정 (되돌리려면 이 줄과 v2_skin.css를 빼고 빌드)
+    s = must_replace(s, '<html lang="ko">', '<html lang="ko" data-skin="kt-light">')
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
            'links': links}
-    js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8')
+    js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8') + '\n' + (ROOT / 'tools' / 'v2_stats.js').read_text(encoding='utf-8')
     i = s.rindex('</body>')
     s = (s[:i] + '<script>\n/* 관리자 설정: build_v2.py 인자로 바꿉니다 */\nwindow.V2_CONFIG = '
          + json.dumps(cfg, ensure_ascii=False) + ';\n' + js + '\n</script>\n' + s[i:])

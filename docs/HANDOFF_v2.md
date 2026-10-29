@@ -1,4 +1,4 @@
-# 급여관리 시스템(인건비 자동화) 인수인계 (저장소용 · 회사 주소 제외) — 2026-10-29 기준 v2.4.1
+# 급여관리 시스템(인건비 자동화) 인수인계 (저장소용 · 회사 주소 제외) — 2026-10-29 기준 v2.5.0
 
 > 새 대화의 첫 메시지로 이 문서를 그대로 붙여넣고, 맨 아래 "다음 작업 요청"을 이어서 보내면 됩니다.
 
@@ -55,9 +55,10 @@
 
 ## 6. 통계·보고서 현재 구현(정교화 대상)
 - 스냅샷(통계 저장 1건) 필드: center, centerType, period(YYYY-MM), version, savedAt, requestId, savedBy, answers{centerType, consultType, workPattern, period, reason, contract1y, region}, before[{job, before, after}], jobs[{name, block, laborType, items{6항목}, stdPaySum, overtime, night, telecom, monthlyTotal, gradeB, compareMonthly, hours, fixedPay, hourly}], checks
-- 통계: 기준 시점별 센터 최신본, 센터유형·상담유형별 시급(=compareMonthly ÷ 월소정근로시간) 비교, 유형 중위수 대비 편차, 백분위, 최저임금 여유, 센터 추이
+- **v2.5.0 화면:** 디자인은 KT 화이트 고정(`tools/v2_skin.css`). 급여 통계는 stats_prototype 기준 새 화면(`tools/v2_stats.js`·`v2_stats.css`): 직군(리더그룹=관리자)·기준/비교 연도·산업군›세부유형 트리·근무유형·지역 필터, 산업군 카드, 구분별 비교/센터 목록/교차표, 엑셀·CSV. 평균은 센터별 직무 평균의 단순 평균(인원 정보 없음). 통계 저장에 세부유형·지역 선택 추가, 기준정보에 '산업군 · 세부유형' 편집 추가. [이전 화면]으로 기존 통계 화면 보기 가능
+- (이전) 통계: 기준 시점별 센터 최신본, 센터유형·상담유형별 시급(=compareMonthly ÷ 월소정근로시간) 비교, 유형 중위수 대비 편차, 백분위, 최저임금 여유, 센터 추이
 - 보고서: 목표 기준(유형 중위수 / 상위40% / 채용시장 중위수 / 둘 중 높은 값), 필요 인상액·연간 비용(법정부담률 18.5% 가정), Word(.doc)·HTML 출력, 채용시장 표본은 수기 입력(고용24 API는 맨 마지막)
-- **⚠ 알려진 문제(최우선):** 실제 양식에서는 등급 행이 '업적수당 금액'이라 `gradeB`가 월급여가 아님 → `compareMonthly = gradeB ?? monthlyTotal`이 **업적수당만으로 시급을 계산**함(데모 양식은 등급 행이 총액이라 문제 없었음). 실제 양식의 '월 보수 합계'(B등급 기준) 또는 소계+B등급 업적수당을 써야 함
+- **v2.5.0에서 해결:** (예전 문제)  실제 양식에서는 등급 행이 '업적수당 금액'이라 `gradeB`가 월급여가 아님 → `compareMonthly = gradeB ?? monthlyTotal`이 **업적수당만으로 시급을 계산**함(데모 양식은 등급 행이 총액이라 문제 없었음). 실제 양식의 '월 보수 합계'(B등급 기준) 또는 소계+B등급 업적수당을 써야 함 → v2.5.0부터 저장 시 `perf`(B등급 업적수당), `compareMonthly = monthlyTotal`(월 보수 합계), `wHours`(직무별 소정시간)를 기록. 이미 저장된 스냅샷은 새 통계 화면이 같은 규칙으로 다시 계산(보고서는 다시 저장한 스냅샷부터 반영)
 - 기타 정교화 후보: 근무형태별 시간(answers.workPattern·기본급 시간수) 반영, 고정급/변동급 분리 비교, 연도별 인상률 추이, 표본 수 부족 경고, 결정 체크리스트 G(통계)·R(보고서) 섹션 결정 반영(아직 미결정 — 권장값 있음)
 
 ## 7. 남은 일(관리자)
