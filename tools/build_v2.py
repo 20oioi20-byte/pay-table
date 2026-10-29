@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.4.2'
+APP_VERSION = '2.5.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -178,7 +178,10 @@ def main():
                      "const gradeB = ((job.grades || []).find(([g]) => /^B/i.test(String(g).trim())) || [])[1];\n      const extras = [job.overtime, job.night, job.telecom, gradeB].map(v => typeof v === 'number' ? v : 0);\n      const combos = [...Array(16).keys()].map(")
     s = must_replace(s, "기준급여합계와 수당(연장·야간·통신비) 합으로 설명되지 않습니다.", "기준급여합계 + B등급 업적수당 + 수당(연장·야간·통신비) 합으로 설명되지 않습니다.")
     i = s.index('</style>\n</head>')
-    s = s[:i] + V2_CSS + s[i:]
+    skin = (ROOT / 'tools' / 'v2_skin.css').read_text(encoding='utf-8')
+    s = s[:i] + V2_CSS + skin + s[i:]
+    # 테마를 화면 그리기 전에 적용(깜빡임 방지) — 저장값이 없으면 기본(원래 디자인)
+    s = must_replace(s, '</style>\n</head>', "</style>\n<script>try{var k=localStorage.getItem('paytable-skin');if(k&&k!=='base')document.documentElement.setAttribute('data-skin',k);}catch(e){}</script>\n</head>")
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
            'links': links}
     js = (ROOT / 'tools' / 'v2_inject.js').read_text(encoding='utf-8')
