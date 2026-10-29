@@ -149,7 +149,7 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   ok(s2.jobs.every(j => typeof j.annualCost === 'number' && typeof j.heads === 'number') && s2.jobs.filter(j => j.heads > 0).length >= 6, '정원·연간 인건비 읽기: ' + s2.jobs.map(j => `${j.heads}명/${Math.round(j.annualCost / 10000)}만`).join(', '));
   await p.evaluate(() => switchAppTab('report'));
   await p.waitForSelector('#reportDoc .page');
-  ok((await p.$$('#reportDoc .page')).length === 2, '보고서 2쪽');
+  ok((await p.$$('#reportDoc .page')).length === 3, '보고서(내부 검토용) 3쪽: 1쪽 요청 · 2쪽 근거 · 3쪽 시나리오');
   const D = s2.jobs.reduce((a, j) => a + (j.annualCost > 0 || !j.heads ? j.annualCost : j.monthlyTotal * 12 * j.heads), 0);
   await p.fill('#repLabor', '5'); await p.dispatchEvent('#repLabor', 'change');
   /* 견적서가 없는 센터의 계산(정원 기준 직접인건비 + 입력한 법정부담·관리비·경비)을 먼저 확인 → 끝나면 견적서 복원 */
@@ -201,7 +201,30 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   ok(PG2.h <= 1124, `2쪽이 A4 한 장 안 (${PG2.h}px)`);
   const w = await p.evaluate(async () => { const r = await window.__v2report.buildWord(); return { parts:r.parts.length, head:r.mht.slice(0, 17), pb:/page-break-before:always/.test(r.html) }; });
   ok(w.head === 'MIME-Version: 1.0' && w.pb, `Word(MHTML) 저장 · 쪽 나눔`);
-  if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_p2.png') });
+  console.log('7. 보고서 v2.6.5: 고객 제출용 · 조정 사유 · 인상률 시나리오 · 최저임금 고시 · 업무 특성');
+  const SC = await p.evaluate(() => { const pg = document.querySelectorAll('#reportDoc .page')[2]; return pg ? { t: pg.innerText, rows: pg.querySelectorAll('table.scn tr').length - 1, me: pg.querySelectorAll('table.scn tr.me').length } : null; });
+  ok(SC && SC.t.includes('인상률 시나리오') && SC.t.includes('고객 제출 금지') && SC.rows >= 3 && SC.me === 1, `3쪽 시나리오 ${SC && SC.rows}안 · 요청안 강조`);
+  await p.fill('#repReason', '고객사 예산 한도 반영(시험)'); await p.dispatchEvent('#repReason', 'change');
+  ok(await p.evaluate(() => { const pg = document.querySelectorAll('#reportDoc .page'); return pg[0].innerText.includes('조정 사유') && pg[0].innerText.includes('예산 한도') && pg[2].innerText.includes('예산 한도'); }), '조정 사유: 1쪽 산출 아래·3쪽에 표시');
+  ok(await p.evaluate(() => document.querySelectorAll('#reportDoc .page')[1].innerText.includes('통신사 간')), '2쪽 A: 통신 업무 특성 기본 문장');
+  await p.fill('#repMwFix', '10600'); await p.dispatchEvent('#repMwFix', 'change');
+  await p.waitForFunction(() => document.getElementById('repMw').disabled && document.querySelector('#reportDoc .page').innerText.includes('고시 10,600'), null, { timeout:5000 }).catch(() => {});
+  const MW = await p.evaluate(() => { const a = window.__v2report.analyze(); return { m: a.m, word: a.mwWord, next: a.mwNext, dis: document.getElementById('repMw').disabled, t: document.querySelector('#reportDoc .page').innerText }; });
+  ok(Math.abs(MW.m - (10600 / 10320 - 1)) < 1e-9 && MW.word === '고시' && MW.next === 10600 && MW.dis && MW.t.includes('최저시급 고시 10,600원'), `최저임금 고시값 입력 → 인상률 ${(MW.m * 100).toFixed(2)}% · '전망' 대신 '고시'`);
+  await p.fill('#repMwFix', ''); await p.dispatchEvent('#repMwFix', 'change');
+  await p.waitForFunction(() => !document.getElementById('repMw').disabled, null, { timeout:5000 }).catch(() => {});
+  ok(await p.evaluate(() => window.__v2report.analyze().mwWord === '전망'), '고시값 지우면 다시 전망');
+  await p.click('.rep-mode [data-mode="client"]');
+  const CL = await p.evaluate(() => { const pg = document.querySelectorAll('#reportDoc .page'), t = [...pg].map(x => x.innerText).join('\n');
+    return { n: pg.length, why: [...pg[0].querySelectorAll('table.why tr')].slice(1).map(r => r.cells[0].innerText.replace(/^\d/, '').trim()).join(','),
+      heads: [...pg[1].querySelectorAll('h2')].map(h => h.textContent.slice(0, 2)).join(''), leak: ['원가 구조', '손실', '자동 산출', '견적 대비 실제', '시나리오', '조정 사유', '내부 검토'].filter(w => t.includes(w)), file: reportFileBase() }; });
+  ok(CL.n === 2 && CL.why === '법정 최저임금,시장 임금 수준' && !CL.leak.length && CL.heads.startsWith('A.B.C.') && CL.file.endsWith('_고객제출용'),
+    `고객 제출용 2쪽 · 근거 ${CL.why} · 소제목 ${CL.heads} · 내부 정보 노출 ${CL.leak.join('/') || '없음'} · ${CL.file.slice(-6)}`);
+  if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_client_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_client_p2.png') });
+    fs.writeFileSync(path.join(process.env.SHOTS, 'report_client.doc'), await p.evaluate(async () => (await window.__v2report.buildWord()).mht)); }
+  await p.click('.rep-mode [data-mode="internal"]');
+  ok((await p.$$('#reportDoc .page')).length === 3 && (await p.evaluate(() => reportFileBase())).endsWith('_내부검토용'), '내부 검토용으로 되돌리기');
+  if(process.env.SHOTS){ const pg = await p.$$('#reportDoc .page'); await pg[0].screenshot({ path: path.join(process.env.SHOTS, 'report_p1.png') }); await pg[1].screenshot({ path: path.join(process.env.SHOTS, 'report_p2.png') }); await pg[2].screenshot({ path: path.join(process.env.SHOTS, 'report_p3.png') });
     fs.writeFileSync(path.join(process.env.SHOTS, 'report.doc'), await p.evaluate(async () => (await window.__v2report.buildWord()).mht));
     await p.fill('#repLabor', ''); await p.dispatchEvent('#repLabor', 'change'); await (await p.$('#reportDoc .page')).screenshot({ path: path.join(process.env.SHOTS, 'report_p1_auto.png') }); }
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);

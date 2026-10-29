@@ -128,10 +128,17 @@
 
   /* ---------- 보고서 설정: 단가 산출 입력 ---------- */
   const priceOf = c => Object.assign({ mgmt:10, fixed:0 }, ((SETTINGS.centerMeta || {})[c] || {}).price);
-  const tmp = { labor:'', mw:'' };   // 이번 보고서에만 쓰는 값(저장 안 함)
+  const tmp = { labor:'', mw:'', reason:'', mode:'internal' };   // 이번 보고서에만 쓰는 값(저장 안 함) · mode: internal 내부 검토용 / client 고객 제출용
+  const nextMwFixed = y => (SETTINGS.minWageByYear || {})[y + 1] || MWY[y + 1] || null;   // 내년 최저시급 고시값(입력·내장)
   $('repHeads').closest('.rep-heads').insertAdjacentHTML('beforebegin', `<div class="rep-price">
+    <span class="flabel">보고서 용도</span>
+    <span class="seg rep-mode" role="group" aria-label="보고서 용도"><button type="button" data-mode="internal">내부 검토용</button><button type="button" data-mode="client">고객 제출용</button></span>
+    <span class="hint" id="repModeHint"></span>
+    <span class="rep-break"></span>
     <span class="flabel">단가 산출</span>
     <label>직접인건비 인상률 <input type="number" step="0.1" id="repLabor" placeholder="자동"> %</label>
+    <label id="repReasonWrap" hidden>조정 사유 <input type="text" id="repReason" class="rep-reason" placeholder="예) 고객사 예산 한도 반영, 2단계 분할 인상 1차분"></label>
+    <label>내년 최저시급 고시 <input type="number" step="10" id="repMwFix" placeholder="미정"> 원</label>
     <label>내년 최저임금 전망 <input type="number" step="0.1" id="repMw"> %</label>
     <label>법정부담률 <input type="number" step="0.1" id="repBurden"> %</label>
     <label>관리비·이윤율 <input type="number" step="0.1" id="repMgmt"> %</label>
@@ -140,12 +147,22 @@
   $('repHeads').closest('.rep-heads').querySelector('.flabel').textContent = '정원 (급여테이블에 정원 행이 없을 때만 입력)';
   function fillPriceInputs(){
     const p = priceOf(reportState.center), y = +String(reportState.period || '').slice(0, 4) || new Date().getFullYear();
-    $('repLabor').value = tmp.labor; $('repMw').value = tmp.mw !== '' ? tmp.mw : ((mwAvg3(y) || 0) * 100).toFixed(1);
+    const fx = nextMwFixed(y);
+    $('repLabor').value = tmp.labor; $('repReason').value = tmp.reason; $('repReasonWrap').hidden = tmp.labor === '';
+    $('repMwFix').value = fx || ''; $('repMw').disabled = !!fx;
+    $('repMw').value = fx ? ((fx / mwOf(y) - 1) * 100).toFixed(1) : tmp.mw !== '' ? tmp.mw : ((mwAvg3(y) || 0) * 100).toFixed(1);
+    document.querySelectorAll('.rep-mode [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === tmp.mode)));
     $('repBurden').value = SETTINGS.burdenRate; $('repMgmt').value = p.mgmt; $('repFixed').value = Math.round(p.fixed / 10000);
   }
   document.querySelector('.rep-price').addEventListener('change', async e => {
     const id = e.target.id, v = e.target.value;
-    if(id === 'repLabor') tmp.labor = v;
+    if(id === 'repLabor'){ tmp.labor = v; $('repReasonWrap').hidden = v === ''; }
+    else if(id === 'repReason') tmp.reason = v.trim();
+    else if(id === 'repMwFix'){
+      const y = +String(reportState.period || '').slice(0, 4) || new Date().getFullYear(), t = Object.assign({}, SETTINGS.minWageByYear);
+      if(+v > 0) t[y + 1] = Math.round(+v); else delete t[y + 1];
+      SETTINGS.minWageByYear = t; await saveSettings(); fillPriceInputs();
+    }
     else if(id === 'repMw') tmp.mw = v;
     else if(id === 'repBurden'){ SETTINGS.burdenRate = +v || 0; await saveSettings(); }
     else if(id === 'repMgmt' || id === 'repFixed'){
@@ -158,7 +175,11 @@
   });
   const origControls = renderReportControls;
   renderReportControls = function(){ origControls.apply(this, arguments); fillPriceInputs(); };
-  $('repCenter').addEventListener('change', () => { tmp.labor = ''; });
+  $('repCenter').addEventListener('change', () => { tmp.labor = ''; tmp.reason = ''; });
+  document.querySelector('.rep-mode').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if(!b) return; tmp.mode = b.dataset.mode; fillPriceInputs(); renderReport(); });
+  /* 파일 이름에 용도 표시 (잘못 보내는 일 방지) */
+  const origBase = reportFileBase;
+  reportFileBase = function(){ return origBase.apply(this, arguments) + (tmp.mode === 'client' ? '_고객제출용' : '_내부검토용'); };
 
   /* ---------- 분석 ---------- */
   function analyze(){
@@ -179,7 +200,8 @@
       const tgt = { median:ref.med, p60:ref.p60, market:mk ?? ref.med, max:Math.max(ref.med, mk ?? 0) }[policy] ?? ref.med;
       return { g, me, lv, ref, mk, tgt, gap: Math.max(0, tgt / me.monthly - 1) };
     }).filter(Boolean);
-    const m = (tmp.mw !== '' ? +tmp.mw : (mwAvg3(y) || 0) * 100) / 100;
+    const fx = nextMwFixed(y);
+    const m = fx ? fx / mwOf(y) - 1 : (tmp.mw !== '' ? +tmp.mw : (mwAvg3(y) || 0) * 100) / 100;
     /* 필요 직접인건비 인상률 = 직군별 (1+최저임금 전망)(1+격차)−1 을 연간 인건비로 가중 */
     const work = groups.filter(x => x.g !== '전체');
     const costSum = work.reduce((a, x) => a + x.me.annual, 0);
@@ -203,12 +225,13 @@
     const byY = new Map(); SNAPS.filter(s => s.center === snap.center && s.period <= period).forEach(s => { const k = +s.period.slice(0, 4), c = byY.get(k); if(!c || s.period > c.period || (s.period === c.period && s.version > c.version)) byY.set(k, s); });
     const yrs = [...byY.keys()].sort().slice(-6), trend = yrs.slice(1).map((yy, i) => { const a = groupPay(byY.get(yy), '상담사'), p = groupPay(byY.get(yrs[i]), '상담사'); return { y:yy, wage: a && p ? a.monthly / p.monthly - 1 : null, mw: mwRate(yy) }; });
     /* 인상하지 않으면: 내년 최저시급(전망) × 기본급 시간수 − 현재 기본급 = 1인 월 부족액 */
-    const mwNext = mwOf(y) * (1 + m);
+    const mwNext = fx || mwOf(y) * (1 + m);
     const risk = snap.jobs.map(j => { const base = num((j.items || {})['기본급']), hrs = payOf(j).hours, need = mwNext * hrs, hd = headsOf(snap, j);
       return { name: j.name, heads: hd, base, need, short: Math.max(0, need - base), margin: base && need ? base / need - 1 : null }; })
       .filter(x => x.base && x.heads > 0);
     const riskTot = risk.reduce((a, x) => a + x.short * x.heads, 0);
-    return { snap, snaps, y, policy, levels, groups, m, manualMw: tmp.mw !== '', auto, cost, wageNeed, r, mwNext, risk, riskTot, manual: tmp.labor !== '', now, next, est, rate: est ? est.all.rate : now.T ? next.T / now.T - 1 : 0, csHeads: cs ? cs.me.heads : 0, pr, b, mg, trend,
+    const client = tmp.mode === 'client';
+    return { client, reason: tmp.reason, mwFixed: !!fx, mwWord: fx ? '고시' : '전망', snap, snaps, y, policy, levels, groups, m, manualMw: !fx && tmp.mw !== '', auto, cost, wageNeed, r, mwNext, risk, riskTot, manual: tmp.labor !== '', now, next, est, rate: est ? est.all.rate : now.T ? next.T / now.T - 1 : 0, csHeads: cs ? cs.me.heads : 0, pr, b, mg, trend,
       hasHeads: snap.jobs.some(j => typeof j.heads === 'number') };
   }
 
@@ -243,47 +266,52 @@
     /* ① 법정 최저임금 */
     const short = A.risk.filter(x => x.short > 0), shortHeads = short.reduce((a, x) => a + x.heads, 0), maxShort = Math.max(0, ...short.map(x => x.short));
     const minM = A.risk.length ? Math.min(...A.risk.map(x => x.margin)) : null;
-    out.push(short.length ? {
-      t:'법정 최저임금', fact:`${A.y + 1}년 최저시급 전망 ${w0(A.mwNext)}원(${pc(A.m)}) 적용 시<br>기본급 미달 <b>${w0(shortHeads)}명</b> · 1인 최대 월 <b>${w0(maxShort)}원</b>`,
-      mean:`인상이 없어도 <b>연 ${eok(A.riskTot * 12 * (1 + A.b))}원</b>(법정부담 포함) 지급 의무 발생`,
-      src:`최저임금 고시 ${A.y}년 ${w0(mwOf(A.y))}원 · 전망 = ${A.manualMw ? '입력값' : '최근 3년 평균 인상률'}` }
-    : { t:'법정 최저임금', fact:`${A.y + 1}년 최저시급 전망 ${w0(A.mwNext)}원(${pc(A.m)}) 적용 시<br>기본급 최소 여유 <b>${pc(minM)}</b>`,
-      mean:'현재 기본급은 기준 이상이나 최저임금 인상분만큼 임금 인상 필요',
-      src:`최저임금 고시 ${A.y}년 ${w0(mwOf(A.y))}원 · 전망 = ${A.manualMw ? '입력값' : '최근 3년 평균 인상률'}` });
+    const mwSrc = A.mwFixed ? `최저임금 고시 ${A.y}년 ${w0(mwOf(A.y))}원 → ${A.y + 1}년 ${w0(A.mwNext)}원(고용노동부 고시)` : `최저임금 고시 ${A.y}년 ${w0(mwOf(A.y))}원 · 전망 = ${A.manualMw ? '입력값' : '최근 3년 평균 인상률'}`;
+    out.push(short.length ? { k:'mw',
+      t:'법정 최저임금', fact:`${A.y + 1}년 최저시급 ${A.mwWord} ${w0(A.mwNext)}원(${pc(A.m)}) 적용 시<br>기본급 미달 <b>${w0(shortHeads)}명</b> · 1인 최대 월 <b>${w0(maxShort)}원</b>`,
+      mean:`인상이 없어도 <b>연 ${eok(A.riskTot * 12 * (1 + A.b))}원</b>(법정부담 포함) 지급 의무 발생`, src: mwSrc }
+    : { k:'mw', t:'법정 최저임금', fact:`${A.y + 1}년 최저시급 ${A.mwWord} ${w0(A.mwNext)}원(${pc(A.m)}) 적용 시<br>기본급 최소 여유 <b>${pc(minM)}</b>`,
+      mean:'현재 기본급은 기준 이상이나 최저임금 인상분만큼 임금 인상 필요', src: mwSrc });
     /* ② 원가 구조 (견적 대비 실제 급여) */
     const q = C.quote;
     if(q && q.received){
       const g = q.paid - q.received, gr = q.paid / q.received - 1;
-      out.push({ t:'원가 구조', fact:`견적상 급여 가용 <b>${w0(q.received)}원</b><br>실제 급여 지급 <b>${w0(q.paid)}원</b> (월)`,
+      out.push({ k:'cost', t:'원가 구조', fact:`견적상 급여 가용 <b>${w0(q.received)}원</b><br>실제 급여 지급 <b>${w0(q.paid)}원</b> (월)`,
         mean: g > 0 ? `현 단가로 <b>월 ${w0(g)}원(${pc(gr)}) 부족</b> — 이미 손실 구조` : `가용 범위 대비 여유 ${pc(-gr)} — 내년 인상분을 흡수할 여력 부족`,
         src:'견적서 · 견적대비 비교 시트, 급여테이블(정원 기준)' });
     } else {
       const share = A.now.T ? A.now.D * (1 + A.b) / A.now.T : null;
-      out.push({ t:'원가 구조', fact:`계약금액 중 인건비(법정부담 포함) 비중 <b>${pc0(share)}</b>`,
+      out.push({ k:'cost', t:'원가 구조', fact:`계약금액 중 인건비(법정부담 포함) 비중 <b>${pc0(share)}</b>`,
         mean:'임금이 오르면 계약금액 대부분이 함께 늘어나는 구조', src:'급여테이블 정원기준 연간 인건비 · 보고서 설정의 단가 구성' });
     }
     /* ③ 시장 임금 수준 */
     const ref = cs.ref, gNow = cs.me.monthly / ref.med - 1, after = cs.me.monthly * (1 + A.r), gAfter = after / ref.med - 1;
     const mk = cs.mk ? ` · 채용시장 ${man(cs.mk)}(${pc(cs.me.monthly / cs.mk - 1)})` : '';
-    out.push({ t:'시장 임금 수준', fact:`상담사 월 총임금 <b>${man(cs.me.monthly)}원</b><br>${esc(ref.label)} 중위수 ${man(ref.med)}원 대비 <b>${pc(gNow)}</b>${mk}`,
+    out.push({ k:'market', t:'시장 임금 수준', fact:`상담사 월 총임금 <b>${man(cs.me.monthly)}원</b><br>${esc(ref.label)} 중위수 ${man(ref.med)}원 대비 <b>${pc(gNow)}</b>${mk}`,
       mean: gNow < -0.01 ? `시장보다 낮아 채용·유지 불리 → 인상 후 ${man(after)}원(중위수 대비 ${pc(gAfter)})으로 회복`
         : `인상 후 ${man(after)}원, 중위수 대비 ${pc(gAfter)} — 시장 수준을 크게 넘지 않음`,
       src:`${esc(ref.label)} ${ref.n}개 센터 급여테이블(${esc(C.period)} 기준)${ref.n < 5 ? ' · 표본 5곳 미만 참고' : ''}${cs.mk ? ' · 채용공고 중위수' : ''}` });
+    const shown = A.client ? out.filter(x => x.k !== 'cost') : out;   // 고객 제출용: 내부 원가 구조는 빼고
     return `<table class="why"><tr><th style="width:15%">근거</th><th style="width:36%">확인된 사실</th><th>의미</th></tr>
-${out.map((x, i) => `<tr><td class="wt"><span class="no">${i + 1}</span>${x.t}</td><td>${x.fact}</td><td class="wm">${x.mean}<div class="src">${x.src}</div></td></tr>`).join('')}</table>`;
+${shown.map((x, i) => `<tr><td class="wt"><span class="no">${i + 1}</span>${x.t}</td><td>${x.fact}</td><td class="wm">${x.mean}<div class="src">${x.src}</div></td></tr>`).join('')}</table>`;
   }
 
   /* 산출 논리: 최저임금분 + 격차분 = 직접인건비 → 견적 단가 */
   function logic(A){
     const cs = A.groups.find(x => x.g === '상담사') || A.groups[0];
     /* Word에서도 폭이 유지되도록 칸마다 width 지정 */
+    if(A.client){   // 고객 제출용: 내부 산출 내역(원가 부족·자동값) 없이 결과와 근거만
+      const box1 = (l, v, cls, w) => `<td class="fb ${cls || ''}" width="${w}%" style="width:${w}%"><div class="fl">${l}</div><div class="fv">${v}</div></td>`;
+      return `<table class="flow"><tr>${box1('직접인건비 인상률', pc(A.r), '', 48)}<td class="fo" width="4%" style="width:4%">→</td>${box1(A.est ? '견적 단가' : '계약 단가', pc(A.rate, 2), 'res', 48)}</tr></table>
+<p class="note">근거: ${A.y + 1}년 최저임금 ${A.mwWord} ${pc(A.m)} 반영 · 동종 산업군 임금 수준 회복 → ${A.est ? '견적서 항목' : '계약 항목'}에 반영(간접비 비례·경비 고정)</p>`;
+    }
     const parts = A.manual ? [['직접인건비 (입력)', pc(A.r)]]
-      : [['최저임금 전망', pc(A.m)]].concat(A.cost ? [['원가 부족 해소', pc(A.cost)]] : [], [['시장 격차 해소', pc((1 + A.wageNeed) / (1 + A.m) - 1)], ['직접인건비', pc(A.r)]]);
+      : [[`최저임금 ${A.mwWord}`, pc(A.m)]].concat(A.cost ? [['원가 부족 해소', pc(A.cost)]] : [], [['시장 격차 해소', pc((1 + A.wageNeed) / (1 + A.m) - 1)], ['직접인건비', pc(A.r)]]);
     const nb = parts.length + 1, bw = ((100 - 4 * (nb - 1)) / nb).toFixed(1);
     const box = (l, v, cls) => `<td class="fb ${cls || ''}" width="${bw}%" style="width:${bw}%"><div class="fl">${l}</div><div class="fv">${v}</div></td>`, op = s => `<td class="fo" width="4%" style="width:4%">${s}</td>`;
     const tail = box(A.est ? '견적 단가' : '계약 단가', pc(A.rate, 2), 'res');
     const cells = parts.map((p, i) => (i ? op(i === parts.length - 1 && !A.manual ? '=' : '+') : '') + box(p[0], p[1])).join('') + op('→') + tail;
-    return `<table class="flow"><tr>${cells}</tr></table><p class="note">${A.manual ? `자동 산출값 ${pc(A.auto)} · ` : ''}직접인건비 인상률 = ${A.cost ? '(1 + 원가 부족) × ' : ''}(1 + 최저임금 전망) × (1 + ${esc(POLICY_LABEL[A.policy] || '목표')}와의 격차) − 1 → ${A.est ? '견적서 항목' : '계약 항목'}에 반영(간접비 비례·경비 고정)</p>`;
+    return `<table class="flow"><tr>${cells}</tr></table><p class="note">${A.manual ? `자동 산출값 ${pc(A.auto)} · ` : ''}직접인건비 인상률 = ${A.cost ? '(1 + 원가 부족) × ' : ''}(1 + 최저임금 ${A.mwWord}) × (1 + ${esc(POLICY_LABEL[A.policy] || '목표')}와의 격차) − 1 → ${A.est ? '견적서 항목' : '계약 항목'}에 반영(간접비 비례·경비 고정)</p>${A.manual && A.reason ? `<p class="adj"><b>조정 사유</b> ${esc(A.reason)} <span class="muted">(자동 산출 ${pc(A.auto)} → 요청 ${pc(A.r)})</span></p>` : ''}`;
   }
 
   /* 금액 변화 (요약) */
@@ -309,7 +337,9 @@ ${out.map((x, i) => `<tr><td class="wt"><span class="no">${i + 1}</span>${x.t}</
     const allW = xs.every(x => x.heads > 0), sw = xs.reduce((a, x) => a + (allW ? x.heads : 1), 0);
     return { n: xs.length, avg: xs.reduce((a, x) => a + x.monthly * (allW ? x.heads : 1), 0) / sw, med: median(xs.map(x => x.monthly)) };
   }
-  const NOTE_DEFAULT = { '금융':'금융소비자보호법 등 전문지식 요구, 타 금융사 이탈 방지 필수', '유통':'주문·배송·결제 즉시 해결 역량 요구, 성수기 프로모션 인력 유지', '제조':'제품 기술 스펙·수리 엔지니어링 상담, 숙련도 6개월 이상 필수' };
+  const NOTE_DEFAULT = { '금융':'금융소비자보호법 등 전문지식 요구, 타 금융사 이탈 방지 필수', '유통':'주문·배송·결제 즉시 해결 역량 요구, 성수기 프로모션 인력 유지', '제조':'제품 기술 스펙·수리 엔지니어링 상담, 숙련도 6개월 이상 필수',
+    '통신':'요금제·결합상품·단말 정책이 자주 바뀌어 상시 교육 필요, 통신사 간 경력 상담사 이동 잦음', '공공':'민원 응대 정확성·친절도 평가가 엄격하고 공공기관 처우와 비교되어 임금 격차에 민감',
+    '기타':'고객사 업무에 맞춘 전문 교육이 필요해 숙련 인력 유지가 상담 품질을 좌우' };
   const notesOf = () => Object.assign({}, NOTE_DEFAULT, SETTINGS.industryNotes || {});
   const subsOf = t => ((SETTINGS.industryTree || {})[t] || []).filter(x => !/그 외|미지정/.test(x)).slice(0, 3);
 
@@ -328,7 +358,7 @@ ${out.map((x, i) => `<tr><td class="wt"><span class="no">${i + 1}</span>${x.t}</
       return `<td class="r ${d < -0.005 ? 'neg' : ''}"><b>${pc(d)}</b> ${d < -0.005 ? '열세' : d > 0.005 ? '우위' : '동등'}</td>`; };
     const showNote = rows.some(r => r.note);
     const ownSt = groupStats(A.snaps.filter(s => s.centerType === C.centerType), '상담사');
-    return `<h2 style="margin-top:4pt">A. 동종 산업군 임금 벤치마킹 (월 총임금) <span class="hsub">— 1쪽 근거 3</span></h2>
+    return `<h2 style="margin-top:4pt">A. 동종 산업군 임금 벤치마킹 (월 총임금) <span class="hsub">— 1쪽 근거 ${A.refNo.market}</span></h2>
 <table class="bench"><tr><th>동종 산업군</th><th class="r">센터</th><th class="r">상담사 평균</th><th class="r">당사 대비</th><th class="r">관리자 평균</th><th class="r">당사 대비</th>${showNote ? '<th>업무 특성 · 인력 유치 시사점</th>' : ''}</tr>
 ${rows.map(r => `<tr class="${r.cls}${typeof r.n === 'number' && r.n < 5 ? ' thin' : ''}"><td class="nw">${r.label}${r.cls === 'me' ? ' ◀' : ''}${typeof r.n === 'number' && r.n < 5 ? ' <span class="muted">참고</span>' : ''}</td><td class="r">${r.n}</td>
   <td class="r">${r.a ? man(r.a.avg) : '–'}</td>${gap(me.cs, r.a)}<td class="r">${r.b ? man(r.b.avg) : '–'}</td>${gap(me.mg, r.b)}${showNote ? `<td class="nt">${esc(r.note)}</td>` : ''}</tr>`).join('')}
@@ -338,9 +368,9 @@ ${rows.map(r => `<tr class="${r.cls}${typeof r.n === 'number' && r.n < 5 ? ' thi
 
   /* B. 견적 대비 실제 급여 — 직무별 (근거 ②) */
   function quoteBlock(A){
-    const q = A.snap.quote; if(!q || !q.received || !(q.jobs || []).length) return '';
+    const q = A.snap.quote; if(A.client || !q || !q.received || !(q.jobs || []).length) return '';
     const js = q.jobs.filter(x => x.heads > 0).sort((a, b) => b.total - a.total), d = q.paid - q.received;
-    return `<h2>B. 견적 대비 실제 급여 지급 (월, 원) <span class="hsub">— 1쪽 근거 2</span></h2>
+    return `<h2>B. 견적 대비 실제 급여 지급 (월, 원) <span class="hsub">— 1쪽 근거 ${A.refNo.cost}</span></h2>
 <table><tr><th>직무</th><th class="r">정원</th><th class="r">1인 통상+초과</th><th class="r">업적수당 계</th><th class="r">직무 지급 계</th></tr>
 ${js.slice(0, 3).map(x => `<tr><td class="nw">${esc(x.job)}</td><td class="r">${w0(x.heads)}</td><td class="r">${w0(x.base1)}</td><td class="r">${w0(x.perfTotal)}</td><td class="r">${w0(x.total)}</td></tr>`).join('')}
 ${js.length > 3 ? `<tr><td class="nw">그 외 ${js.length - 3}개 직무</td><td class="r">${w0(js.slice(3).reduce((a, x) => a + x.heads, 0))}</td><td></td><td class="r">${w0(js.slice(3).reduce((a, x) => a + x.perfTotal, 0))}</td><td class="r">${w0(js.slice(3).reduce((a, x) => a + x.total, 0))}</td></tr>` : ''}
@@ -357,7 +387,7 @@ ${js.length > 3 ? `<tr><td class="nw">그 외 ${js.length - 3}개 직무</td><td
     A.risk.forEach(x => { const k = `${Math.round(x.base)}|${Math.round(x.need)}`, g = grp.get(k); if(g){ g.heads += x.heads; g.n++; } else grp.set(k, { ...x, n:1 }); });
     const rows = [...grp.values()].sort((a, b) => b.short * b.heads - a.short * a.heads).slice(0, 4);
     const tr = A.trend.filter(t => t.wage != null);
-    return `<h2>C. 최저임금 영향 (${A.y + 1}년 전망 ${pc(A.m)}, 시급 ${w0(A.mwNext)}원) <span class="hsub">— 1쪽 근거 1</span></h2>
+    return `<h2>C. 최저임금 영향 (${A.y + 1}년 ${A.mwWord} ${pc(A.m)}, 시급 ${w0(A.mwNext)}원) <span class="hsub">— 1쪽 근거 ${A.refNo.mw}</span></h2>
 <table><tr><th>직무</th><th class="r">정원</th><th class="r">현재 기본급</th><th class="r">내년 최저 기준</th><th class="r">1인 부족(월)</th><th class="r">부족 계(월)</th></tr>
 ${rows.map(x => `<tr><td class="nw">${esc(x.name)}${x.n > 1 ? ` 외 ${x.n - 1}개` : ''}</td><td class="r">${w0(x.heads)}</td><td class="r">${w0(x.base)}</td><td class="r">${w0(x.need)}</td><td class="r ${x.short > 0 ? 'neg' : ''}">${x.short > 0 ? w0(x.short) : `여유 ${pc(x.margin)}`}</td><td class="r">${w0(x.short * x.heads)}</td></tr>`).join('')}
 <tr class="me"><td class="nw">계</td><td colspan="4">연 ${w0(A.riskTot * 12)}원 · 법정부담 포함 연 ${w0(A.riskTot * 12 * (1 + A.b))}원</td><td class="r">${w0(A.riskTot)}</td></tr></table>
@@ -374,6 +404,36 @@ ${tr.length ? `<p class="note">연도별 인상률 — 최저임금 ${tr.map(t =
 <table><tr><th>직무</th><th class="r">정원</th><th class="r">현재 1인 단가</th><th class="r">인상 후</th><th class="r">1인 증가</th><th class="r">증가 계(월)</th></tr>
 ${rows.map(x => `<tr><td class="nw">${esc(x.name)}</td><td class="r">${w0(x.heads)}</td><td class="r">${w0(x.now.T)}</td><td class="r">${w0(x.next.T)}</td><td class="r"><b>${w0(x.next.T - x.now.T)}</b></td><td class="r">${w0((x.next.T - x.now.T) * x.heads)}</td></tr>`).join('')}
 <tr class="me"><td class="nw">계</td><td class="r">${w0(rows.reduce((a, x) => a + x.heads, 0))}</td><td colspan="3">연 ${w0(tot * 12)}원</td><td class="r">${w0(tot)}</td></tr></table>`;
+  }
+
+  /* 3쪽(내부 검토용만): 인상률 시나리오 — 협상할 때 어디까지 물러설 수 있는지 */
+  function scenarioPage(A){
+    const cs = A.groups.find(x => x.g === '상담사') || A.groups[0], ref = cs.ref;
+    const price = r => {
+      if(A.est){ const e = estCalc(A.snap.estimate, r, x => x.total); return { rate: e.rate, inc: e.next.T - e.now.T }; }
+      const tot = d => { const L = d * A.b, M = (d + L) * A.mg; return d + L + M + A.pr.fixed; }, t0 = tot(A.now.D), t1 = tot(A.now.D * (1 + r));
+      return { rate: t0 ? t1 / t0 - 1 : 0, inc: (t1 - t0) / 12 };
+    };
+    const shortAfter = r => A.risk.filter(x => x.base * (1 + r) + 0.5 < x.need).reduce((a, x) => a + x.heads, 0);
+    const list = [], add = (label, desc, r) => { const ex = list.find(x => Math.abs(x.r - r) < 0.0005); if(ex){ ex.label += ` · ${label}`; ex.desc += ` / ${desc}`; return; } list.push({ label, desc, r }); };
+    add('최저임금 대응', `${A.y + 1}년 최저임금 ${A.mwWord} 인상률만 반영`, A.m);
+    if(A.cost > 0) add('원가 보전', '최저임금 + 견적 대비 현재 급여 부족분 해소', (1 + A.cost) * (1 + A.m) - 1);
+    add('시장 회복', `최저임금${A.cost > 0 ? ' + 원가' : ''} + ${esc(POLICY_LABEL[A.policy] || '목표')} 격차 해소 (자동 산출)`, A.auto);
+    if(A.manual) add('요청안', '1쪽 요청 인상률 (직접 입력)', A.r);
+    list.sort((a, b) => a.r - b.r);
+    const rows = list.map((x, i) => { const p = price(x.r), after = cs.me.monthly * (1 + x.r), sh = shortAfter(x.r), req = Math.abs(x.r - A.r) < 0.0005;
+      return `<tr class="${req ? 'me' : ''}"><td><b>${String.fromCharCode(65 + i)}안</b> ${esc(x.label)}${req ? ' ◀ 요청' : ''}<div class="sd">${x.desc}</div></td>
+        <td class="r">${pc(x.r)}</td><td class="r"><b>${pc(p.rate, 2)}</b></td><td class="r">${w0(p.inc)}</td><td class="r">${w0(p.inc * 12)}</td>
+        <td class="r ${sh ? 'neg' : ''}">${sh ? `${w0(sh)}명 미달` : '충족'}</td><td class="r">${man(after)} <span class="${after / ref.med - 1 < -0.005 ? 'neg' : 'muted'}">(${pc(after / ref.med - 1)})</span></td></tr>`; }).join('');
+    const floor = list[0], floorShort = shortAfter(floor.r - 0.001);
+    return `<div class="page p2 p3">
+<p class="kicker">내부 검토 자료 · 고객 제출 금지</p>
+<h2 style="margin-top:4pt">인상률 시나리오 비교 <span class="hsub">— 협상 기준</span></h2>
+<table class="scn"><tr><th style="width:34%">안 · 내용</th><th class="r">직접인건비</th><th class="r">${A.est ? '견적' : '계약'} 단가</th><th class="r">증가(월)</th><th class="r">증가(연)</th><th class="r">${A.y + 1}년 최저임금</th><th class="r">상담사 월 총임금<br><span class="muted">${esc(ref.label)} 중위수 대비</span></th></tr>
+${rows}</table>
+<p class="note">하한선: <b>${esc(floor.label)} ${pc(floor.r)}</b>${floorShort ? ` — 이보다 낮추면 ${A.y + 1}년 최저임금 미달 ${w0(floorShort)}명` : ''} · 단가는 ${A.est ? '견적서 항목' : '계약 항목'} 연동(간접비 비례·경비 고정) · 월 총임금은 상담사 정원 가중 평균에 직접인건비 인상률을 똑같이 적용한 값 · 최저임금은 기본급이 같은 비율로 오른다고 보고 판단</p>
+${A.manual ? `<h2>조정 사유</h2><p>${A.reason ? esc(A.reason) : '<span class="neg">입력 없음 — 보고서 설정의 [조정 사유]에 자동 산출값과 다른 이유를 적어 주세요.</span>'}</p><p class="note">자동 산출 ${pc(A.auto)} → 요청 ${pc(A.r)} (${pc(A.r - A.auto)}p)</p>` : ''}
+</div>`;
   }
 
   /* ---------- 기준정보: 산업군별 업무 특성·시사점 ---------- */
@@ -396,8 +456,10 @@ ${rows.map(x => `<tr><td class="nw">${esc(x.name)}</td><td class="r">${w0(x.head
   /* ---------- 보고서 본문 (화면·Word 공통) ---------- */
   function buildDoc(A){
     const C = A.snap, cs = A.groups.find(x => x.g === '상담사') || A.groups[0], N = A.now, today = new Date().toISOString().slice(0, 10);
+    const keys = ['mw'].concat(A.client ? [] : ['cost'], ['market']);
+    A.refNo = Object.fromEntries(keys.map((k, i) => [k, i + 1]));   // 1쪽 근거 번호 ↔ 2쪽 참조
     const page1 = `<div class="page">
-<p class="kicker">상담 단가 조정 요청 · ${A.y + 1}년 적용</p>
+<p class="kicker">상담 단가 조정 요청 · ${A.y + 1}년 적용${A.client ? '' : ' <span class="kint">내부 검토용 · 고객 제출 금지</span>'}</p>
 <h1>${esc(C.center)} 상담 단가 ${pc0(A.rate, 2)} 조정 요청</h1>
 <p class="meta">${esc(C.centerType)}${C.subType ? ` › ${esc(C.subType)}` : ''}${C.region ? ` · ${esc(C.region)}` : ''} · 상담사 ${w0(cs.me.heads)}명 · ${esc(C.period)} 급여테이블 v${C.version} 기준 · ${today}</p>
 ${askBox(A)}
@@ -420,11 +482,13 @@ ${mwBlock(A)}
 ${roleBlock(A)}
 <h2>E. 산출 기준</h2>
 <ul>
-  <li>월 총임금 = 기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신(‘월 보수 합계’) · 관리자 = 리더그룹 직무 · 직접인건비 인상률 = ${A.cost ? '(1 + 원가 부족) × ' : ''}(1 + 최저임금 전망 ${pc(A.m)}) × (1 + ${esc(POLICY_LABEL[A.policy] || '목표')}와의 격차) − 1${A.manual ? ` (이번 보고서는 직접 입력 ${pc(A.r)})` : ''}</li>
+  <li>월 총임금 = 기준급여 소계 + B등급 업적수당 + 고정 초과·야간·통신(‘월 보수 합계’) · 관리자 = 리더그룹 직무 · ${A.client ? `직접인건비 인상률 ${pc(A.r)} = ${A.y + 1}년 최저임금 ${A.mwWord} ${pc(A.m)}와 동종 산업군 임금 수준 반영` : `직접인건비 인상률 = ${A.cost ? '(1 + 원가 부족) × ' : ''}(1 + 최저임금 ${A.mwWord} ${pc(A.m)}) × (1 + ${esc(POLICY_LABEL[A.policy] || '목표')}와의 격차) − 1${A.manual ? ` (이번 보고서는 직접 입력 ${pc(A.r)})` : ''}`}</li>
   <li>${A.est ? '견적서 항목: 간접인건비(퇴직·4대보험)·일반관리비·기업이윤·부가세는 각 산정 기준에 비례, 경비는 그대로' : `계약금액 = 직접인건비 × (1 + 법정부담 ${(A.b * 100).toFixed(1)}%) × (1 + 관리비·이윤 ${(A.mg * 100).toFixed(1)}%) + 고정 경비`} · 기준 시점 ${esc(C.period)} 저장본</li>
 </ul>
 </div>`;
-    return page1 + `<br class="pb" clear="all">` + page2;
+    /* 고객 제출용은 B(견적 대비)가 빠지므로 2쪽 소제목 글자를 A부터 다시 매김 */
+    let li = 0; const p2 = page2.replace(/<h2([^>]*)>[A-Z]\. /g, (m, a) => `<h2${a}>${String.fromCharCode(65 + li++)}. `);
+    return page1 + `<br class="pb" clear="all">` + p2 + (A.client ? '' : `<br class="pb" clear="all">` + scenarioPage(A));
   }
 
   renderReport = function(){
@@ -434,7 +498,8 @@ ${roleBlock(A)}
     doc.classList.add('rp2');
     doc.innerHTML = buildDoc(A);
     ['repBurden', 'repMgmt', 'repFixed'].forEach(id => { $(id).closest('label').hidden = !!A.est; });
-    $('repPriceHint').textContent = `자동 계산 ${pc(A.auto)} (최저임금 전망 + 목표 격차) · 비워 두면 자동값 사용` + (A.est ? ' · 간접비·관리비·이윤은 견적서 값으로 계산' : '');
+    $('repPriceHint').textContent = `자동 계산 ${pc(A.auto)} (최저임금 ${A.mwWord} + 목표 격차) · 비워 두면 자동값 사용` + (A.est ? ' · 간접비·관리비·이윤은 견적서 값으로 계산' : '') + (A.manual && !A.reason ? ' · 조정 사유를 입력해 주세요' : '');
+    $('repModeHint').textContent = A.client ? '2쪽 · 원가 구조·견적 대비 지급·자동 산출 내역·시나리오 제외' : '3쪽(인상률 시나리오 포함) · 고객에게 보내지 마세요';
     $('repLabor').placeholder = `자동 ${(A.auto * 100).toFixed(1)}`;
   };
 
