@@ -37,14 +37,15 @@
         <div id="v2SpBox"></div>
         <ol class="v2-mini">
           <li>열린 화면에서 '${h(FOLDER)}' 폴더 오른쪽 <b>…</b> → <b>OneDrive에 바로 가기 추가</b></li>
-          <li>1~2분 뒤 PC의 파일 탐색기 → <b>OneDrive - 회사명</b> 안에 '${h(FOLDER)}' 폴더가 보이면 완료</li>
+          <li>1~2분 뒤 PC의 파일 탐색기 → <b>OneDrive - 회사명</b> 안에 '${h(FOLDER)}' 폴더가 보이면 완료 (이름 앞에 사이트 이름이 붙어 보일 수 있습니다)</li>
+          <li><b>"이미 바로 가기가 있습니다"</b>라고 나오면 이미 된 것입니다. 아래에 체크하고 다음으로 넘어가세요.</li>
         </ol>
         <label class="v2-check"><input type="checkbox" id="v2Synced"> 파일 탐색기에 '${h(FOLDER)}' 폴더가 보입니다</label>
         <div class="v2-act"><button type="button" class="btn-ghost" id="v2Back2">이전</button><button type="button" class="btn-primary" id="v2Next2" disabled>다음</button></div>
       </section>
       <section data-wiz="3" hidden>
         <p>아래 버튼을 누르고, 창이 뜨면 <b>OneDrive - 회사명 › ${h(FOLDER)}</b> 폴더를 골라 <b>[폴더 선택]</b>, 이어서 <b>[파일 보기 허용]·[변경 내용 저장 허용]</b>을 눌러 주세요.</p>
-        <div class="v2-act"><button type="button" class="btn-primary v2-big" id="v2Pick">공유 폴더 연결</button></div>
+        <div class="v2-act"><button type="button" class="btn-ghost v2-big" id="v2Reuse" hidden>이전에 연결한 폴더 다시 사용</button><button type="button" class="btn-primary v2-big" id="v2Pick">공유 폴더 연결</button></div>
         <p class="v2-err" id="v2Err3"></p>
         <p class="v2-ok" id="v2Ok3"></p>
         <div class="v2-act"><button type="button" class="btn-ghost" id="v2Back3">이전</button><button type="button" class="btn-primary" id="v2Done" hidden>시작하기</button></div>
@@ -198,7 +199,23 @@
     if(profile){ $('v2Name').value = profile.name; $('v2Ini').value = profile.ini; }
     showStep(step || 1);
   }
+  async function prepareReuse(){
+    const b = $('v2Reuse'), old = await kvGet('shareDir');
+    b.hidden = !old;
+    if(old) b.textContent = `이전에 연결한 폴더 다시 사용 (${old.name})`;
+  }
+  $('v2Reuse').addEventListener('click', async () => {
+    $('v2Err3').textContent = ''; $('v2Ok3').textContent = '';
+    const old = await kvGet('shareDir'); if(!old) return;
+    try{
+      if(!(await perm(old, true))) throw new Error('브라우저 허용이 거절되었습니다. [공유 폴더 연결]로 폴더를 다시 골라 주세요.');
+      await validateAndConnect(old);
+      $('v2Ok3').textContent = '이전 폴더로 다시 연결했습니다. 쓰기·읽기 시험까지 정상입니다.';
+      $('v2Pick').hidden = true; $('v2Reuse').hidden = true; $('v2Done').hidden = false; $('v2Back3').hidden = true;
+    }catch(err){ $('v2Err3').textContent = err.message; }
+  });
   function showStep(n){
+    if(n === 3) prepareReuse();
     document.querySelectorAll('#v2Wizard [data-wiz]').forEach(s => { s.hidden = s.dataset.wiz !== String(n); });
     document.querySelectorAll('#v2Wizard [data-dot]').forEach(d => d.classList.toggle('on', +d.dataset.dot <= n));
   }
@@ -1035,10 +1052,15 @@
     const onboarded = await kvGet('onboarded');
     if(!profile || (!shareDir && onboarded !== 'later')) return openWizard(profile ? 2 : 1);
     if(!shareDir) return;
-    try{
-      if(await perm(shareDir, false)) await afterConnect();
-      else { renderConn('ask'); reconnect.hidden = false; }
-    }catch(e){ shareDir = null; renderConn(); openWizard(3); }
+    let granted = false;
+    try{ granted = await perm(shareDir, false); }catch(e){ granted = false; }
+    if(!granted){ renderConn('ask'); reconnect.hidden = false; return; }
+    try{ await afterConnect(); }
+    catch(e){
+      console.error(e);   // 동기화 중 등 일시적 오류: 연결 정보는 유지하고 다시 시도할 수 있게만 안내
+      renderConn('ask'); reconnect.hidden = false;
+      $('v2BannerTxt').textContent = '공유 폴더를 잠시 읽지 못했습니다(OneDrive 동기화 중일 수 있음). 잠시 뒤 [계속]을 눌러 주세요.';
+    }
   })();
 
   window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, get pending(){ return pending; }, get shareDir(){ return shareDir; } };

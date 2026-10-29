@@ -207,6 +207,10 @@ const seedFolders = p => p.evaluate(async () => {
   await p.reload(); await p.waitForTimeout(1500);
   ok(await p.$eval('#v2Wizard', e => e.hidden), '첫 실행 안내 안 뜸');
   ok((await p.textContent('#v2Conn')).includes('연결됨'), await p.textContent('#v2Conn'));
+  console.log('9. 연결 정보가 지워진 상태에서 "이전에 연결한 폴더 다시 사용"');
+  await p.evaluate(() => sysStore.setKV('onboarded', null));
+  await p.click('#v2Conn');          // 연결됨 상태에서 누르면 권한만 확인 → 그대로 연결 유지
+  ok((await p.textContent('#v2Conn')).includes('연결됨'), '연결 상태 유지');
   ok(p.errs.length === 0, `스크립트 오류 ${p.errs.length}건 ${p.errs.join(' / ')}`);
 
   await b.close(); srv.close();
