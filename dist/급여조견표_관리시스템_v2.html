@@ -818,6 +818,24 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .v2-paste{ width:100%; min-height:70px; padding:10px 12px; border:2px dashed var(--pri); border-radius:10px; font:inherit; font-size:13px; background:var(--pri-soft); resize:vertical; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
+  /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
+  .v2-cmp summary{ cursor:pointer; display:flex; gap:8px 12px; align-items:center; flex-wrap:wrap; font-size:14px; list-style:none; }
+  .v2-cmp summary::-webkit-details-marker{ display:none; }
+  .v2-cmp summary::before{ content:"▸"; color:var(--muted); } .v2-cmp[open] summary::before{ content:"▾"; }
+  .v2-cmp .tblwrap{ margin-top:10px; }
+  .v2-red{ color:var(--bad); }
+  #v2Compare tr.v2-muted td{ color:var(--muted); }
+  .v2-ackall{ margin:6px 0 2px; }
+  .v2-next{ position:sticky; bottom:0; z-index:20; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-top:16px; padding:12px 18px;
+    background:#0f1b30; color:#fff; border-radius:12px 12px 0 0; box-shadow:0 -6px 20px rgba(15,27,48,.18); }
+  .v2-next-steps{ display:flex; gap:6px; flex-wrap:wrap; font-size:12px; }
+  .v2-next-steps span{ padding:3px 9px; border-radius:999px; background:rgba(255,255,255,.08); color:#9fb0cc; }
+  .v2-next-steps span.on{ background:#fff; color:#0f1b30; font-weight:800; } .v2-next-steps span.done{ color:#8fd6a6; }
+  .v2-next-msg{ flex:1; min-width:200px; font-size:13.5px; font-weight:600; }
+  .v2-next-act{ display:flex; gap:8px; flex-wrap:wrap; }
+  .v2-next-act .btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
+  .v2-flash{ outline:3px solid var(--pri); outline-offset:3px; transition:outline-color .6s; }
+  .v2-sandbox{ background:var(--bad-soft); border-color:#f3c2c2; color:var(--bad); }
   @media (prefers-reduced-motion:reduce){ .v2-fill{ transition:none; } }
   @media (max-width:860px){ .v2-banner{ margin:12px 16px 0; } }
 </style>
@@ -2867,10 +2885,11 @@ function collectIssues(parsed){
       if(!fits) add('confirm', `std:${idx}`, name, `기준급여합계 ${won(job.stdPaySum)}원이 항목 합계 ${won(sum6)}원과 맞지 않습니다.`);
     }
     if(typeof job.monthlyTotal === 'number' && typeof job.stdPaySum === 'number'){
-      const extras = [job.overtime, job.night, job.telecom].map(v => typeof v === 'number' ? v : 0);
-      const combos = [0,1,2,3,4,5,6,7].map(m => job.stdPaySum + extras.reduce((a, v, i) => a + ((m >> i) & 1 ? v : 0), 0));
+      const gradeB = ((job.grades || []).find(([g]) => /^B/i.test(String(g).trim())) || [])[1];
+      const extras = [job.overtime, job.night, job.telecom, gradeB].map(v => typeof v === 'number' ? v : 0);
+      const combos = [...Array(16).keys()].map(m => job.stdPaySum + extras.reduce((a, v, i) => a + ((m >> i) & 1 ? v : 0), 0));
       if(!combos.some(v => Math.abs(v - job.monthlyTotal) < 1)){
-        add('confirm', `total:${idx}`, name, `월총액 ${won(job.monthlyTotal)}원이 기준급여합계와 수당(연장·야간·통신비) 합으로 설명되지 않습니다.`);
+        add('confirm', `total:${idx}`, name, `월총액 ${won(job.monthlyTotal)}원이 기준급여합계 + B등급 업적수당 + 수당(연장·야간·통신비) 합으로 설명되지 않습니다.`);
       }
     } else if(job.monthlyTotal === null){
       add('confirm', `total:${idx}`, name, '월총액이 비어 있습니다.');
@@ -4391,7 +4410,7 @@ loadSystem().then(()=>{ refreshNavCounts(); });
 </script>
 <script>
 /* 관리자 설정: build_v2.py 인자로 바꿉니다 */
-window.V2_CONFIG = {"appVersion": "2.3.1", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
+window.V2_CONFIG = {"appVersion": "2.4.0", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
 /* ============================================================
    급여관리 시스템 v2 전용 스크립트 (급여조견표_관리시스템_v2.html 에만 들어감)
    - 첫 실행 안내(이름 → 폴더 받기 → 폴더 연결) 후에는 사용자가 설정할 것이 없음
@@ -4689,7 +4708,8 @@ window.V2_CONFIG = {"appVersion": "2.3.1", "folderName": "급여조견표", "tea
   handleFile = async function(file){
     if(/\.json$/i.test(file.name)) return origHandleFile(file);
     const plain = (await isZip(file)) || (await readsLocally(file));
-    beforeData = plain ? await beforeFromXlsx(file) : null;
+    if(plain){ const g = await gridsFromXlsx(file); beforeData = g.before; curGrid = g.cur; }
+    else { beforeData = null; curGrid = null; }
     if(uploadMode() !== 'auto'){
       if(plain){ qPanel.hidden = true; return origHandleFile(file); }
       return uploadMode() === 'web' ? showWebUpload(file) : showPasteGuide(file);
@@ -5305,8 +5325,9 @@ window.V2_CONFIG = {"appVersion": "2.3.1", "folderName": "급여조견표", "tea
   const origLinked = handleLinkedJsonFile;
   handleLinkedJsonFile = function(file){
     file.text().then(t => {
-      try{ const p = JSON.parse(t.replace(/^﻿/, '')); beforeData = Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null; }
-      catch(e){ beforeData = null; }
+      try{ const p = JSON.parse(t.replace(/^﻿/, '')); beforeData = Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
+        curGrid = Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null; }
+      catch(e){ beforeData = null; curGrid = null; }
       origLinked(file);
     });
   };
@@ -5314,48 +5335,69 @@ window.V2_CONFIG = {"appVersion": "2.3.1", "folderName": "급여조견표", "tea
   handlePastedText = function(text){
     const p = pastedPayload(text);
     beforeData = p && Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
+    curGrid = p && Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
     const r = origPasted(text);
     if(p && $('v2State').dataset.state === 'paste'){
       setJob('done', '붙여넣기로 읽었습니다. 아래에서 검사 결과와 조견표를 확인하세요. Excel에서 스크립트를 한 번 더 실행해 임시 시트를 지워 주세요.');
     }
     return r;
   };
+  /* 변경전 비교: 직무 이름으로 짝을 맞춤
+     정확히 같은 이름 → 같은 블록·같은 이름 순번 → 다른 블록의 같은 이름 → 이름이 서로 포함되는 경우(호봉 세분화)
+     짝이 없으면 '신규', 변경전에만 있으면 '폐지·통합'. 변경전 시트가 없으면 신규 센터로 보고 비교하지 않음 */
+  let compareNote = '';
+  const normJob = s => String(s || '').replace(/\s+/g, '').replace(/[()（）\[\]·.,_-]/g, '').toLowerCase();
   function buildCompare(parsed){
-    compareRows = [];
-    if(!beforeData) return;
+    compareRows = []; compareNote = '';
+    if(!beforeData){ compareNote = '변경전 시트가 없습니다 (신규 센터 또는 변경전 정보 없음).'; return; }
     let prev;
-    try{ prev = parsePaytable(paytablePayloadToWorkbook({ sheet:'급여테이블(변경후)', start: beforeData.start, values: beforeData.values }).wb); }catch(e){ return; }
-    const key = j => `${j.block}|${jobLabel(j)}`;
-    const seen = {}, prevMap = {};
-    prev.jobs.forEach(j => { const k = key(j); seen[k] = (seen[k] || 0) + 1; prevMap[`${k}#${seen[k]}`] = j; });
-    const cur = {};
-    compareRows = parsed.jobs.map(j => {
-      const k = key(j); cur[k] = (cur[k] || 0) + 1;
-      const p = prevMap[`${k}#${cur[k]}`];
-      const b = p && typeof p.monthlyTotal === 'number' ? p.monthlyTotal : null, a = typeof j.monthlyTotal === 'number' ? j.monthlyTotal : null;
-      return { label: jobLabel(j), before: b, after: a, diff: b != null && a != null ? a - b : null, rate: b ? (a - b) / b : null };
+    try{ prev = parsePaytable(paytablePayloadToWorkbook({ sheet:'급여테이블(변경후)', start: beforeData.start, values: beforeData.values }).wb); }
+    catch(e){ compareNote = '변경전 시트를 읽지 못해 비교하지 않았습니다.'; return; }
+    if(!prev.jobs.length){ compareNote = '변경전 시트에 직무가 없어 비교하지 않았습니다.'; return; }
+    const used = new Set();
+    const take = (pred) => { const i = prev.jobs.findIndex((p, k) => !used.has(k) && pred(p)); if(i < 0) return null; used.add(i); return prev.jobs[i]; };
+    const rows = parsed.jobs.map(j => ({ j, label: jobLabel(j), key: normJob(jobLabel(j)), name: normJob(j.jobName) }));
+    rows.forEach(r => { r.p = take(p => p.block === r.j.block && normJob(jobLabel(p)) === r.key); if(r.p) r.how = ''; });
+    rows.forEach(r => { if(!r.p){ r.p = take(p => normJob(jobLabel(p)) === r.key || (r.name && normJob(p.jobName) === r.name)); if(r.p) r.how = r.p.block !== r.j.block ? '블록 이동' : ''; } });
+    rows.forEach(r => { if(!r.p && r.name){ r.p = take(p => { const n = normJob(p.jobName); return n && n.length >= 2 && (r.name.startsWith(n) || n.startsWith(r.name)); }); if(r.p) r.how = `세분화 (변경전: ${jobLabel(r.p)})`; } });
+    compareRows = rows.map(r => {
+      const b = r.p && typeof r.p.monthlyTotal === 'number' ? r.p.monthlyTotal : null, a = typeof r.j.monthlyTotal === 'number' ? r.j.monthlyTotal : null;
+      return { label: r.label, before: b, after: a, diff: b != null && a != null ? a - b : null, rate: b ? (a - b) / b : null, tag: r.p ? r.how : '신규' };
     });
+    prev.jobs.forEach((p, k) => { if(!used.has(k)) compareRows.push({ label: jobLabel(p), before: typeof p.monthlyTotal === 'number' ? p.monthlyTotal : null, after: null, diff: null, rate: null, tag: '폐지·통합' }); });
   }
   function drawCompare(){
-    if(!compareRows.length || compareRows.every(r => r.before == null)){ comparePanel.hidden = true; return; }
+    if(!compareRows.length && !compareNote){ comparePanel.hidden = true; return; }
     comparePanel.hidden = false;
-    const down = compareRows.filter(r => r.diff < 0).length, big = compareRows.filter(r => r.rate != null && Math.abs(r.rate) > RAISE_LIMIT).length;
-    const rates = compareRows.filter(r => r.rate != null).map(r => r.rate);
-    const avg = rates.length ? rates.reduce((x, y) => x + y, 0) / rates.length : 0;
-    comparePanel.innerHTML = `<div class="ph"><h2>변경전 대비 월 합계 <span class="v2-help-slot" data-help="compare"></span></h2>
-      <span class="hint">평균 ${pctTxt(avg)} · 감소 ${down}개 · ±${RAISE_LIMIT * 100}% 초과 ${big}개</span></div>
-      <div class="tblwrap"><table class="grid"><thead><tr><th>직무</th><th class="r">변경전</th><th class="r">변경후</th><th class="r">인상액</th><th class="r">인상률</th></tr></thead><tbody>
-      ${compareRows.map(r => `<tr class="${r.diff < 0 ? 'v2-down' : r.rate != null && Math.abs(r.rate) > RAISE_LIMIT ? 'v2-big' : ''}"><td>${h(r.label)}</td>
+    if(!compareRows.length){
+      comparePanel.innerHTML = `<details class="v2-cmp"><summary><b>변경전 대비 월 합계</b> <span class="hint">${h(compareNote)}</span></summary></details>`;
+      return;
+    }
+    const matched = compareRows.filter(r => r.rate != null);
+    const down = matched.filter(r => r.diff < 0).length, big = matched.filter(r => Math.abs(r.rate) > RAISE_LIMIT).length;
+    const fresh = compareRows.filter(r => r.tag === '신규').length, gone = compareRows.filter(r => r.tag === '폐지·통합').length, split = compareRows.filter(r => /세분화/.test(r.tag)).length;
+    const avg = matched.length ? matched.reduce((x, r) => x + r.rate, 0) / matched.length : 0;
+    const parts = [`평균 ${pctTxt(avg)}`];
+    if(down) parts.push(`<b class="v2-red">감소 ${down}</b>`);
+    if(big) parts.push(`±${RAISE_LIMIT * 100}% 초과 ${big}`);
+    if(fresh) parts.push(`신규 ${fresh}`); if(split) parts.push(`세분화 ${split}`); if(gone) parts.push(`폐지·통합 ${gone}`);
+    comparePanel.innerHTML = `<details class="v2-cmp"${down ? ' open' : ''}><summary><b>변경전 대비 월 합계</b> <span class="v2-help-slot" data-help="compare"></span>
+      <span class="hint">${parts.join(' · ')} · 눌러서 ${down ? '접기' : '펼치기'}</span></summary>
+      <div class="tblwrap"><table class="grid"><thead><tr><th>직무</th><th>구분</th><th class="r">변경전</th><th class="r">변경후</th><th class="r">인상액</th><th class="r">인상률</th></tr></thead><tbody>
+      ${compareRows.map(r => `<tr class="${r.diff < 0 ? 'v2-down' : r.rate != null && Math.abs(r.rate) > RAISE_LIMIT ? 'v2-big' : r.tag ? 'v2-muted' : ''}"><td>${h(r.label)}</td><td>${h(r.tag || '')}</td>
         <td class="r num">${r.before == null ? '-' : won(r.before)}</td><td class="r num">${r.after == null ? '-' : won(r.after)}</td>
         <td class="r num">${r.diff == null ? '-' : (r.diff > 0 ? '+' : '') + won(r.diff)}</td><td class="r num">${r.rate == null ? '-' : pctTxt(r.rate)}</td></tr>`).join('')}
       </tbody></table></div>
-      ${down ? '<p class="hint err">월 합계가 줄어든 직무가 있습니다. 열 위치가 바뀌었거나 입력 오류일 수 있으니 확인해 주세요.</p>' : ''}`;
+      ${down ? '<p class="hint err">월 합계가 줄어든 직무가 있습니다. 열 위치가 바뀌었거나 입력 오류일 수 있으니 확인해 주세요.</p>' : ''}
+      <p class="hint">신규: 변경전에 없던 직무 · 세분화: 변경전 호봉이 여러 호봉으로 나뉜 경우(이름이 포함 관계) · 폐지·통합: 변경후에 없는 직무</p></details>`;
     attachHelp(comparePanel);
+    comparePanel.querySelector('details').addEventListener('toggle', e => { const s = e.target.querySelector('summary .hint'); if(s) s.textContent = s.textContent.replace(/눌러서 (접기|펼치기)$/, `눌러서 ${e.target.open ? '접기' : '펼치기'}`); });
   }
 
   /* 파싱 직후: 센터별 자동 채움 + 변경전 비교 */
   const origShowParsed = showParsed;
   showParsed = function(parsed, label){
+    analyzeGrid(parsed);            // 검사(runChecks)보다 먼저: 직무별 열·초과근무 시간
     origShowParsed(parsed, label);
     buildCompare(parsed); drawCompare();
     prefillForCenter(parsed.centerName);
@@ -5435,6 +5477,291 @@ window.V2_CONFIG = {"appVersion": "2.3.1", "folderName": "급여조견표", "tea
     else el.insertAdjacentHTML('beforeend', ' ' + helpBtn(key));
   });
   document.querySelector('#tabHistory .filterbar').insertAdjacentHTML('afterbegin', helpBtn('history'));
+
+  /* ============================================================
+     v2.4 · 시트 격자 분석: 직무별 열 찾기 → 초과근무 시간 자동 산출 → 수식 검사
+     curGrid = { values, formulas|null, start }  (엑셀 업로드·자동연동 JSON·붙여넣기 모두)
+     ============================================================ */
+  let curGrid = null;
+  async function gridsFromXlsx(file){
+    try{
+      const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type:'array', cellFormula:true });
+      const grab = ws => {
+        const ref = ws['!ref'] || 'A1', rg = XLSX.utils.decode_range(ref);
+        const values = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true });
+        const formulas = [];
+        for(let r = rg.s.r; r <= rg.e.r; r++){
+          const row = [];
+          for(let c = rg.s.c; c <= rg.e.c; c++){ const cell = ws[XLSX.utils.encode_cell({ r, c })]; row.push(cell && cell.f ? '=' + cell.f : ''); }
+          formulas.push(row);
+        }
+        return { values, formulas, start: ref.split(':')[0] };
+      };
+      const after = wb.SheetNames.find(n => n.includes('급여테이블') && n.includes('변경후')) || wb.SheetNames.find(n => n.includes('급여테이블'));
+      const prev = wb.SheetNames.find(n => n.includes('급여테이블') && n.includes('변경전'));
+      return { cur: after ? grab(wb.Sheets[after]) : null, before: prev ? grab(wb.Sheets[prev]) : null };
+    }catch(e){ return { cur:null, before:null }; }
+  }
+  const colNum = s => s.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
+  const colName = n => { let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+  function gridAt(g){
+    const m = String(g.start || 'A1').match(/^([A-Z]+)(\d+)$/) || [0, 'A', '1'];
+    const c0 = colNum(m[1]), r0 = +m[2];
+    const v = (r, c) => { const row = g.values[r - r0]; return row ? row[c - c0] : undefined; };
+    const f = (r, c) => { if(!g.formulas) return ''; const row = g.formulas[r - r0]; const x = row ? row[c - c0] : ''; return typeof x === 'string' && x.startsWith('=') ? x : ''; };
+    return { v, f, rows: r0 + g.values.length - 1, cols: c0 + Math.max(0, ...g.values.map(r => r.length)) - 1 };
+  }
+  const txt = x => (x == null ? '' : String(x)).trim();
+  const num = x => typeof x === 'number' ? x : (typeof x === 'string' && x.trim() !== '' && !isNaN(+x.replace(/,/g, '')) ? +x.replace(/,/g, '') : null);
+  /* 블록(보수테이블·리딩그룹)별 제목 행과, 직무가 있는 열을 parsed.jobs 순서와 맞춤 */
+  function mapJobs(parsed, G){
+    const blocks = [];
+    for(let r = 1; r <= G.rows; r++){
+      const a = txt(G.v(r, 1));
+      if(/보수테이블/.test(a) && !blocks.some(b => b.name === '일반')) blocks.push({ name:'일반', t:r });
+      else if(/리딩그룹|리더그룹/.test(a) && !blocks.some(b => b.name === '리더그룹')) blocks.push({ name:'리더그룹', t:r });
+    }
+    blocks.forEach(b => {
+      const jobs = parsed.jobs.filter(j => j.block === b.name);
+      const cols = [];
+      for(let c = 4; c <= G.cols && cols.length < jobs.length; c++){
+        const name = txt(G.v(b.t + 2, c));
+        if(name && !/비고/.test(name)) cols.push(c);
+      }
+      b.end = G.rows;
+      if(cols.length === jobs.length && jobs.every((j, i) => normJob(txt(G.v(b.t + 2, cols[i]))) === normJob(j.jobName))) jobs.forEach((j, i) => { j._col = cols[i]; j._t = b.t; });
+    });
+    blocks.sort((x, y) => x.t - y.t).forEach((b, i, arr) => { b.end = i + 1 < arr.length ? arr[i + 1].t - 1 : Math.min(G.rows, b.t + 40); });
+    return blocks;
+  }
+  const findRow = (G, from, to, re) => { for(let r = from; r <= to; r++) if(re.test(txt(G.v(r, 1)))) return r; return 0; };
+  const fmtH = h => (Math.round(h * 2) / 2).toString().replace(/\.0$/, '');
+  /* 초과근무 시간: ① 수식의 곱하는 시간(=ROUNDUP(X53*5,-1) → 5H) ② 없으면 초과근무수당 ÷ 시간외수당(1H) */
+  function deriveOvertime(parsed, G, blocks){
+    blocks.forEach(b => {
+      const rOt = findRow(G, b.t + 3, b.end, /초과근무/), rH = findRow(G, b.t + 3, b.end, /시간외수당|시간외근로/);
+      if(!rOt) return;
+      parsed.jobs.filter(j => j.block === b.name && j._col).forEach(j => {
+        if(!(typeof j.overtime === 'number' && j.overtime > 0)) return;
+        const f = G.f(rOt, j._col);
+        let hours = null, src = '';
+        const m = f && f.replace(/\s/g, '').match(/[A-Z]+\$?\d+\*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\*\$?[A-Z]+\$?\d+/);
+        if(m){ hours = +(m[1] || m[2]); src = '수식'; }
+        else if(rH){
+          const per = num(G.v(rH, j._col));
+          if(per > 0){ const x = j.overtime / per, r2 = Math.round(x * 2) / 2; if(r2 > 0 && Math.abs(x - r2) / r2 < 0.03){ hours = r2; src = '계산'; } }
+        }
+        if(hours) j._otAuto = { text: `${fmtH(hours)}H`, src, cell: `${colName(j._col)}${rOt}` };
+      });
+    });
+  }
+  const origOtAuto = computeOvertimeNoteAuto;
+  computeOvertimeNoteAuto = function(job){
+    if(job._otAuto && typeof job.overtime === 'number' && job.overtime > 0) return { text: job._otAuto.text, confident: true };
+    return origOtAuto(job);
+  };
+  /* 수식 검사: 같은 행의 직무 칸끼리 수식 모양(숫자는 무시)을 비교 */
+  function formulaShape(f, r, c){
+    const refs = [];
+    let s = String(f).replace(/('[^']*'!|[A-Za-z0-9_가-힣()]+!)?(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\d(])/g, (m, sh, a, col, b, row) => {
+      refs.push((sh || '') + (b ? 'R' + row : `R[${+row - r}]`) + (a ? 'C' + colNum(col) : `C[${colNum(col) - c}]`)); return `§${refs.length - 1}§`;
+    });
+    s = s.replace(/\d+(\.\d+)?/g, '#').replace(/§#§/g, '§');
+    let i = 0; return s.replace(/§/g, () => refs[i++] || '');
+  }
+  const CHECK_ROWS = /소계|합계|연차수당|시간외수당|휴일근로|야근수당|연간|국민연금|건강|GAP|월 ?총액/;
+  function formulaIssues(parsed){
+    const out = [];
+    if(!curGrid || !curGrid.formulas) return out;
+    const G = gridAt(curGrid), blocks = mapJobs(parsed, G);
+    blocks.forEach(b => {
+      const jobs = parsed.jobs.filter(j => j.block === b.name && j._col);
+      if(jobs.length < 2) return;
+      for(let r = b.t + 9; r <= b.end; r++){
+        const label = txt(G.v(r, 1)); if(!label || !CHECK_ROWS.test(label)) continue;
+        const cells = jobs.map(j => ({ j, c: j._col, f: G.f(r, j._col), v: num(G.v(r, j._col)) }));
+        const withF = cells.filter(x => x.f);
+        const where = x => `${jobLabel(x.j)}(${colName(x.c)}${r})`;
+        if(!withF.length){
+          if(/GAP/.test(label)) out.push({ level:'confirm', key:`fx-miss:${r}`, job: label, msg: '이 행에 수식이 하나도 없습니다 (수식 누락). 원본 엑셀을 확인해 주세요.' });
+          continue;
+        }
+        const count = {}; withF.forEach(x => { x.k = formulaShape(x.f, r, x.c); count[x.k] = (count[x.k] || 0) + 1; });
+        const [top, n] = Object.entries(count).sort((a, z) => z[1] - a[1])[0];
+        if(n < 2) continue;
+        const diff = withF.filter(x => x.k !== top), hard = cells.filter(x => !x.f && x.v);
+        if(diff.length && diff.length < withF.length / 2) out.push({ level:'confirm', key:`fx-diff:${r}`, job: label, msg: `같은 행의 다른 직무와 수식 모양이 다릅니다: ${diff.map(where).join(', ')} (예: ${diff[0].f})` });
+        if(hard.length && withF.length >= cells.length / 2) out.push({ level:'confirm', key:`fx-hard:${r}`, job: label, msg: `수식 대신 숫자가 직접 입력되어 있습니다: ${hard.map(where).join(', ')}` });
+      }
+    });
+    return out;
+  }
+  function overtimeIssues(parsed){
+    const out = [];
+    parsed.jobs.forEach((j, idx) => {
+      if(!j._otAuto) return;
+      const raw = origOtAuto(j);
+      const m = raw.text && raw.text.match(/(\d+(?:\.\d+)?)\s*H/i);
+      if(m && raw.confident && +m[1] !== +j._otAuto.text.replace('H', '')) out.push({ level:'info', key:`ot2:${idx}`, job: jobLabel(j),
+        msg: `초과근무 비고를 ${j._otAuto.src === '수식' ? '수식' : '금액'} 기준 "${j._otAuto.text}"로 표시합니다. 엑셀 비고(${j.overtimeNote})의 "${raw.text}"와 다르니 확인해 주세요.` });
+    });
+    return out;
+  }
+  /* 최저임금: 직무마다 기본급 시간수(=시급×209·167·84 …)로 월 기준을 다시 잡음 (주4일·단시간이 209시간 기준으로 잘못 차단되지 않게) */
+  function baseHours(job){
+    if(curGrid && job._col && job._t){
+      const G = gridAt(curGrid), f = G.f(job._t + 3, job._col).replace(/\s/g, '');
+      const m = f.match(/^=([\d.]+)\*([\d.]+)$/);
+      if(m){ const a = +m[1], b = +m[2]; return a > b ? b : a; }
+    }
+    const base = itemValue(job, '기본급'), hr = MIN_WAGE_HOURLY;
+    if(typeof base === 'number' && base > 0){ const h = base / hr, r = Math.round(h); if(r >= 20 && r <= 209 && Math.abs(h - r) / r < 0.005) return r; }
+    return 209;
+  }
+  function minWageIssues(parsed, issues){
+    const keep = issues.filter(i => !i.key.startsWith('minw:'));
+    parsed.jobs.forEach((job, idx) => {
+      const base = itemValue(job, '기본급'); if(base === null || base === 0) return;
+      const sum6 = (job.items || []).reduce((a, [, v]) => a + (typeof v === 'number' ? v : 0), 0);
+      const hours = baseHours(job), need = MIN_WAGE_HOURLY * hours, name = jobLabel(job), tag = hours === 209 ? '' : ` (월 ${hours}시간 기준)`;
+      if(sum6 < need) keep.push({ level:'block', key:`minw:${idx}`, job:name, msg:`월 고정급 ${won(sum6)}원이 최저임금 월환산액 ${won(need)}원${tag}보다 적습니다.` });
+      else if(sum6 < need * 1.02) keep.push({ level:'confirm', key:`minw:${idx}`, job:name, msg:`월 고정급 ${won(sum6)}원, 최저임금${tag} 대비 여유 ${((sum6 / need - 1) * 100).toFixed(1)}% (2% 미만)` });
+    });
+    return keep;
+  }
+  const origCollect = collectIssues;
+  collectIssues = function(parsed){
+    let issues = origCollect(parsed);
+    try{ if(parsed.jobs.length) issues = minWageIssues(parsed, issues); }catch(e){ console.error(e); }
+    try{ issues.push(...formulaIssues(parsed), ...overtimeIssues(parsed)); }catch(e){ console.error(e); }
+    return issues;
+  };
+  function analyzeGrid(parsed){
+    try{
+      if(!curGrid) return;
+      const G = gridAt(curGrid), blocks = mapJobs(parsed, G);
+      deriveOvertime(parsed, G, blocks);
+    }catch(e){ console.error(e); }
+  }
+
+  /* 확인 항목 한꺼번에 체크 */
+  const ckPanel = $('checkPanel');
+  const ackAllBtn = document.createElement('button');
+  ackAllBtn.type = 'button'; ackAllBtn.className = 'btn-ghost btn-sm v2-ackall'; ackAllBtn.hidden = true;
+  $('checkSum').after(ackAllBtn);
+  function pendingConfirms(){ return checkState && checkState.issues ? checkState.issues.filter(i => i.level === 'confirm' && !checkState.acked.has(i.key)) : []; }
+  function ackAll(){
+    const now = new Date().toISOString();
+    pendingConfirms().forEach(i => { checkState.acked.add(i.key); if(!checkState.reasons[i.key]) checkState.reasons[i.key] = '일괄 확인'; checkState.reasons[i.key + '@'] = now; });
+    renderChecklist();
+  }
+  ackAllBtn.addEventListener('click', ackAll);
+  const origRenderChecklist = renderChecklist;
+  renderChecklist = function(){
+    origRenderChecklist();
+    const n = pendingConfirms().length;
+    ackAllBtn.hidden = !n; ackAllBtn.textContent = `확인 항목 ${n}개 모두 확인함`;
+  };
+
+  /* ZIP: 화면이 멈추지 않게 한 장씩 쉬어 가며 만들고, 진행률 표시 · 알림창 대신 화면 알림 */
+  $('zipBtn').addEventListener('click', e => { e.stopImmediatePropagation(); makeZip(); }, true);
+  let zipBusy = false;
+  async function makeZip(){
+    if(zipBusy) return;
+    if(!cardRegistry.length) return toast('먼저 [조견표 생성]을 눌러 주세요.');
+    if(!checkGateOpen()){ toast('확인 항목을 먼저 체크해 주세요.'); $('checkPanel').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
+    zipBusy = true;
+    const btn = $('zipBtn'), total = cardRegistry.length, zip = new JSZip(), used = new Set(), failed = [];
+    let ok = 0;
+    btn.disabled = true;
+    const say = t => { btn.textContent = t; nextMsg(t); };
+    try{
+      const scale = total >= 5 ? 1.5 : 2;
+      await ensureFontsReady();
+      for(let i = 0; i < total; i++){
+        const { capture, filename, jobName } = cardRegistry[i];
+        say(`PNG 만드는 중 ${i + 1}/${total}`);
+        await new Promise(r => setTimeout(r, 30));
+        try{
+          const canvas = await captureElementAsCanvas(capture, { scale });
+          const blob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob 실패')), 'image/png'));
+          let name = safeName(filename) + '.png', n = 2;
+          while(used.has(name)) name = `${safeName(filename)}_${n++}.png`;
+          used.add(name); zip.file(name, blob); ok++;
+        }catch(err){ failed.push(jobName || filename); console.error(err); }
+      }
+      if(!ok){ toast('PNG를 만들지 못했습니다. 카드별 개별 다운로드를 이용해 주세요.', 10000); return; }
+      say('ZIP 묶는 중 0%');
+      const content = await Promise.race([
+        zip.generateAsync({ type:'blob', compression:'STORE' }, meta => say(`ZIP 묶는 중 ${Math.round(meta.percent)}%`)),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('ZIP 시간 초과(60초)')), 60000))
+      ]);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = safeName(`급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+      zipDone = true;
+      const hint = $('resultCountHint');
+      if(hint) hint.textContent = `ZIP 완료: ${ok}/${total}개` + (failed.length ? ` · 실패 ${failed.length}개(${failed.join(', ')})` : '');
+      toast(failed.length ? `ZIP 다운로드: ${ok}개 포함, ${failed.length}개 실패(${failed.join(', ')})` : `ZIP 다운로드 완료 · 조견표 ${ok}장. 다음은 [통계에 저장]입니다.`, 8000);
+    }catch(err){
+      console.error(err); toast('ZIP을 만들지 못했습니다: ' + err.message + ' · 카드별 개별 다운로드를 이용해 주세요.', 10000);
+    }finally{
+      zipBusy = false; btn.disabled = false; btn.textContent = '전체 PNG 일괄 다운로드(ZIP)'; updateDashboard();
+    }
+  }
+
+  /* 다음 단계 안내 막대 (조견표 생성 화면 하단 고정) */
+  const nextBar = document.createElement('div');
+  nextBar.className = 'v2-next no-print'; nextBar.id = 'v2Next'; nextBar.hidden = true;
+  nextBar.innerHTML = '<div class="v2-next-steps" id="v2NextSteps"></div><div class="v2-next-msg" id="v2NextMsg"></div><div class="v2-next-act" id="v2NextAct"></div>';
+  $('tabCreate').appendChild(nextBar);
+  let nextOverride = '';
+  function nextMsg(t){ nextOverride = t; $('v2NextMsg').textContent = t; }
+  const go = id => { const el = $(id); if(el){ el.scrollIntoView({ behavior:'smooth', block:'start' }); el.classList.add('v2-flash'); setTimeout(() => el.classList.remove('v2-flash'), 1600); } };
+  function updateNextBar(){
+    if(!parsedData || !checkState || !checkState.issues){ nextBar.hidden = true; return; }
+    nextBar.hidden = false;
+    const blocks = checkState.issues.filter(i => i.level === 'block').length, pend = pendingConfirms().length;
+    const made = cardRegistry.length > 0;
+    let step, msg, act;
+    if(blocks){ step = 1; msg = `차단 항목 ${blocks}개 · 원본 엑셀을 고쳐 다시 올려 주세요.`; act = '<button type="button" class="btn-ghost" data-n="check">검사 결과 보기</button>'; }
+    else if(pend){ step = 1; msg = `확인 항목 ${pend}개를 확인해 주세요.`; act = '<button type="button" class="btn-ghost" data-n="check">검사 결과 보기</button><button type="button" class="btn-primary" data-n="ackall">모두 확인함</button>'; }
+    else if(!made){ step = 2; msg = '검사 완료 · 조견표를 만들 수 있습니다.'; act = '<button type="button" class="btn-primary" data-n="gen">조견표 생성</button>'; }
+    else if(!zipDone){ step = 3; msg = `조견표 ${cardRegistry.length}장 생성됨 · 미리보기를 확인하고 받으세요.`; act = '<button type="button" class="btn-ghost" data-n="result">결과 보기</button><button type="button" class="btn-primary" data-n="zip">PNG(ZIP) 받기</button>'; }
+    else if(!snapSaved){ step = 4; msg = '다운로드 완료 · 마지막으로 통계에 저장하세요.'; act = '<button type="button" class="btn-ghost" data-n="zip">다시 받기</button><button type="button" class="btn-primary" data-n="snap">통계에 저장</button>'; }
+    else { step = 5; msg = '완료 · 통계와 보고서에 반영되었습니다.'; act = '<button type="button" class="btn-ghost" data-n="stats">급여 통계 보기</button><button type="button" class="btn-ghost" data-n="report">보고서 만들기</button><button type="button" class="btn-primary" data-n="new">다른 파일 올리기</button>'; }
+    $('v2NextSteps').innerHTML = ['검사 확인', '조견표 생성', 'PNG 받기', '통계 저장'].map((t, i) => `<span class="${i + 1 < step ? 'done' : i + 1 === step ? 'on' : ''}">${i + 1 < step ? '✓' : (i + 1) + '.'} ${t}</span>`).join('');
+    $('v2NextMsg').textContent = zipBusy ? nextOverride : msg;
+    if(!zipBusy) $('v2NextAct').innerHTML = act;
+  }
+  nextBar.addEventListener('click', e => {
+    const b = e.target.closest('[data-n]'); if(!b) return;
+    const k = b.dataset.n;
+    if(k === 'check') go('checkPanel');
+    else if(k === 'ackall') ackAll();
+    else if(k === 'gen'){ $('generateBtn').click(); }
+    else if(k === 'result') go('resultPanel');
+    else if(k === 'zip') makeZip();
+    else if(k === 'snap'){ go('snapPanel'); }
+    else if(k === 'stats') switchAppTab('stats');
+    else if(k === 'report') switchAppTab('report');
+    else if(k === 'new') $('fileInput').click();
+  });
+  const origDash = updateDashboard;
+  updateDashboard = function(){ origDash(); try{ updateNextBar(); }catch(e){ console.error(e); } };
+
+  /* 미리보기(샌드박스) 화면에서 열렸는지 감지 */
+  let sandboxed = false;
+  try{ sandboxed = window.self !== window.top; }catch(e){ sandboxed = true; }
+  if(sandboxed){
+    const sb = document.createElement('div');
+    sb.className = 'v2-banner v2-sandbox no-print';
+    sb.innerHTML = '<span>지금 <b>미리보기 화면</b>에서 열려 있어 폴더 연결·다운로드가 제한됩니다. PC 파일 탐색기에서 이 파일을 <b>오른쪽 클릭 → 연결 프로그램 → Chrome</b>으로 열어 주세요. (주소창이 file:/// 로 시작해야 정상)</span>';
+    document.querySelector('.main').insertBefore(sb, document.querySelector('.page-head'));
+  }
+
 
   /* ---------- 시작 ---------- */
   (async () => {

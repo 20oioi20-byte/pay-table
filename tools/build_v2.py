@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.3.1'
+APP_VERSION = '2.4.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -106,6 +106,24 @@ V2_CSS = """
   .v2-paste{ width:100%; min-height:70px; padding:10px 12px; border:2px dashed var(--pri); border-radius:10px; font:inherit; font-size:13px; background:var(--pri-soft); resize:vertical; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
+  /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
+  .v2-cmp summary{ cursor:pointer; display:flex; gap:8px 12px; align-items:center; flex-wrap:wrap; font-size:14px; list-style:none; }
+  .v2-cmp summary::-webkit-details-marker{ display:none; }
+  .v2-cmp summary::before{ content:"▸"; color:var(--muted); } .v2-cmp[open] summary::before{ content:"▾"; }
+  .v2-cmp .tblwrap{ margin-top:10px; }
+  .v2-red{ color:var(--bad); }
+  #v2Compare tr.v2-muted td{ color:var(--muted); }
+  .v2-ackall{ margin:6px 0 2px; }
+  .v2-next{ position:sticky; bottom:0; z-index:20; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-top:16px; padding:12px 18px;
+    background:#0f1b30; color:#fff; border-radius:12px 12px 0 0; box-shadow:0 -6px 20px rgba(15,27,48,.18); }
+  .v2-next-steps{ display:flex; gap:6px; flex-wrap:wrap; font-size:12px; }
+  .v2-next-steps span{ padding:3px 9px; border-radius:999px; background:rgba(255,255,255,.08); color:#9fb0cc; }
+  .v2-next-steps span.on{ background:#fff; color:#0f1b30; font-weight:800; } .v2-next-steps span.done{ color:#8fd6a6; }
+  .v2-next-msg{ flex:1; min-width:200px; font-size:13.5px; font-weight:600; }
+  .v2-next-act{ display:flex; gap:8px; flex-wrap:wrap; }
+  .v2-next-act .btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
+  .v2-flash{ outline:3px solid var(--pri); outline-offset:3px; transition:outline-color .6s; }
+  .v2-sandbox{ background:var(--bad-soft); border-color:#f3c2c2; color:var(--bad); }
   @media (prefers-reduced-motion:reduce){ .v2-fill{ transition:none; } }
   @media (max-width:860px){ .v2-banner{ margin:12px 16px 0; } }
 """
@@ -152,6 +170,10 @@ def main():
     s = must_replace(s, '<div class="side-group">기타</div>', '<div class="side-group" hidden>기타</div>')
     s = must_replace(s, "setSaveStatus('로컬 전용 모드 (서버 환경변수 미설정 — 클라우드 저장 안 함)', 'warn');",
                      "setSaveStatus('이 PC에서 읽었습니다 (외부 서버로 보내지 않음)', 'ok');")
+    # 월총액 검사: 실제 양식은 월 보수 합계 = 통상임금소계 + B등급 업적수당 + 초과·야간·통신 → B등급 금액도 더해 봄
+    s = must_replace(s, "const extras = [job.overtime, job.night, job.telecom].map(v => typeof v === 'number' ? v : 0);\n      const combos = [0,1,2,3,4,5,6,7].map(",
+                     "const gradeB = ((job.grades || []).find(([g]) => /^B/i.test(String(g).trim())) || [])[1];\n      const extras = [job.overtime, job.night, job.telecom, gradeB].map(v => typeof v === 'number' ? v : 0);\n      const combos = [...Array(16).keys()].map(")
+    s = must_replace(s, "기준급여합계와 수당(연장·야간·통신비) 합으로 설명되지 않습니다.", "기준급여합계 + B등급 업적수당 + 수당(연장·야간·통신비) 합으로 설명되지 않습니다.")
     i = s.index('</style>\n</head>')
     s = s[:i] + V2_CSS + s[i:]
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
