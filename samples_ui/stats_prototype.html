@@ -10,13 +10,8 @@
   --g1:#4C4C4E;--g2:#A2A4A3;--g3:#D6D7D7;--heat:76,76,78;
   --acc-bg:#FFE9EA;--acc-t:#D9141D;--sel:#FFF4F4;--tip:#FFFFFF;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);
 }
-:root[data-theme="dark"]{
-  --bg:#000000;--card:#141415;--line:#2A2A2D;--line2:#1E1E20;--t:#FFFFFF;--m:#C4C5C6;--f:#7C7E7F;--hover:#1B1B1D;--soft:#232326;--track:#2A2A2D;
-  --g1:#D9DADB;--g2:#8A8C8B;--g3:#4C4C4E;--heat:255,255,255;
-  --acc-bg:rgba(254,46,54,.16);--acc-t:#FF6B71;--sel:rgba(254,46,54,.09);--tip:#1E1E20;--shadow:0 0 0 1px #1F1F22;
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'KT Flow','Pretendard','Malgun Gothic','Apple SD Gothic Neo','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--t);font-size:13px;min-width:1100px;transition:background .2s}
+body{font-family:'KT Flow','Pretendard','Malgun Gothic','Apple SD Gothic Neo','WenQuanYi Zen Hei',sans-serif;background:var(--bg);color:var(--t);font-size:13px;min-width:1100px;}
 button,select,input{font:inherit;color:inherit}
 select,input{background:var(--card);color:var(--t)}
 .app{display:grid;grid-template-columns:270px 1fr;gap:20px;padding:20px;max-width:1560px;margin:0 auto}
@@ -64,16 +59,25 @@ h3{font-size:14px;display:flex;align-items:center;gap:8px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .seg button{border:0;background:var(--card);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--m)}
 .seg button.on{background:var(--t);color:var(--card);font-weight:bold}
-.theme button{display:inline-flex;align-items:center;gap:6px}.theme i{width:10px;height:10px;border-radius:50%;border:1px solid var(--f)}
-/* 산업군 카드 */
-.inds{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
-.ind{padding:14px 16px;cursor:pointer;border-top:3px solid transparent;transition:transform .1s}
-.ind:hover{transform:translateY(-1px)}
-.ind.on{border-top-color:var(--red)}
-.ind .h{display:flex;justify-content:space-between;font-size:13px;font-weight:bold}.ind .h span{font-size:11px;color:var(--f);font-weight:normal}
-.ind .n{font-size:24px;font-weight:800;margin:10px 0 6px;white-space:nowrap}.ind .n small{font-size:13px;font-weight:600;margin-left:2px}
-.ind .s{font-size:11.5px;color:var(--m);display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
-.ind.dim{opacity:.55}
+/* 산업군·세부유형 카드 묶음 (B안) */
+.gridh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.gridh .lg2{font-size:11.5px;color:var(--m)}.gridh .lg2 b{color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.ic{padding:14px 18px 12px;border-top:3px solid transparent}
+.ic.on{border-top-color:var(--red)}.ic.dim{opacity:.5}
+.ic .hd{display:flex;justify-content:space-between;align-items:baseline;cursor:pointer}.ic .hd b{font-size:14px}.ic .hd span{font-size:11px;color:var(--f)}
+.ic .amt{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px;cursor:pointer;white-space:nowrap}
+.ic .amt big{font-size:22px;font-weight:800}.ic .amt small{font-size:12px;font-weight:700}.ic .amt em{font-style:normal;font-size:12px;font-weight:bold}.ic .amt i{font-style:normal;font-size:11px;color:var(--f)}
+.sr2{display:grid;grid-template-columns:100px 1fr 64px 48px;gap:8px;align-items:center;padding:4px 6px;margin:0 -6px;border-radius:5px;cursor:pointer}
+.sr2:hover{background:var(--hover)}.sr2.on{background:var(--sel)}.sr2.on .nm{color:var(--acc-t);font-weight:bold}
+.sr2 .nm{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr2 .tr{position:relative;height:14px;background:var(--soft);border-radius:3px}.sr2 .tr i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--g1)}
+.sr2 .tr b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--red)}
+.sr2 .v{font-size:12px;font-weight:bold;text-align:right}.sr2 .y{font-size:11px;text-align:right;color:var(--m)}
+.sr2.thin{color:var(--f)}.sr2.thin .tr i{background:var(--g3)}.sr2.thin .v,.sr2.thin .y{color:var(--f)}
+.ic.tot{background:#000;color:#fff}.ic.tot .hd span,.ic.tot .amt i{color:#A2A4A3}
+.mixl{display:flex;height:8px;border-radius:3px;overflow:hidden;margin-top:12px}.mixl i{display:block}
+.mixt{display:flex;justify-content:space-between;font-size:11px;color:#C4C5C6;margin-top:6px}
 /* 표 */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 12px;padding:0 18px}
 .tabs button{border:0;background:none;padding:10px 12px;font-size:13px;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -127,18 +131,12 @@ td.cy{background:var(--soft);font-weight:bold}td.cp{background:var(--hover)}
 <main>
   <div class="card top">
     <div class="crumb" id="crumb"></div><div class="sp"></div>
-    <span class="seg theme" id="theme" title="화면 테마"><button data-th="light"><i style="background:#fff"></i>화이트</button><button data-th="dark"><i style="background:#000"></i>블랙</button></span>
     <span class="seg" id="unit"><button data-u="y" class="on">연</button><button data-u="m">월</button></span>
     <button class="btn pri" id="xls">엑셀 다운로드</button>
   </div>
 
-  <div class="inds" id="inds"></div>
-
-  <div class="card pad" style="margin-bottom:16px">
-    <div class="ch"><h3 id="subTitle"></h3>
-      <span class="lg"><span><i style="background:var(--g1)"></i>기본급</span><span><i style="background:var(--g2)"></i>고정 수당</span><span><i style="background:var(--g3)"></i>B등급 업적수당</span></span></div>
-    <table id="subs"></table>
-  </div>
+  <div class="card gridh"><h3 id="gridTitle"></h3><span class="lg2" id="gridLg"></span></div>
+  <div class="grid" id="grid"></div>
 
   <div class="card pad">
     <div class="tabs" id="tabs"><button data-t="pivot" class="on">구분별 비교</button><button data-t="list">센터 목록</button><button data-t="heat">교차표</button></div>
@@ -260,7 +258,7 @@ const mixBar = a => a.avg ? `<div class="mix" title="기본급 ${fmt(a.base)} ·
 
 /* ================= 렌더 ================= */
 function render(){
-  renderPanel(); renderTop(); renderInds(); renderSubs();
+  renderPanel(); renderTop(); renderGrid();
   if(st.tab === 'pivot') renderPivot();
   if(st.tab === 'list') renderList(agg(yearOf(scoped(), st.year)).avg);
   if(st.tab === 'heat') renderHeat();
@@ -284,36 +282,27 @@ function renderTop(){
     <span class="soft sx" style="margin-left:6px">${st.year} vs ${st.cmp}</span>${st.wts.size < WT.length ? `<span class="soft sx">${[...st.wts].map(w => WT_S[w]).join('·')}</span>` : ''}${st.reg ? `<span class="soft sx">${st.reg}</span>` : ''}`;
 }
 
-/* 상단: 산업군 5개 카드 (금액 + 비교 연도 금액·인상률) */
-function renderInds(){
-  const pr = scoped(['cls']), sel = new Set([...st.subs].map(s => SUB_IND[s]));
-  $('inds').innerHTML = IND.map(i => {
-    const rs = pr.filter(r => r.ind === i), c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)), yo = pct(c.avg, p.avg);
-    return `<div class="card ind ${sel.has(i) ? 'on' : sel.size ? 'dim' : ''}" data-pick="${i}"><div class="h">${i}<span>${c.n}개 센터 · ${c.heads.toLocaleString()}명</span></div>
-      <div class="n">${c.avg ? Math.round(c.avg * (st.unit === 'y' ? 12 : 1) / 10000).toLocaleString() : '–'}<small>만원</small></div>
-      <div class="s"><span>${st.cmp}년 ${fmt(p.avg)}원</span><b class="${yo >= 0 ? 'up' : 'dn'}">${yo == null ? '–' : `${yo >= 0 ? '▲' : '▼'} ${Math.abs(yo).toFixed(1)}%`}</b></div></div>`;
-  }).join('');
-}
-
-/* 산업군·세부유형 표 */
-function renderSubs(){
-  const pr = scoped(['cls']), sc = scope(), sel = new Set([...st.subs].map(s => SUB_IND[s]));
-  const inds = sel.size ? IND.filter(i => sel.has(i)) : IND;
-  const all = agg(yearOf(pr, st.year)).avg;
-  $('subTitle').innerHTML = `산업군·세부유형별 인당 평균 ${unitL()} 총임금 <span class="soft sx">${jobL()} · ${st.year}</span>`;
-  const row = (name, rs, cls, pick) => {
-    const c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)), thin = c.n && c.n < MIN_N, yo = pct(c.avg, p.avg);
-    if(!c.n && !p.n) return '';
-    return `<tr class="go ${cls}${thin ? ' thin' : ''}${st.subs.has(pick) || (cls === 'grp' && sc.ind === pick && sc.path.length === 1) ? ' sel' : ''}" data-pick="${pick}">
-      <td>${name}${thin ? ' <span class="soft sx">표본 부족</span>' : ''}</td><td class="r">${c.n || '–'}</td><td class="r">${c.heads ? c.heads.toLocaleString() : '–'}</td>
-      <td class="r">${fmt(c.base)}</td><td class="r">${fmt(c.fixed)}</td><td class="r">${fmt(c.perf)}</td><td>${mixBar(c)}</td>
-      <td class="r" style="color:var(--m)">${fmt(p.avg)}</td><td class="r cy">${fmt(c.avg)}</td>
-      <td class="r ${yo >= 0 ? 'up' : 'dn'}">${pctS(yo)}</td><td style="width:140px">${c.avg && all ? devBar(c.avg / all - 1, thin) : ''}</td></tr>`;
-  };
-  $('subs').innerHTML = `<thead><tr><th>산업군 / 세부유형</th><th class="r">센터</th><th class="r">인원</th><th class="r">기본급</th><th class="r">고정 수당</th><th class="r">업적수당</th><th>구성</th>
-    <th class="r">${st.cmp} 총임금</th><th class="r">${st.year} 총임금</th><th class="r">인상률</th><th>전체 산업 대비</th></tr></thead>
-    <tbody>${sel.size ? '' : row('전체 산업', pr, 'total', '')}${inds.map(i => row(i, pr.filter(r => r.ind === i), 'grp', i)
-      + Object.keys(TREE[i].subs).map(s => row(s, pr.filter(r => r.sub === s), 'sub', s)).join('')).join('')}</tbody>`;
+/* 산업군·세부유형 카드 묶음 (B안): 산업군 금액·전년·인상률 + 세부유형 가로 막대 */
+function renderGrid(){
+  const pr = scoped(['cls']), sel = new Set([...st.subs].map(s => SUB_IND[s])), sc = scope(), m = st.unit === 'y' ? 12 : 1;
+  const one = rs => { const c = agg(yearOf(rs, st.year)), p = agg(yearOf(rs, st.cmp)); return { c, p, yo:pct(c.avg, p.avg) }; };
+  const all = one(pr), data = IND.map(i => ({ i, ...one(pr.filter(r => r.ind === i)), subs:Object.keys(TREE[i].subs).map(s => ({ s, ...one(pr.filter(r => r.sub === s)) })).filter(x => x.c.n).sort((a, b) => b.c.avg - a.c.avg) }));
+  /* 막대 공통 축: 세부유형 최솟값~최댓값을 100만(월은 10만) 단위로 */
+  const vals = data.flatMap(d => d.subs.map(x => x.c.avg * m / 10000)), stp = m === 12 ? 100 : 10;
+  const lo = Math.floor(Math.min(...vals) * 0.97 / stp) * stp, hi = Math.ceil(Math.max(...vals) * 1.01 / stp) * stp, sx = v => Math.max(0, Math.min(100, (v * m / 10000 - lo) / (hi - lo) * 100));
+  const yoS = yo => yo == null ? '–' : `${yo >= 0 ? '▲' : '▼'} ${Math.abs(yo).toFixed(1)}%`;
+  $('gridTitle').innerHTML = `산업군·세부유형별 인당 평균 ${unitL()} 총임금 <span class="soft sx">${jobL()} · ${st.year}</span>`;
+  $('gridLg').innerHTML = `막대 공통 축 ${lo.toLocaleString()}~${hi.toLocaleString()}만 · <b>┃</b> 전체 산업 평균 ${fmt(all.c.avg)} · 흐린 막대: 센터 ${MIN_N}개 미만 · 산업군·세부유형을 누르면 선택`;
+  $('grid').innerHTML = data.map(d => `<div class="card ic ${sel.has(d.i) ? 'on' : sel.size ? 'dim' : ''}">
+    <div class="hd" data-pick="${d.i}"><b>${d.i}</b><span>${d.c.n}개 센터 · ${d.c.heads.toLocaleString()}명</span></div>
+    <div class="amt" data-pick="${d.i}"><big>${d.c.avg ? Math.round(d.c.avg * m / 10000).toLocaleString() : '–'}</big><small>만원</small><em class="${d.yo >= 0 ? 'up' : 'dn'}">${yoS(d.yo)}</em><i>${st.cmp}년 ${fmt(d.p.avg)}</i></div>
+    ${d.subs.map(x => { const thin = x.c.n < MIN_N; return `<div class="sr2 ${thin ? 'thin' : ''} ${st.subs.has(x.s) && sc.path.length === 2 ? 'on' : ''}" data-pick="${x.s}" title="${x.s} · 센터 ${x.c.n}개 · ${x.c.heads.toLocaleString()}명${thin ? ' (표본 부족)' : ''}">
+      <span class="nm">${x.s}</span><div class="tr"><i style="width:${sx(x.c.avg)}%"></i><b style="left:${sx(all.c.avg)}%"></b></div><span class="v">${fmt(x.c.avg)}</span><span class="y">${pctS(x.yo)}</span></div>`; }).join('')}</div>`).join('')
+    + `<div class="card ic tot"><div class="hd"><b>전체 산업</b><span>${all.c.n}개 센터 · ${all.c.heads.toLocaleString()}명</span></div>
+    <div class="amt"><big>${all.c.avg ? Math.round(all.c.avg * m / 10000).toLocaleString() : '–'}</big><small>만원</small><em>${yoS(all.yo)}</em><i>${st.cmp}년 ${fmt(all.p.avg)}</i></div>
+    <div style="font-size:11.5px;color:#A2A4A3;line-height:1.6">카드의 빨간 세로선이 이 값입니다.<br>임금 구성 (인당 ${unitL()})</div>
+    <div class="mixl"><i style="width:${all.c.base / all.c.avg * 100}%;background:#FFFFFF"></i><i style="width:${all.c.fixed / all.c.avg * 100}%;background:#A2A4A3"></i><i style="width:${all.c.perf / all.c.avg * 100}%;background:#4C4C4E"></i></div>
+    <div class="mixt"><span>기본급 ${fmt(all.c.base)}</span><span>고정 수당 ${fmt(all.c.fixed)}</span><span>업적수당 ${fmt(all.c.perf)}</span></div></div>`;
 }
 
 /* ---------- 구분별 비교 (연도별) ---------- */
@@ -420,7 +409,7 @@ $('wtChips').onclick = e => { const b = e.target.closest('[data-wt]'); if(!b) re
 $('fReg').innerHTML = `<option value="">지역 전체</option>${REG.map(r => `<option>${r}</option>`).join('')}`;
 $('fReg').onchange = e => { st.reg = e.target.value; st.page = 0; render(); };
 $('crumb').onclick = e => { const a = e.target.closest('[data-go]'); if(!a) return; if(!a.dataset.go){ st.subs.clear(); render(); } else { st.subs = new Set(Object.keys(TREE[a.dataset.go].subs)); render(); } };
-['inds', 'subs', 'pivot'].forEach(id => { $(id).onclick = e => { const t = e.target.closest('[data-pick]'); if(t && t.dataset.pick) pickCls(t.dataset.pick); }; });
+['grid', 'pivot'].forEach(id => { $(id).onclick = e => { const t = e.target.closest('[data-pick]'); if(t && t.dataset.pick) pickCls(t.dataset.pick); }; });
 const seg = (id, key) => $(id).onclick = e => { const b = e.target.closest('button'); if(!b) return;
   [...$(id).children].forEach(x => x.classList.toggle('on', x === b)); st[key] = b.dataset.u || b.dataset.d; render(); };
 seg('unit', 'unit'); seg('dim', 'dim');
@@ -483,15 +472,6 @@ $('xls').onclick = () => {
   XLSX.writeFile(wb, `인건비_수준_통계_${jobL()}_${scope().name}_${st.year}.xlsx`);
 };
 
-/* ================= 테마 (이 브라우저에만 기억, 없어도 동작) ================= */
-function setTheme(t){
-  document.documentElement.dataset.theme = t;
-  [...$('theme').children].forEach(b => b.classList.toggle('on', b.dataset.th === t));
-  try{ localStorage.setItem('statsTheme', t); }catch(e){}
-}
-let savedTheme = 'light'; try{ savedTheme = localStorage.getItem('statsTheme') || 'light'; }catch(e){}
-setTheme(new URLSearchParams(location.search).get('theme') || savedTheme);
-$('theme').onclick = e => { const b = e.target.closest('[data-th]'); if(b){ setTheme(b.dataset.th); render(); } };
 render();
 </script>
 </body></html>
