@@ -580,7 +580,7 @@
     }
   }
   function fail(msg){
-    clearInterval(pollTimer);
+    clearInterval(pollTimer); clearInterval(tickTimer);   // 타이머도 멈춤 (멈추지 않으면 1초마다 실패 처리·알림이 반복됨)
     const who = isAdmin() ? '' : ` 계속 안 되면 요청번호 ${pending.requestId}를 관리자에게 알려 주세요.`;
     setJob('fail', msg + ' 원본을 확인한 뒤 다시 올리거나, 아래 [다시 기다리기]를 눌러 주세요.' + who,
       `<button type="button" class="btn-ghost" id="v2Retry">다시 기다리기</button><button type="button" class="btn-ghost" id="v2Drop">이 요청 닫기</button>` +
@@ -1431,6 +1431,13 @@
     profile = await kvGet('profile');
     shareDir = await kvGet('shareDir');
     pending = await kvGet('pending');
+    /* 지난 접속에서 걸어 둔 '[SharePoint에 바로 올리기] 결과 기다리기'(파일 지정 없음)가 기한(30분)을 넘겼으면
+       다시 열 때 '실패'로 띄우지 않고 조용히 닫음 (결과가 왔으면 처리 이력에서 열 수 있음) */
+    if(pending && pending.any && Date.now() - pending.startedAt > 2 * FAIL_MS){
+      const hrs = Math.round((Date.now() - pending.startedAt) / 3600000);
+      pending = null; await kvSet('pending', null);
+      setTimeout(() => toast(`지난 접속의 SharePoint 업로드 대기(${hrs ? hrs + '시간' : '1시간 이내'} 전)를 닫았습니다. 결과가 왔다면 [처리 이력]에서 열 수 있습니다.`, 8000), 800);
+    }
     renderConn(); applyRole(); renderLinks();
     const onboarded = await kvGet('onboarded');
     if(!profile || (!shareDir && onboarded !== 'later')) return openWizard(profile ? 2 : 1);

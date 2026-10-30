@@ -166,6 +166,13 @@ for n in sorted(z.namelist()):
   const withWork = workLines.filter(l => !l.endsWith('=-'));
   ok(withWork.length === 1 && /단축상담_사원/.test(withWork[0]) && /주 25시간 근무에서 주 20시간 근무로 변경/.test(withWork[0]), `근로조건 줄은 단축상담 · 사원만 (${withWork.join(' / ')})`);
 
+  console.log('7. 지난 접속의 [SharePoint에 바로 올리기] 대기(22시간 전)는 다시 열 때 실패로 띄우지 않고 닫음');
+  await p.evaluate(() => window.__v2.kvSet('pending', { requestId:'', file:'SharePoint에 올린 파일', base:'', web:true, any:true, startedAt: Date.now() - 22 * 3600000 }));
+  await p.waitForTimeout(300);
+  await p.reload(); await p.waitForSelector('#v2Toast:not([hidden])', { timeout: 10000 });
+  ok(/업로드 대기\(22시간 전\)를 닫았습니다/.test(await p.textContent('#v2Toast')), await p.textContent('#v2Toast'));
+  ok(await p.evaluate(async () => (await window.__v2.kvGet('pending')) === null) && !(await p.isVisible('#v2Retry')), '대기 기록 삭제 · 실패 화면 없음');
+
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');
   await b.close(); srv.close(); process.exit(failed ? 1 : 0);

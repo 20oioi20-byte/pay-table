@@ -35,9 +35,10 @@
 
   /* KT 화이트: 흰 바탕 + 블랙 사이드바 + 레드 포인트 */
   html[data-skin="kt-light"]{
-    --pri-soft:#FFECEE; --bg:#F4F4F4; --card:#FFFFFF; --line:#E4E4E4; --ink2:#111111; --muted:#4C4C4E;
+    /* 배경은 카드(흰색)와 구분만 되도록 한 단계 어둡게 (#F4F4F4 → #ECECEC, 저사양·밝은 모니터에서도 보이게) */
+    --pri-soft:#FFECEE; --bg:#ECECEC; --card:#FFFFFF; --line:#E4E4E4; --ink2:#111111; --muted:#4C4C4E;
   }
-  html[data-skin="kt-light"] .panel{ border-color:#E4E4E4; }
+  html[data-skin="kt-light"] .panel{ border-color:#D9D9D9; }
   html[data-skin="kt-light"] .topbar{ background:#fff; border-bottom:2px solid #000; }
 
   html[data-skin="kt-light"] #dropzone strong, html[data-skin="kt-light"] #dropzone b{ color:#000; }
