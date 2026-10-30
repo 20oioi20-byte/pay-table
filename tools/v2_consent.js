@@ -66,10 +66,24 @@
   function workTable(notes, grid){
     return gridWorkTable(grid) || (notes || []).find(n => n && n.type === 'table' && typeof isWorkTypeTable === 'function' && isWorkTypeTable(n.headers)) || null;
   }
+  /* 근무형태 줄 고르기: ① 직무 칸이 직무 그룹(일반상담·단축상담…)과 같은 줄 → ② 그 안에서 호봉·직무 칸에 호봉 이름이 있는 줄
+     → ③ 그룹 줄의 첫 줄 → ④ 없으면 조견표와 같은 유사도 규칙. (호봉 이름 '사원'만 같은 다른 직무 줄을 고르지 않게) */
+  const toks = v => String(v || '').split(/[,·/]/).map(norm).filter(Boolean);
+  function pickWorkRow(job, t){
+    const hi = re => t.headers.findIndex(x => re.test(norm(x)));
+    const jc = Math.max(0, hi(/^직무/)), hc = hi(/^호봉/);
+    const g = norm(job.groupLabel), n = norm(job.jobName);
+    const inGroup = g ? t.rows.filter(r => toks(r[jc]).includes(g)) : [];
+    const pool = inGroup.length ? inGroup : t.rows;
+    const named = pool.find(r => toks(r[jc]).includes(n) || (hc >= 0 && toks(r[hc]).includes(n)));
+    if(named) return named;
+    if(inGroup.length) return inGroup[0];
+    return (filterWorkTypeRowsForJob(job, t.headers, t.rows) || [])[0];
+  }
   function workOf(job, notes, grid){
     const t = workTable(notes, grid);
     if(!t || !t.rows.length) return null;
-    const row = (filterWorkTypeRowsForJob(job, t.headers, t.rows) || [])[0];
+    const row = pickWorkRow(job, t);
     if(!row) return null;
     const col = re => { const i = t.headers.findIndex(x => re.test(norm(x))); return i < 0 ? '' : String(row[i] || '').trim(); };
     const days = col(/^근무일/), slot = col(/^근무시간/), rest = col(/^휴게/);
@@ -81,7 +95,7 @@
   const weeklyFromMonth = mh => Math.round(mh / 4.345 / 1.2 * 2) / 2;   // 209 → 40, 167 → 32
   const monthFromWeekly = w => Math.round(w * 1.2 * 4.345);            // 40 → 209, 32 → 167
   function workText(w, monthHours){
-    if(w && w.perWeek && w.weekly && w.daily) return `일${w.daily}H/주${w.perWeek}일/주 ${w.weekly}시간` + (w.slot ? ` (${w.slot})` : '');
+    if(w && w.perWeek && w.weekly && w.daily) return `일${w.daily}H/주${w.perWeek}일/주 ${w.weekly}시간`;   // 원본 표기 그대로(시간대는 근로조건 줄에서)
     if(w && (w.days || w.slot)) return [w.days, w.slot].filter(Boolean).join(' ');
     const wk = weeklyFromMonth(monthHours);
     return wk % 5 === 0 ? `일${wk / 5}H/주5일/주 ${wk}시간` : `주 ${wk}시간`;
@@ -137,10 +151,45 @@
     if(!tplZip) tplZip = await JSZip.loadAsync(window.V2_CONSENT_TPL, { base64:true });
     return tplZip;
   }
-  async function makeDocx(vals){
+  /* ---------- 1쪽 맞춤 ----------
+     글자 폭(한글 1, 숫자·영문 0.6, 공백 0.33, 기호 0.45 글자)으로 줄 수를 어림해
+     - 제목: 한 줄(18pt, 약 23.5글자)에 들어가면 그대로, 조금 넘치면 글자를 16pt까지 줄여 한 줄,
+             그래도 넘치면 '근로조건…'부터 둘째 줄로
+     - 원본보다 늘어난 높이만큼 아래쪽 빈 줄(SP4→SP1, 그다음 제목 위 SP0)을 지워 2쪽으로 넘어가지 않게 */
+  const emOf = s => [...String(s)].reduce((a, ch) => a + (/[\uac00-\ud7a3\u3131-\u318e]/.test(ch) ? 1 : /[0-9A-Za-z]/.test(ch) ? 0.6 : ch === ' ' ? 0.33 : 0.45), 0);
+  const linesOf = (s, w) => s === DEL ? 0 : Math.max(1, Math.ceil(emOf(s) / w));
+  const TITLE_EM = 23.5, TITLE_PT = 18, TITLE_MIN_PT = 16, BODY_EM = 40, LINE_EM = 38, COL_B_EM = 14.5, COL_A_EM = 17;
+  const PT = { title: 35, body: 18, line: 17, cell: 16 }, SPACER = [['SP4', 23], ['SP3', 23], ['SP2', 23], ['SP1', 23], ['SP0', 35]];
+  function fitPage(vals){
+    const head = `‘${vals.YY}년 ${vals.CENTER}`, tail = '근로조건/급여테이블 변경 동의서';
+    const need = emOf(`${head} ${tail}`), pt = Math.min(TITLE_PT, Math.floor(TITLE_PT * TITLE_EM / need * 2) / 2);
+    const one = pt >= TITLE_MIN_PT;
+    const out = { TBR: one ? ' ' : 'BR', TSZ: one ? pt : TITLE_PT };
+    const titleLines = one ? 1 : linesOf(head, TITLE_EM) + 1;
+    const body = `${vals.BRIEF} 실시된 ${head} 근로조건 및 급여테이블 변경 설명회 참석을 통해 관련 내용을 상세하게 청취하였으며 아래 변경사항에 동의하는 바 입니다.`;
+    const body0 = '0000년 00월 00일 실시된 ‘26년 000센터 근로조건 및 급여테이블 변경 설명회 참석을 통해 관련 내용을 상세하게 청취하였으며 아래 변경사항에 동의하는 바 입니다.';
+    let extra = (titleLines - 1) * PT.title + (linesOf(body, BODY_EM) - linesOf(body0, BODY_EM)) * PT.body;
+    extra += (vals.WORK === DEL ? -1 : linesOf(`○ 근로조건 : ${vals.WORK}`, LINE_EM) - 1) * PT.line;
+    extra += (linesOf(`○ 급여테이블 변경 : ${vals.CHANGE}`, LINE_EM) - 1) * PT.line;
+    for(const k of ['WORKT', 'REST', 'JOB', 'POS', 'PERF', 'MEAL', 'OT', 'NIGHT'])
+      extra += (Math.max(linesOf(vals[`${k}_B`] || '', COL_B_EM), linesOf(vals[`${k}_A`] || '', COL_A_EM)) - 1) * PT.cell;
+    const basic = Math.max(linesOf(vals.BASIC_B1 || '', COL_B_EM) + linesOf(vals.BASIC_B2 || DEL, COL_B_EM), linesOf(vals.BASIC_A1 || '', COL_A_EM) + linesOf(vals.BASIC_A2 || DEL, COL_A_EM));
+    extra += (basic - 2) * PT.cell;
+    let freed = 0;
+    /* 글꼴·프로그램(Word·한컴·모바일 보기)마다 줄 높이가 달라 1.5배 여유를 두고 줄임 */
+    if(extra > 0) for(const [k, pt] of SPACER){ if(freed >= extra * 1.5 + 8) break; out[k] = DEL; freed += pt; }
+    return out;
+  }
+
+  async function makeDocx(input){
+    const vals = Object.assign({}, input);
+    Object.assign(vals, fitPage(vals));
     const src = await template(), z = new JSZip();
     for(const [name, f] of Object.entries(src.files)) if(!f.dir) z.file(name, await f.async('uint8array'));
     let x = await src.file('word/document.xml').async('string');
+    x = x.replace('{{TBR}}', vals.TBR === 'BR' ? '</w:t><w:br/><w:t xml:space="preserve">' : ' ');
+    if(vals.TSZ !== TITLE_PT) x = x.replace(/<w:p[ >](?:(?!<w:p[ >])[\s\S])*?근로조건\/급여테이블 변경[\s\S]*?<\/w:p>/, q =>
+      q.replace(/<w:sz(Cs)? w:val="36"\/>/g, (m, cs) => `<w:sz${cs || ''} w:val="${Math.round(vals.TSZ * 2)}"/>`));
     for(const [k, v] of Object.entries(vals)){
       if(v === DEL) x = x.replace(new RegExp(`<w:p[ >](?:(?!<w:p[ >])[\\s\\S])*?\\{\\{${k}\\}\\}[\\s\\S]*?</w:p>`), '');
     }

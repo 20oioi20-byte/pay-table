@@ -65,17 +65,33 @@ print('\\n'.join(''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', p)) for p in re.
   console.log('2. 기본: 근무형태·휴게시간·상동·업적수당 S~E');
   await load(); await waitParsed();
   let c = await consentOf('상담1');
-  ok(c.vals.WORKT_B === '일8H/주5일/주 40시간 (09:00 ~ 18:00)' && c.vals.WORKT_A === '상동', `근무시간 ${c.vals.WORKT_B} → ${c.vals.WORKT_A}`);
+  ok(c.vals.WORKT_B === '일8H/주5일/주 40시간' && c.vals.WORKT_A === '상동', `근무시간 ${c.vals.WORKT_B} → ${c.vals.WORKT_A}`);
   ok(c.vals.REST_B === '12:00 ~ 13:00' && c.vals.REST_A === '상동', `휴게시간 ${c.vals.REST_B} → ${c.vals.REST_A}`);
   ok(c.vals.BASIC_B1 === '시급 10,320원 기준 산정' && c.vals.BASIC_A1 === '상동', `기본급 ${c.vals.BASIC_B1} → ${c.vals.BASIC_A1}`);
   ok(c.vals.PERF_B === '120,000원 ~ 0원' && c.vals.PERF_A === '상동', `업적수당 S~E ${c.vals.PERF_B}`);
   ok(c.vals.MEAL_B === '90,000원' && c.vals.MEAL_A === '100,000원', `급식비 ${c.vals.MEAL_B} → ${c.vals.MEAL_A}`);
   let t = docText(c.b64);
   ok(!/근로조건 :/.test(t), '근무시간이 그대로면 근로조건 줄 삭제');
-  ok(!/\{\{/.test(t) && /‘26년 가상시 민원상담콜센터 근로조건\/급여테이블 변경 동의서/.test(t) && /붙임 : ‘26년 가상시 민원상담콜센터 급여테이블 1부/.test(t), '제목·붙임에 센터명, 남은 토큰 없음');
+  ok(!/\{\{/.test(t) && /‘26년 가상시 민원상담콜센터근로조건\/급여테이블 변경 동의서/.test(t) && /붙임 : ‘26년 가상시 민원상담콜센터 급여테이블 1부/.test(t), '제목·붙임에 센터명, 남은 토큰 없음');
   ok(/0000년 00월 00일 실시된/.test(t) && /주요 변경사항 기재/.test(t), '나중에 작성: 원본 문구 그대로');
   ok(/202 {2}년 {5}월 {4}일/.test(t) && /성명/.test(t), '서명 날짜·소속·사번·성명은 빈칸 그대로');
   ok(/기본급\n시급 10,320원 기준 산정\n {2}- 일 8시간 기준 2,156,880원\n상동\n직무수당/.test(t), '기본급 같으면 변경 칸은 상동 한 줄');
+
+  console.log('2-1. 제목 한 줄 / 두 줄(근로조건부터 둘째 줄) · 1쪽 맞춤(빈 줄 줄이기)');
+  const xmlOf = (b64) => require('child_process').execFileSync('python3', ['-I', '-c', `
+import sys, zipfile, io, base64
+print(zipfile.ZipFile(io.BytesIO(base64.b64decode(sys.stdin.read()))).read('word/document.xml').decode())`], { input: b64 }).toString();
+  const titleXml = x => (x.match(/<w:p[ >](?:(?!<w:p[ >])[\s\S])*?근로조건\/급여테이블 변경[\s\S]*?<\/w:p>/) || [''])[0];
+  const blanks = x => (x.split('<w:body>')[1].match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []).filter(q => !/<w:t[^>]*>[^<]+<\/w:t>/.test(q) && !/<w:tc>/.test(q)).length;
+  const short = await consentOf('상담1', { CENTER:'평택고객센터' });
+  let sx = xmlOf(short.b64);
+  ok(!/<w:br\/>/.test(titleXml(sx)) && /평택고객센터 근로조건/.test(docText(short.b64)), `한 줄에 조금 넘치는 센터명: 제목 한 줄 (글자 ${(titleXml(sx).match(/<w:sz w:val="(\d+)"/) || [])[1] / 2}pt)`);
+  const tiny = await consentOf('상담1', { CENTER:'평택센터' });
+  ok(/<w:sz w:val="36"\/>/.test(titleXml(xmlOf(tiny.b64))) && !/<w:br\/>/.test(titleXml(xmlOf(tiny.b64))), '짧은 센터명: 원래 크기(18pt) 한 줄');
+  const nShort = blanks(sx);
+  ok(/<w:br\/><w:t xml:space="preserve">근로조건\/급여테이블 변경/.test(titleXml(xmlOf(c.b64))), '긴 센터명: 줄바꿈 뒤 둘째 줄이 "근로조건…"으로 시작');
+  const nLong = blanks(xmlOf(c.b64));
+  ok(nLong < nShort, `제목이 두 줄이면 아래 빈 줄을 줄임 (빈 줄 ${nShort} → ${nLong})`);
 
   console.log('3. 주 근로시간 변경(25 → 20시간) → 근로조건 줄 표시, 기본급 시급 역산');
   await load(`
@@ -86,7 +102,7 @@ print('\\n'.join(''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', p)) for p in re.
   `); await waitParsed();
   c = await consentOf('상담2', { BRIEF:'2025년 12월 15일', CHANGE:'2026년 최저임금 인상 반영', EFF:'2026. 01. 01.' });
   ok(c.vals.WORK === '주 25시간 근무에서 주 20시간 근무로 변경', `근로조건: ${c.vals.WORK}`);
-  ok(c.vals.WORKT_B === '일5H/주5일/주 25시간 (09:00 ~ 18:00)' && c.vals.WORKT_A === '일4H/주5일/주 20시간 (09:00 ~ 13:00)', `근무시간 ${c.vals.WORKT_B} → ${c.vals.WORKT_A}`);
+  ok(c.vals.WORKT_B === '일5H/주5일/주 25시간' && c.vals.WORKT_A === '일4H/주5일/주 20시간', `근무시간 ${c.vals.WORKT_B} → ${c.vals.WORKT_A}`);
   ok(c.vals.BASIC_B1 === `시급 ${Math.round(2156880 / 130).toLocaleString('ko-KR')}원 기준 산정` && c.vals.BASIC_B2 === '  - 일 5시간 기준 2,156,880원', `기존 기본급: ${c.vals.BASIC_B1} / ${c.vals.BASIC_B2.trim()}`);
   t = docText(c.b64);
   ok(/○ 근로조건 : 주 25시간 근무에서 주 20시간 근무로 변경\n/.test(t), 'Word 근로조건 줄');
@@ -112,6 +128,43 @@ print('\\n'.join(''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', p)) for p in re.
   await p.evaluate(() => window.__v2consent.log({ meta:{ center:'가상시 민원상담콜센터', count:6, jobs:[], fresh:['상담 · 상담3'], eff:'2026. 01. 01.', mode:'later', brief:'', change:'' } }, 'x.zip'));
   await p.click('#tabBtnHistory'); await p.waitForTimeout(400);
   ok(/가상시 민원상담콜센터/.test(await p.textContent('#v2ConLogBody')) && /나중에 작성/.test(await p.textContent('#v2ConLogBody')), '처리 이력 › 변경동의서 생성 기록');
+
+  console.log('6. 실제와 비슷한 더미(평택, 호봉 17개) 엑셀을 화면에서 올려 조견표 + 변경동의서 ZIP');
+  const PT_XLSX = fs.readFileSync(path.join(ROOT, 'samples', '더미_평택_급여테이블.xlsx')).toString('base64');
+  await p.click('.app-tab[data-tab="create"]');
+  await p.evaluate(b64 => {
+    const bin = atob(b64), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const dt = new DataTransfer(); dt.items.add(new File([u], '더미_평택_급여테이블.xlsx')); const inp = document.getElementById('fileInput');
+    inp.files = dt.files; inp.dispatchEvent(new Event('change', { bubbles:true }));
+  }, PT_XLSX);
+  await p.waitForFunction(() => typeof parsedData !== 'undefined' && parsedData && parsedData.centerName === '평택고객센터' && window.__v2.comparePrev, null, { timeout: 30000 });
+  ok(await p.evaluate(() => parsedData.jobs.length) === 17, `호봉 ${await p.evaluate(() => parsedData.jobs.length)}개 읽음`);
+  if(await p.isVisible('#v2Next [data-n="ackall"]')) await p.click('#v2Next [data-n="ackall"]');
+  await p.evaluate(() => { selectedJobs = new Set(parsedData.jobs.map((j, i) => i)); });
+  await p.click('#v2Next [data-n="gen"]');
+  await p.waitForSelector('#v2Next [data-n="zip"]');
+  const dl2 = p.waitForEvent('download', { timeout: 180000 });
+  await p.click('#v2Next [data-n="zip"]');
+  await p.waitForSelector('#v2Consent:not([hidden])');
+  ok(await p.inputValue('#v2ConEff') === '2026. 01. 01.' && await p.inputValue('#v2ConChange') === '2026년 최저임금 인상 및 단축상담 근무시간 조정', '시행일·주요 변경사항(요청사유) 자동 채움');
+  ok(/16개/.test(await p.textContent('#v2ConInfo')) && /채팅상담 · 사원/.test(await p.textContent('#v2ConInfo')), '동의서 16개 · 신규 호봉(채팅상담) 제외 안내');
+  await p.fill('#v2ConBrief', '2025-12-15');
+  if(process.env.CONSENT_SHOT) await p.locator('#v2Consent .v2-card').screenshot({ path: process.env.CONSENT_SHOT });
+  await p.click('[data-con="ok"]');
+  const zip2 = await (await dl2).path();
+  const names2 = require('child_process').execFileSync('python3', ['-I', '-c', 'import sys,zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))', zip2]).toString().trim().split('\n');
+  ok(names2.filter(n => /\.png$/.test(n)).length === 17 && names2.filter(n => /^변경동의서\/.+\.docx$/.test(n)).length === 16, `ZIP: 조견표 PNG ${names2.filter(n => /\.png$/.test(n)).length}장 + 변경동의서 ${names2.filter(n => /\.docx$/.test(n)).length}개`);
+  if(process.env.CONSENT_OUT) fs.copyFileSync(zip2, process.env.CONSENT_OUT);
+  const workLines = require('child_process').execFileSync('python3', ['-I', '-c', `
+import sys, zipfile, io, re
+z = zipfile.ZipFile(sys.argv[1])
+for n in sorted(z.namelist()):
+    if not n.endswith('.docx'): continue
+    x = zipfile.ZipFile(io.BytesIO(z.read(n))).read('word/document.xml').decode()
+    t = [''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', p)) for p in re.findall(r'<w:p[ >].*?</w:p>', x, re.S)]
+    print(n.split('_', 2)[-1] + '=' + next((s for s in t if s.startswith('○ 근로조건')), '-'))`, zip2]).toString().trim().split('\n');
+  const withWork = workLines.filter(l => !l.endsWith('=-'));
+  ok(withWork.length === 1 && /단축상담_사원/.test(withWork[0]) && /주 25시간 근무에서 주 20시간 근무로 변경/.test(withWork[0]), `근로조건 줄은 단축상담 · 사원만 (${withWork.join(' / ')})`);
 
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');

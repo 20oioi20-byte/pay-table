@@ -69,7 +69,8 @@ def main(src):
     paras = body.findall('w:p', NS)
 
     # 제목: ‘26년 000센터 근로조건/급여테이블 변경 동의서
-    set_runs(find_para(paras, '‘26년 000센터'), [None, '{{YY}}', '', '년 ', '{{CENTER}}', ' 근로조건/급여테이블 변경', None])
+    # {{TBR}}: 한 줄에 안 들어가면 시스템이 줄바꿈을 넣어 '근로조건…'부터 둘째 줄로 내림
+    set_runs(find_para(paras, '‘26년 000센터'), [None, '{{YY}}', '', '년 ', '{{CENTER}}', '{{TBR}}근로조건/급여테이블 변경', None])
     # 본문: 0000년 00월 00일 실시된 ‘26년 000센터 … 설명회
     p = find_para(paras, '0000년 00월 00일')
     rs = runs(p)
@@ -93,6 +94,16 @@ def main(src):
     # 붙임
     p = find_para(paras, '붙임')
     set_runs(p, [None, None, None, '‘{{YY}}', '', '년 ', '{{CENTER}}', ' 급여테이블 ', None, None, None, None])
+
+    # 빈 줄: 제목 위(SP0)와 서명란~붙임 사이 4줄(SP1~SP4) → 내용이 길어지면 시스템이 줄여 1쪽 유지
+    blanks = [k for k, q in enumerate(paras) if not ptext(q).strip()]
+    title_i = paras.index(find_para(paras, '‘{{YY}}년'))
+    attach_i = paras.index(find_para(paras, '붙임'))
+    assert blanks and blanks[0] < title_i, '제목 위 빈 줄 없음'
+    tail = [k for k in blanks if k < attach_i][-4:]
+    assert len(tail) == 4 and tail == list(range(attach_i - 4, attach_i)), f'붙임 위 빈 줄 4개가 아님: {tail}'
+    for n, k in enumerate([blanks[0]] + tail):
+        fill_cell_para(paras[k], f'{{{{SP{n}}}}}')
 
     # 비교표: 행 이름 → 토큰 이름 (기존 _B, 변경 _A)
     rows = {'근무시간': 'WORKT', '휴게시간': 'REST', '기본급': 'BASIC', '직무수당': 'JOB', '직책수당': 'POS',
