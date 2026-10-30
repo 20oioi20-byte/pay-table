@@ -13,6 +13,7 @@ v1 파일과 v1 저장소(paytable-system)는 바꾸지 않는다.
 {"sharepointUrl": "...", "team": "..."} 로 적어 두어도 된다.
 """
 import argparse
+import base64
 import json
 from urllib.parse import quote
 from datetime import date
@@ -21,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.6.5'
+APP_VERSION = '2.6.6'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -127,6 +128,13 @@ V2_CSS = """
   .v2-next-act .btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
   .v2-flash{ outline:3px solid var(--pri); outline-offset:3px; transition:outline-color .6s; }
   .v2-sandbox{ background:var(--bad-soft); border-color:#f3c2c2; color:var(--bad); }
+  /* v2.6.6 · 변경동의서 입력 창 */
+  .v2-con-info{ margin:0; font-size:13.5px; }
+  .v2-con-mode{ display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .v2-con-now{ display:flex; flex-direction:column; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#f8fafc; }
+  .v2-con-now[hidden]{ display:none; }
+  .v2-con-now label{ display:flex; flex-direction:column; gap:5px; font-weight:600; font-size:13px; }
+  .v2-card input[type=date]{ padding:8px 10px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:14px; }
   @media (prefers-reduced-motion:reduce){ .v2-fill{ transition:none; } }
   @media (max-width:860px){ .v2-banner{ margin:12px 16px 0; } }
 """
@@ -186,10 +194,12 @@ def main():
     s = must_replace(s, '<html lang="ko">', '<html lang="ko" data-skin="kt-light">')
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
            'links': links}
-    js = '\n'.join((ROOT / 'tools' / f).read_text(encoding='utf-8') for f in ('v2_inject.js', 'v2_stats.js', 'v2_report.js', 'v2_quote.js'))
+    js = '\n'.join((ROOT / 'tools' / f).read_text(encoding='utf-8') for f in ('v2_inject.js', 'v2_stats.js', 'v2_report.js', 'v2_quote.js', 'v2_consent.js'))
+    # 변경동의서 Word 틀(tools/make_consent_template.py로 만든 것)을 base64로 넣음
+    tpl = base64.b64encode((ROOT / 'tools' / 'consent_template.docx').read_bytes()).decode()
     i = s.rindex('</body>')
     s = (s[:i] + '<script>\n/* 관리자 설정: build_v2.py 인자로 바꿉니다 */\nwindow.V2_CONFIG = '
-         + json.dumps(cfg, ensure_ascii=False) + ';\n' + js + '\n</script>\n' + s[i:])
+         + json.dumps(cfg, ensure_ascii=False) + ';\nwindow.V2_CONSENT_TPL = "' + tpl + '";\n' + js + '\n</script>\n' + s[i:])
     OUT.write_text(s, encoding='utf-8')
     (ROOT / 'dist' / 'version.json').write_text(json.dumps(
         {'version': APP_VERSION, 'file': OUT.name, 'date': date.today().isoformat()}, ensure_ascii=False), encoding='utf-8')

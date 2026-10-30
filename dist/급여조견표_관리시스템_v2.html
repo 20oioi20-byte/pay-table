@@ -839,6 +839,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .v2-next-act .btn-ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
   .v2-flash{ outline:3px solid var(--pri); outline-offset:3px; transition:outline-color .6s; }
   .v2-sandbox{ background:var(--bad-soft); border-color:#f3c2c2; color:var(--bad); }
+  /* v2.6.6 · 변경동의서 입력 창 */
+  .v2-con-info{ margin:0; font-size:13.5px; }
+  .v2-con-mode{ display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .v2-con-now{ display:flex; flex-direction:column; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#f8fafc; }
+  .v2-con-now[hidden]{ display:none; }
+  .v2-con-now label{ display:flex; flex-direction:column; gap:5px; font-weight:600; font-size:13px; }
+  .v2-card input[type=date]{ padding:8px 10px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:14px; }
   @media (prefers-reduced-motion:reduce){ .v2-fill{ transition:none; } }
   @media (max-width:860px){ .v2-banner{ margin:12px 16px 0; } }
   /* ============================================================
@@ -4675,7 +4682,8 @@ loadSystem().then(()=>{ refreshNavCounts(); });
 </script>
 <script>
 /* 관리자 설정: build_v2.py 인자로 바꿉니다 */
-window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
+window.V2_CONFIG = {"appVersion": "2.6.6", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
+window.V2_CONSENT_TPL = "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";
 /* ============================================================
    급여관리 시스템 v2 전용 스크립트 (급여조견표_관리시스템_v2.html 에만 들어감)
    - 첫 실행 안내(이름 → 폴더 받기 → 폴더 연결) 후에는 사용자가 설정할 것이 없음
@@ -5614,7 +5622,7 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
 
   /* 변경전 대비 비교: JSON의 before(또는 엑셀의 변경전 시트)를 같은 파서로 읽어 직무별 월 합계 비교 */
   const RAISE_LIMIT = 0.15;
-  let beforeData = null, compareRows = [];
+  let beforeData = null, compareRows = [], comparePrev = null, comparePairs = [];
   const comparePanel = document.createElement('div');
   comparePanel.className = 'panel'; comparePanel.id = 'v2Compare'; comparePanel.hidden = true;
   $('dropzone').closest('.panel').after(comparePanel);
@@ -5655,7 +5663,7 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
   let compareNote = '';
   const normJob = s => String(s || '').replace(/\s+/g, '').replace(/[()（）\[\]·.,_-]/g, '').toLowerCase();
   function buildCompare(parsed){
-    compareRows = []; compareNote = '';
+    compareRows = []; compareNote = ''; comparePrev = null; comparePairs = [];
     if(!beforeData){ compareNote = '변경전 시트가 없습니다 (신규 센터 또는 변경전 정보 없음).'; return; }
     let prev;
     try{ prev = parsePaytable(paytablePayloadToWorkbook({ sheet:'급여테이블(변경후)', start: beforeData.start, values: beforeData.values }).wb); }
@@ -5667,6 +5675,7 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
     rows.forEach(r => { r.p = take(p => p.block === r.j.block && normJob(jobLabel(p)) === r.key); if(r.p) r.how = ''; });
     rows.forEach(r => { if(!r.p){ r.p = take(p => normJob(jobLabel(p)) === r.key || (r.name && normJob(p.jobName) === r.name)); if(r.p) r.how = r.p.block !== r.j.block ? '블록 이동' : ''; } });
     rows.forEach(r => { if(!r.p && r.name){ r.p = take(p => { const n = normJob(p.jobName); return n && n.length >= 2 && (r.name.startsWith(n) || n.startsWith(r.name)); }); if(r.p) r.how = `세분화 (변경전: ${jobLabel(r.p)})`; } });
+    comparePrev = prev; comparePairs = rows.map(r => ({ j: r.j, p: r.p || null, how: r.how || '' }));   // 변경동의서(v2_consent.js)용 짝
     compareRows = rows.map(r => {
       const b = r.p && typeof r.p.monthlyTotal === 'number' ? r.p.monthlyTotal : null, a = typeof r.j.monthlyTotal === 'number' ? r.j.monthlyTotal : null;
       return { label: r.label, before: b, after: a, diff: b != null && a != null ? a - b : null, rate: b ? (a - b) / b : null, tag: r.p ? r.how : '신규' };
@@ -5997,6 +6006,13 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
     if(zipBusy) return;
     if(!cardRegistry.length) return toast('먼저 [조견표 생성]을 눌러 주세요.');
     if(!checkGateOpen()){ toast('확인 항목을 먼저 체크해 주세요.'); $('checkPanel').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
+    /* 기존 센터면 호봉별 변경동의서(Word)를 같은 ZIP에 넣음 (신규 센터는 null, 취소는 false) */
+    let consent = null;
+    if(window.__v2consent){
+      try{ consent = await window.__v2consent.prepare(); }
+      catch(err){ console.error(err); toast('변경동의서를 만들지 못했습니다: ' + err.message + ' · 조견표만 받습니다.', 10000); consent = null; }
+      if(consent === false) return;
+    }
     zipBusy = true;
     const btn = $('zipBtn'), total = cardRegistry.length, zip = new JSZip(), used = new Set(), failed = [];
     let ok = 0;
@@ -6018,6 +6034,7 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
         }catch(err){ failed.push(jobName || filename); console.error(err); }
       }
       if(!ok){ toast('PNG를 만들지 못했습니다. 카드별 개별 다운로드를 이용해 주세요.', 10000); return; }
+      if(consent) consent.files.forEach(f => zip.file('변경동의서/' + f.name, f.blob));
       say('ZIP 묶는 중 0%');
       const content = await Promise.race([
         zip.generateAsync({ type:'blob', compression:'STORE' }, meta => say(`ZIP 묶는 중 ${Math.round(meta.percent)}%`)),
@@ -6025,13 +6042,15 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
       ]);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
-      a.download = safeName(`급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
+      a.download = safeName(consent ? `급여조견표_${parsedData.centerName}_${ok}개_변경동의서_${consent.files.length}개` : `급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
+      if(consent) window.__v2consent.log(consent, a.download);
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 15000);
       zipDone = true;
       const hint = $('resultCountHint');
       if(hint) hint.textContent = `ZIP 완료: ${ok}/${total}개` + (failed.length ? ` · 실패 ${failed.length}개(${failed.join(', ')})` : '');
-      toast(failed.length ? `ZIP 다운로드: ${ok}개 포함, ${failed.length}개 실패(${failed.join(', ')})` : `ZIP 다운로드 완료 · 조견표 ${ok}장. 다음은 [통계에 저장]입니다.`, 8000);
+      const withDoc = consent ? ` · 변경동의서 ${consent.files.length}개` : '';
+      toast(failed.length ? `ZIP 다운로드: ${ok}개 포함${withDoc}, ${failed.length}개 실패(${failed.join(', ')})` : `ZIP 다운로드 완료 · 조견표 ${ok}장${withDoc}. 다음은 [통계에 저장]입니다.`, 8000);
     }catch(err){
       console.error(err); toast('ZIP을 만들지 못했습니다: ' + err.message + ' · 카드별 개별 다운로드를 이용해 주세요.', 10000);
     }finally{
@@ -6113,7 +6132,7 @@ window.V2_CONFIG = {"appVersion": "2.6.5", "folderName": "급여조견표", "tea
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; } };
 })();
 
 /* ============================================================
@@ -7549,6 +7568,314 @@ ${roleBlock(A)}
     return rec;
   };
   window.__v2quote = { readQuote, compute, get result(){ return R; } };
+})();
+
+/* ============================================================
+   v2.6.6 · 근로조건/급여테이블 변경동의서 (호봉별 Word)
+   - 기존 센터(급여테이블(변경전) 시트가 있는 파일)만 만듦. 신규 센터는 만들지 않음
+   - 담당자 원본 양식(tools/consent_template.docx)의 {{토큰}}만 바꿔 서식은 그대로 유지
+   - 조견표를 만든 호봉마다 1개: 변경전 짝이 없는 신규 호봉은 기존 값이 없어 제외
+   - 기존과 같으면 '상동', 업적수당은 S등급 ~ E등급 금액
+   - 시행일 = 급여테이블(변경후) 관리번호 오른쪽 '센터명/날짜'의 날짜 (없거나 애매하면 빈칸)
+   - 설명회 일자·주요 변경사항은 지금 입력하거나, 원본 문구 그대로 두고 나중에 직접 작성
+   - 조견표 ZIP에 '변경동의서/' 폴더로 함께 넣고, 생성 기록은 처리 이력 화면에 남김
+   ============================================================ */
+(() => {
+  const $ = id => document.getElementById(id);
+  const h = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const V2X = () => window.__v2 || {};
+  const norm = s => String(s ?? '').replace(/\s+/g, '');
+  const won = v => Math.round(v).toLocaleString('ko-KR');
+  const amt = v => typeof v === 'number' && isFinite(v) ? `${won(v)}원` : '-';
+  const pad = n => String(n).padStart(2, '0');
+  const DEL = '\u0000DEL';
+  const LOG_DIR = '동의서이력';
+  const CHANGE_HINT = '주요 변경사항 기재';
+
+  /* ---------- 급여테이블(변경후) 머리글: 관리번호 → 시행일, 요청사유 → 주요 변경사항 기본값 ---------- */
+  function labelValue(grid, label){
+    if(!grid || !Array.isArray(grid.values)) return '';
+    for(const row of grid.values.slice(0, 40)){
+      const i = (row || []).findIndex(v => norm(v) === label);
+      if(i < 0) continue;
+      for(let k = i + 1; k < row.length; k++){ const v = String(row[k] ?? '').trim(); if(v) return v; }
+    }
+    return '';
+  }
+  /* '센터명/2026년1월', '센터명/2026.01.01', '센터명/20260101' → { y, m, d } · 연도만 있거나 못 읽으면 null */
+  function parseEffective(mgmt){
+    const s = String(mgmt || ''), k = s.lastIndexOf('/');
+    if(k < 0) return null;
+    const t = s.slice(k + 1).trim();
+    let m = t.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if(!m) m = t.match(/(\d{4})\s*[년.\-]\s*(\d{1,2})\s*(?:월|[.\-])?\s*(?:(\d{1,2})\s*일?)?/);
+    if(!m) return null;
+    const y = +m[1], mo = +m[2], d = m[3] ? +m[3] : 1;
+    if(y < 2000 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    return { y, m: mo, d };
+  }
+  const effText = e => e ? `${e.y}. ${pad(e.m)}. ${pad(e.d)}.` : '';
+
+  /* ---------- 9.근무형태 표 → 직무별 근무일·근무시간·휴게시간 ---------- */
+  /* 시트 칸에서 직접 찾음(직무 | 호봉 | 근무일 | 근무시간 | 휴게시간 머리행 아래, 빈 줄 전까지) → 없으면 특례사항 파싱 결과 */
+  function gridWorkTable(grid){
+    if(!grid || !Array.isArray(grid.values)) return null;
+    const V = grid.values;
+    for(let r = 0; r < V.length; r++){
+      const row = (V[r] || []).map(v => String(v ?? '').trim());
+      if(norm(row[0]) !== '직무' || !/호봉/.test(row[1] || '') || !row.some(v => /근무일|근무시간|휴게/.test(norm(v)))) continue;
+      const idx = row.map((v, i) => v ? i : -1).filter(i => i >= 0);
+      const rows = [];
+      for(let k = r + 1; k < V.length; k++){
+        const cells = idx.map(i => String((V[k] || [])[i] ?? '').trim());
+        if(cells.every(v => !v)) break;
+        rows.push(cells);
+      }
+      return { headers: idx.map(i => row[i]), rows };
+    }
+    return null;
+  }
+  function workTable(notes, grid){
+    return gridWorkTable(grid) || (notes || []).find(n => n && n.type === 'table' && typeof isWorkTypeTable === 'function' && isWorkTypeTable(n.headers)) || null;
+  }
+  function workOf(job, notes, grid){
+    const t = workTable(notes, grid);
+    if(!t || !t.rows.length) return null;
+    const row = (filterWorkTypeRowsForJob(job, t.headers, t.rows) || [])[0];
+    if(!row) return null;
+    const col = re => { const i = t.headers.findIndex(x => re.test(norm(x))); return i < 0 ? '' : String(row[i] || '').trim(); };
+    const days = col(/^근무일/), slot = col(/^근무시간/), rest = col(/^휴게/);
+    const both = `${days} ${slot}`;
+    const dm = both.match(/주\s*(\d+)\s*일/), hm = both.match(/일\s*(\d+(?:\.\d+)?)\s*(?:H|시간)/i);
+    const wm = both.replace(/일\s*\d+(?:\.\d+)?\s*(?:H|시간)/gi, '').match(/(\d+(?:\.\d+)?)\s*시간/);
+    return { days, slot, rest, perWeek: dm ? +dm[1] : null, daily: hm ? +hm[1] : null, weekly: wm ? +wm[1] : null };
+  }
+  const weeklyFromMonth = mh => Math.round(mh / 4.345 / 1.2 * 2) / 2;   // 209 → 40, 167 → 32
+  const monthFromWeekly = w => Math.round(w * 1.2 * 4.345);            // 40 → 209, 32 → 167
+  function workText(w, monthHours){
+    if(w && w.perWeek && w.weekly && w.daily) return `일${w.daily}H/주${w.perWeek}일/주 ${w.weekly}시간` + (w.slot ? ` (${w.slot})` : '');
+    if(w && (w.days || w.slot)) return [w.days, w.slot].filter(Boolean).join(' ');
+    const wk = weeklyFromMonth(monthHours);
+    return wk % 5 === 0 ? `일${wk / 5}H/주5일/주 ${wk}시간` : `주 ${wk}시간`;
+  }
+
+  /* ---------- 직무 값 ---------- */
+  const item = (job, name) => { const it = (job.items || []).find(([l]) => norm(l).includes(name)); return it && typeof it[1] === 'number' ? it[1] : null; };
+  const grade = (job, g) => { const x = (job.grades || []).find(([n]) => String(n).trim().replace(/\.$/, '').toUpperCase() === g); return x && typeof x[1] === 'number' ? x[1] : null; };
+  function perfText(job){
+    const s = grade(job, 'S'), e = grade(job, 'E');
+    return s == null && e == null ? '-' : `${amt(s)} ~ ${amt(e)}`;
+  }
+
+  /* 호봉 1개의 동의서 값 (p = 변경전 직무, j = 변경후 직무) */
+  function valuesFor(p, j, prevNotes, curNotes){
+    const wb = workOf(p, prevNotes, V2X().beforeData), wa = workOf(j, curNotes, V2X().curGrid);
+    const hoursA = (V2X().baseHours ? V2X().baseHours(j) : 209) || 209;
+    const weekA = wa && wa.weekly ? wa.weekly : weeklyFromMonth(hoursA);
+    const weekB = wb && wb.weekly ? wb.weekly : weekA;
+    const hoursB = weekB !== weekA ? monthFromWeekly(weekB) : hoursA;
+    const basic = (job, w, hours, week) => {
+      const base = item(job, '기본급');
+      if(base == null) return ['-', DEL];
+      const daily = w && w.daily ? w.daily : Math.round(week / 5 * 10) / 10;
+      return [`시급 ${won(base / hours)}원 기준 산정`, `  - 일 ${daily}시간 기준 ${won(base)}원`];
+    };
+    const v = {
+      WORKT: [workText(wb, hoursB), workText(wa, hoursA)],
+      REST: [wb ? wb.rest : '', wa ? wa.rest : ''],
+      JOB: [amt(item(p, '직무수당')), amt(item(j, '직무수당'))],
+      POS: [amt(item(p, '직책수당')), amt(item(j, '직책수당'))],
+      PERF: [perfText(p), perfText(j)],
+      MEAL: [amt(item(p, '급식비')), amt(item(j, '급식비'))],
+      OT: [amt(p.overtime), amt(j.overtime)],
+      NIGHT: [amt(p.night), amt(j.night)]
+    };
+    const out = {};
+    for(const [k, [b, a]] of Object.entries(v)){ out[`${k}_B`] = b; out[`${k}_A`] = b && a === b ? '상동' : a; }
+    const [b1, b2] = basic(p, wb, hoursB, weekB), [a1, a2] = basic(j, wa, hoursA, weekA);
+    Object.assign(out, { BASIC_B1: b1, BASIC_B2: b2 });
+    if(b1 + b2 === a1 + a2) Object.assign(out, { BASIC_A1: '상동', BASIC_A2: DEL });
+    else Object.assign(out, { BASIC_A1: a1, BASIC_A2: a2 });
+    /* 근로조건: 주 근로시간이 바뀌면 그 내용, 근무 시간대만 바뀌면 시간대, 그대로면 문단 삭제 */
+    out.WORK = weekB !== weekA ? `주 ${weekB}시간 근무에서 주 ${weekA}시간 근무로 변경`
+      : wb && wa && wb.slot && wa.slot && norm(wb.slot) !== norm(wa.slot) ? `근무시간 ${wb.slot} → ${wa.slot} 변경` : DEL;
+    return out;
+  }
+
+  /* ---------- Word 만들기 ---------- */
+  const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let tplZip = null;
+  async function template(){
+    if(!tplZip) tplZip = await JSZip.loadAsync(window.V2_CONSENT_TPL, { base64:true });
+    return tplZip;
+  }
+  async function makeDocx(vals){
+    const src = await template(), z = new JSZip();
+    for(const [name, f] of Object.entries(src.files)) if(!f.dir) z.file(name, await f.async('uint8array'));
+    let x = await src.file('word/document.xml').async('string');
+    for(const [k, v] of Object.entries(vals)){
+      if(v === DEL) x = x.replace(new RegExp(`<w:p[ >](?:(?!<w:p[ >])[\\s\\S])*?\\{\\{${k}\\}\\}[\\s\\S]*?</w:p>`), '');
+    }
+    /* 원본의 빨간 안내 문구('주요 변경사항 기재')를 실제 내용으로 채우면 검정 글씨로 */
+    if(vals.CHANGE && vals.CHANGE !== CHANGE_HINT) x = x.replace(/(<w:r[ >](?:(?!<w:r[ >])[\s\S])*?)<w:color w:val="FF0000"\/>((?:(?!<w:r[ >])[\s\S])*?\{\{CHANGE\}\})/, '$1$2');
+    x = x.replace(/\{\{(\w+)\}\}/g, (m, k) => k in vals && vals[k] !== DEL ? xmlEsc(vals[k]) : '');
+    z.file('word/document.xml', x);
+    return z.generateAsync({ type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression:'DEFLATE' });
+  }
+
+  /* ---------- 대상 호봉 ---------- */
+  function targets(){
+    const v = V2X(), prev = v.comparePrev, pairs = v.comparePairs || [];
+    if(!prev || typeof parsedData === 'undefined' || !parsedData) return null;   // 변경전 시트 없음 = 신규 센터
+    const chosen = parsedData.jobs.filter((j, i) => typeof selectedJobs === 'undefined' || selectedJobs.has(i));
+    const list = [], fresh = [];
+    chosen.forEach(j => { const pr = pairs.find(x => x.j === j); if(pr && pr.p) list.push(pr); else fresh.push(jobLabel(j)); });
+    return { prev, list, fresh };
+  }
+
+  /* ---------- 입력 창 ---------- */
+  document.body.insertAdjacentHTML('beforeend', `
+  <div class="v2-modal" id="v2Consent" hidden role="dialog" aria-modal="true" aria-labelledby="v2ConTitle">
+    <div class="v2-card">
+      <div class="v2-wiz-head"><small>변경동의서</small><h2 id="v2ConTitle">변경동의서도 함께 받기</h2></div>
+      <section>
+        <p class="v2-con-info" id="v2ConInfo"></p>
+        <label>시행일 <input type="text" id="v2ConEff" placeholder="예: 2026. 01. 01. (비우면 빈칸)"><span class="hint" id="v2ConEffHint"></span></label>
+        <div class="v2-con-mode" role="radiogroup" aria-label="설명회 일자·주요 변경사항 작성 방법">
+          <b>설명회 일자 · 주요 변경사항</b>
+          <label class="v2-check"><input type="radio" name="v2ConMode" value="now" checked> 지금 입력</label>
+          <label class="v2-check"><input type="radio" name="v2ConMode" value="later"> 나중에 직접 작성 (원본 문구 그대로 둠)</label>
+        </div>
+        <div id="v2ConNow" class="v2-con-now">
+          <label>설명회 일자 <input type="date" id="v2ConBrief"></label>
+          <label>주요 변경사항 <input type="text" id="v2ConChange" placeholder="예: 2026년 최저임금 인상 반영"></label>
+        </div>
+        <p class="v2-err" id="v2ConErr"></p>
+        <div class="v2-act">
+          <button type="button" class="btn-ghost" data-con="cancel">취소</button>
+          <button type="button" class="btn-ghost" data-con="skip">동의서 없이 조견표만</button>
+          <button type="button" class="btn-primary" data-con="ok">ZIP 받기</button>
+        </div>
+      </section>
+    </div>
+  </div>`);
+  const modal = $('v2Consent');
+  const syncMode = () => { $('v2ConNow').hidden = modal.querySelector('input[name="v2ConMode"]:checked').value !== 'now'; };
+  modal.addEventListener('change', e => { if(e.target.name === 'v2ConMode') syncMode(); });
+  let waiting = null;
+  modal.addEventListener('click', e => {
+    const b = e.target.closest('[data-con]'); if(!b || !waiting) return;
+    const mode = modal.querySelector('input[name="v2ConMode"]:checked').value;
+    if(b.dataset.con === 'ok' && mode === 'now' && !$('v2ConBrief').value){ $('v2ConErr').textContent = '설명회 일자를 넣거나 [나중에 직접 작성]을 골라 주세요.'; return; }
+    modal.hidden = true;
+    const done = waiting; waiting = null;
+    done(b.dataset.con === 'ok' ? { mode, eff: $('v2ConEff').value.trim(), brief: $('v2ConBrief').value, change: $('v2ConChange').value.trim() } : b.dataset.con);
+  });
+
+  /* ZIP 받기 전에 호출: 동의서 대상이 없으면 null, 취소면 false, 아니면 { files, meta } */
+  async function prepare(){
+    const t = targets();
+    if(!t) return null;
+    if(!t.list.length){ V2X().toast && V2X().toast(`변경전과 짝이 맞는 호봉이 없어 변경동의서는 만들지 않습니다 (신규 호봉 ${t.fresh.length}개).`, 8000); return null; }
+    if(waiting) return false;
+    const center = parsedData.centerName, grid = V2X().curGrid;
+    const mgmt = labelValue(grid, '관리번호'), eff = parseEffective(mgmt);
+    const saved = ((await V2X().kvGet('consentInputs')) || {})[center] || {};
+    $('v2ConInfo').innerHTML = `기존 센터입니다(변경전 시트 있음). 호봉별 변경동의서 <b>${t.list.length}개</b>(Word)를 조견표 PNG와 함께 ZIP의 '변경동의서' 폴더에 넣습니다.`
+      + (t.fresh.length ? `<br><span class="hint">신규 호봉 ${t.fresh.length}개(${h(t.fresh.join(', '))})는 기존 값이 없어 제외합니다.</span>` : '');
+    $('v2ConEff').value = effText(eff);
+    $('v2ConEffHint').textContent = eff ? `급여테이블(변경후) 관리번호 '${mgmt}'에서 읽었습니다.` : mgmt ? `관리번호 '${mgmt}'에서 날짜를 읽지 못해 빈칸으로 둡니다.` : '관리번호를 찾지 못해 빈칸으로 둡니다.';
+    modal.querySelector(`input[name="v2ConMode"][value="${saved.mode === 'later' ? 'later' : 'now'}"]`).checked = true;
+    $('v2ConBrief').value = saved.brief || '';
+    $('v2ConChange').value = saved.change || labelValue(grid, '요청사유');
+    $('v2ConErr').textContent = '';
+    syncMode();
+    modal.hidden = false;
+    const ans = await new Promise(res => { waiting = res; });
+    if(ans === 'cancel') return false;
+    if(ans === 'skip') return null;
+    const map = (await V2X().kvGet('consentInputs')) || {};
+    map[center] = { mode: ans.mode, brief: ans.brief, change: ans.change };
+    V2X().kvSet('consentInputs', map);
+
+    const ey = (ans.eff.match(/(\d{4})/) || [])[1] || (eff ? String(eff.y) : '') || ((mgmt + labelValue(grid, '요청사유')).match(/(20\d{2})/) || [])[1] || String(new Date().getFullYear());
+    const bd = ans.mode === 'now' && ans.brief ? ans.brief.split('-') : null;
+    const common = {
+      YY: ey.slice(2), CENTER: center,
+      BRIEF: bd ? `${bd[0]}년 ${bd[1]}월 ${bd[2]}일` : '0000년 00월 00일',
+      CHANGE: ans.mode === 'now' && ans.change ? ans.change : CHANGE_HINT,
+      EFF: ans.eff
+    };
+    const files = [], used = new Set();
+    for(const pr of t.list){
+      const vals = Object.assign({}, common, valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes));
+      /* 조견표 PNG와 같은 이름 체계(급여조견표_센터_01_… → 변경동의서_센터_01_…)로 짝을 맞춤 */
+      const card = typeof cardRegistry !== 'undefined' ? cardRegistry.find(c => parsedData.jobs[c.idx] === pr.j) : null;
+      const base = card && /^급여조견표_/.test(safeName(card.filename)) ? safeName(card.filename).replace(/^급여조견표_/, '변경동의서_') : safeName(`변경동의서_${center}_${jobLabel(pr.j)}`);
+      let name = base + '.docx', n = 2;
+      while(used.has(name)) name = `${base}_${n++}.docx`;
+      used.add(name);
+      files.push({ name, blob: await makeDocx(vals), job: jobLabel(pr.j) });
+    }
+    return { files, meta: { center, count: files.length, jobs: files.map(f => f.job), fresh: t.fresh, eff: ans.eff, mode: ans.mode,
+      brief: ans.mode === 'now' ? common.BRIEF : '', change: ans.mode === 'now' ? common.CHANGE : '' } };
+  }
+
+  /* ---------- 생성 기록 (이 PC + 공유 폴더 04_스냅샷/동의서이력) ---------- */
+  async function log(consent, zipName){
+    const prof = V2X().profile;
+    const rec = Object.assign({ kind:'PAYCONSENT', v:1, id:`consent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      at: new Date().toISOString(), by: prof ? prof.name : '', zip: zipName }, consent.meta);
+    const list = (await V2X().kvGet('consentLog')) || [];
+    list.unshift(rec); V2X().kvSet('consentLog', list.slice(0, 500));
+    try{
+      const v = V2X();
+      if(v.shareDir && await v.perm(v.shareDir, false)){
+        const dir = await (await v.sub(v.SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
+        await v.writeFile(dir, `${rec.id}.json`, JSON.stringify(rec, null, 1));
+      }
+    }catch(e){ console.error(e); }
+  }
+  async function loadLog(){
+    const map = new Map();
+    ((await V2X().kvGet('consentLog')) || []).forEach(r => map.set(r.id, r));
+    try{
+      const v = V2X();
+      if(v.shareDir && await v.perm(v.shareDir, false)){
+        const dir = await (await v.sub(v.SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
+        for await (const e of dir.values()){
+          if(e.kind !== 'file' || !/\.json$/i.test(e.name)) continue;
+          try{ const r = JSON.parse((await (await e.getFile()).text()).replace(/^﻿/, '')); if(r.kind === 'PAYCONSENT' && r.id) map.set(r.id, r); }catch(err){}
+        }
+      }
+    }catch(e){ console.error(e); }
+    return [...map.values()].sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  }
+
+  /* 처리 이력 화면 아래에 '변경동의서 생성 기록' */
+  const histPanel = document.querySelector('#tabHistory .panel');
+  if(histPanel){
+    histPanel.insertAdjacentHTML('afterend', `<div class="panel" id="v2ConLog">
+      <div class="ph"><h2>변경동의서 생성 기록</h2><span class="hint" id="v2ConLogCount"></span></div>
+      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>생성 시각</th><th>센터</th><th class="r">동의서</th><th>시행일</th><th>설명회 일자</th><th>주요 변경사항</th><th>만든 사람</th></tr></thead><tbody id="v2ConLogBody"></tbody></table></div>
+      <p class="hint">조견표 ZIP을 받을 때 함께 만든 변경동의서입니다. 설명회 일자가 비어 있으면 '나중에 직접 작성'을 고른 경우입니다.</p>
+    </div>`);
+  }
+  async function renderLog(){
+    const body = $('v2ConLogBody'); if(!body) return;
+    const rows = await loadLog();
+    const fmt = t => new Date(t).toLocaleString('ko-KR', { year:'numeric', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    body.innerHTML = rows.slice(0, 300).map(r => `<tr><td class="num">${h(fmt(r.at))}</td><td>${h(r.center)}</td>
+      <td class="r num" title="${h((r.jobs || []).join(', '))}">${h(r.count)}개${r.fresh && r.fresh.length ? ` <span class="hint">(신규 ${r.fresh.length} 제외)</span>` : ''}</td>
+      <td class="num">${h(r.eff || '-')}</td><td class="num">${h(r.brief || '나중에 작성')}</td><td>${h(r.change || '-')}</td><td>${h(r.by || '-')}</td></tr>`).join('')
+      || '<tr><td colspan="7" class="empty">아직 만든 변경동의서가 없습니다.</td></tr>';
+    $('v2ConLogCount').textContent = rows.length ? `전체 ${rows.length}건` : '';
+  }
+  const origSwitch = switchAppTab;
+  switchAppTab = function(tabId){ origSwitch(tabId); if(tabId === 'history') renderLog(); };
+  const reload = $('v2HistReload'); if(reload) reload.addEventListener('click', renderLog);
+
+  window.__v2consent = { prepare, log, loadLog, valuesFor, parseEffective, makeDocx };
 })();
 
 </script>

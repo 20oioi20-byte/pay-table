@@ -936,7 +936,7 @@
 
   /* 변경전 대비 비교: JSON의 before(또는 엑셀의 변경전 시트)를 같은 파서로 읽어 직무별 월 합계 비교 */
   const RAISE_LIMIT = 0.15;
-  let beforeData = null, compareRows = [];
+  let beforeData = null, compareRows = [], comparePrev = null, comparePairs = [];
   const comparePanel = document.createElement('div');
   comparePanel.className = 'panel'; comparePanel.id = 'v2Compare'; comparePanel.hidden = true;
   $('dropzone').closest('.panel').after(comparePanel);
@@ -977,7 +977,7 @@
   let compareNote = '';
   const normJob = s => String(s || '').replace(/\s+/g, '').replace(/[()（）\[\]·.,_-]/g, '').toLowerCase();
   function buildCompare(parsed){
-    compareRows = []; compareNote = '';
+    compareRows = []; compareNote = ''; comparePrev = null; comparePairs = [];
     if(!beforeData){ compareNote = '변경전 시트가 없습니다 (신규 센터 또는 변경전 정보 없음).'; return; }
     let prev;
     try{ prev = parsePaytable(paytablePayloadToWorkbook({ sheet:'급여테이블(변경후)', start: beforeData.start, values: beforeData.values }).wb); }
@@ -989,6 +989,7 @@
     rows.forEach(r => { r.p = take(p => p.block === r.j.block && normJob(jobLabel(p)) === r.key); if(r.p) r.how = ''; });
     rows.forEach(r => { if(!r.p){ r.p = take(p => normJob(jobLabel(p)) === r.key || (r.name && normJob(p.jobName) === r.name)); if(r.p) r.how = r.p.block !== r.j.block ? '블록 이동' : ''; } });
     rows.forEach(r => { if(!r.p && r.name){ r.p = take(p => { const n = normJob(p.jobName); return n && n.length >= 2 && (r.name.startsWith(n) || n.startsWith(r.name)); }); if(r.p) r.how = `세분화 (변경전: ${jobLabel(r.p)})`; } });
+    comparePrev = prev; comparePairs = rows.map(r => ({ j: r.j, p: r.p || null, how: r.how || '' }));   // 변경동의서(v2_consent.js)용 짝
     compareRows = rows.map(r => {
       const b = r.p && typeof r.p.monthlyTotal === 'number' ? r.p.monthlyTotal : null, a = typeof r.j.monthlyTotal === 'number' ? r.j.monthlyTotal : null;
       return { label: r.label, before: b, after: a, diff: b != null && a != null ? a - b : null, rate: b ? (a - b) / b : null, tag: r.p ? r.how : '신규' };
@@ -1319,6 +1320,13 @@
     if(zipBusy) return;
     if(!cardRegistry.length) return toast('먼저 [조견표 생성]을 눌러 주세요.');
     if(!checkGateOpen()){ toast('확인 항목을 먼저 체크해 주세요.'); $('checkPanel').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
+    /* 기존 센터면 호봉별 변경동의서(Word)를 같은 ZIP에 넣음 (신규 센터는 null, 취소는 false) */
+    let consent = null;
+    if(window.__v2consent){
+      try{ consent = await window.__v2consent.prepare(); }
+      catch(err){ console.error(err); toast('변경동의서를 만들지 못했습니다: ' + err.message + ' · 조견표만 받습니다.', 10000); consent = null; }
+      if(consent === false) return;
+    }
     zipBusy = true;
     const btn = $('zipBtn'), total = cardRegistry.length, zip = new JSZip(), used = new Set(), failed = [];
     let ok = 0;
@@ -1340,6 +1348,7 @@
         }catch(err){ failed.push(jobName || filename); console.error(err); }
       }
       if(!ok){ toast('PNG를 만들지 못했습니다. 카드별 개별 다운로드를 이용해 주세요.', 10000); return; }
+      if(consent) consent.files.forEach(f => zip.file('변경동의서/' + f.name, f.blob));
       say('ZIP 묶는 중 0%');
       const content = await Promise.race([
         zip.generateAsync({ type:'blob', compression:'STORE' }, meta => say(`ZIP 묶는 중 ${Math.round(meta.percent)}%`)),
@@ -1347,13 +1356,15 @@
       ]);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
-      a.download = safeName(`급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
+      a.download = safeName(consent ? `급여조견표_${parsedData.centerName}_${ok}개_변경동의서_${consent.files.length}개` : `급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
+      if(consent) window.__v2consent.log(consent, a.download);
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 15000);
       zipDone = true;
       const hint = $('resultCountHint');
       if(hint) hint.textContent = `ZIP 완료: ${ok}/${total}개` + (failed.length ? ` · 실패 ${failed.length}개(${failed.join(', ')})` : '');
-      toast(failed.length ? `ZIP 다운로드: ${ok}개 포함, ${failed.length}개 실패(${failed.join(', ')})` : `ZIP 다운로드 완료 · 조견표 ${ok}장. 다음은 [통계에 저장]입니다.`, 8000);
+      const withDoc = consent ? ` · 변경동의서 ${consent.files.length}개` : '';
+      toast(failed.length ? `ZIP 다운로드: ${ok}개 포함${withDoc}, ${failed.length}개 실패(${failed.join(', ')})` : `ZIP 다운로드 완료 · 조견표 ${ok}장${withDoc}. 다음은 [통계에 저장]입니다.`, 8000);
     }catch(err){
       console.error(err); toast('ZIP을 만들지 못했습니다: ' + err.message + ' · 카드별 개별 다운로드를 이용해 주세요.', 10000);
     }finally{
@@ -1435,5 +1446,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; } };
 })();

@@ -86,10 +86,26 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   await p.waitForSelector('#v2Next [data-n="zip"]');
   const dl = p.waitForEvent('download', { timeout: 120000 });
   await p.click('#v2Next [data-n="zip"]');
+  // 기존 센터(변경전 시트 있음) → 변경동의서 입력 창
+  await p.waitForSelector('#v2Consent:not([hidden])');
+  ok(await p.inputValue('#v2ConEff') === '2026. 01. 01.', `변경동의서: 시행일을 관리번호에서 읽음 (${await p.inputValue('#v2ConEff')})`);
+  await p.click('[data-con="ok"]');
+  ok(await p.isVisible('#v2ConErr') && /설명회 일자/.test(await p.textContent('#v2ConErr')), '변경동의서: 지금 입력인데 설명회 일자가 없으면 막음');
+  await p.fill('#v2ConBrief', '2025-12-15');
+  await p.fill('#v2ConChange', '2026년 최저임금 인상 반영');
+  await p.click('[data-con="ok"]');
   const d = await dl;
   // 시험용 Chromium(headless)은 한글 파일명을 'download'로 바꿔 보고함 → 다운로드가 일어났는지와 크기만 확인
-  const size = fs.statSync(await d.path()).size;
+  const zipPath = await d.path(), size = fs.statSync(zipPath).size;
   ok(size > 10000, `ZIP 다운로드 (${Math.round(size / 1024)}KB, 화면 멈춤 없이 진행률 표시)`);
+  const entries = require('child_process').execFileSync('python3', ['-I', '-c', 'import sys,zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))', zipPath]).toString().trim().split('\n');
+  const pngs = entries.filter(n => /\.png$/i.test(n)), docs = entries.filter(n => /^변경동의서\/.+\.docx$/.test(n));
+  const pairs = await p.evaluate(() => { const v = window.__v2; return parsedData.jobs.filter((j, i) => selectedJobs.has(i) && v.comparePairs.some(x => x.j === j && x.p)).length; });
+  ok(pngs.length > 0 && docs.length === pairs, `ZIP 안: 조견표 PNG ${pngs.length}장 + 변경동의서 Word ${docs.length}개(변경전 짝이 있는 호봉 ${pairs}개)`);
+  if(process.env.CONSENT_OUT) fs.copyFileSync(zipPath, process.env.CONSENT_OUT);
+  await p.click('#tabBtnHistory'); await p.waitForTimeout(500);
+  ok(/변경동의서/.test(await p.textContent('#v2ConLogBody')) || /2025년 12월 15일/.test(await p.textContent('#v2ConLogBody')), '처리 이력에 변경동의서 생성 기록');
+  await p.click('.app-tab[data-tab="create"]');
   await p.waitForSelector('#v2Next [data-n="snap"]');
   ok(true, '다음 단계: 통계에 저장 안내');
   await p.click('#v2Next [data-n="snap"]');
