@@ -818,6 +818,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .v2-job .v2-act.v2-col{ flex-direction:column; align-items:stretch; gap:8px; }
   .v2-steps{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.8; }
   .v2-paste{ width:100%; min-height:70px; padding:10px 12px; border:2px dashed var(--pri); border-radius:10px; font:inherit; font-size:13px; background:var(--pri-soft); resize:vertical; }
+  .v2-sp{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
+  .v2-sp p{ margin:0; } .v2-sp label{ display:flex; flex-direction:column; gap:4px; font-weight:600; }
+  .v2-sp input{ padding:7px 9px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:13px; max-width:720px; }
+  .v2-sp-row{ display:flex; gap:12px; flex-wrap:wrap; } .v2-sp-row input{ width:180px; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
@@ -4845,7 +4849,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     const s = await readJson(await sub(SUB.cfg, true), 'settings.json');
     if(s && s.kind === 'PAYSETTINGS' && s.settings){
       SETTINGS = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), s.settings);
-      await saveSettings();
+      await saveSettings(); applyLinks();
       const m = $('v2SetMsg'); if(m) m.textContent = `공유 설정 적용됨 · ${s.updatedBy || ''} · ${String(s.updatedAt || '').slice(0, 10)}`;
     }
   }
@@ -5302,7 +5306,33 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   /* ============================================================
      1차 · 바로가기 링크 / 상태 점검 / 센터별 자동 채움 / 결과 자동 보관
      ============================================================ */
-  const LINKS = V2.links || {};
+  /* 바로가기·업로드 주소: [기준정보 › SharePoint 주소]에 입력한 값(공유 settings.json) → 없으면 빌드 때 넣은 값
+     회사 주소를 저장소·빌드 파일에 넣지 않아도 관리자가 한 번 입력하면 모든 사용자가 웹 업로드를 씀 */
+  const BUILD_LINKS = Object.assign({}, V2.links || {}), BUILD_SP = V2.sharepointUrl || '';
+  const LINKS = new Proxy({}, { get: (_, k) => (V2.links || {})[k] });
+  /* SharePoint 주소 정리: https만 허용, 'AllItems.aspx?id=/sites/…/급여조견표' 형태는 폴더 경로 주소로 바꿈 */
+  function normSp(url){
+    let u; try{ u = new URL(String(url || '').trim()); }catch(e){ return ''; }
+    if(u.protocol !== 'https:') return '';
+    const id = u.searchParams.get('id');
+    const path = id && id.startsWith('/') ? id : decodeURIComponent(u.pathname);
+    return u.origin + path.replace(/\/+$/, '').split('/').map(x => encodeURIComponent(x)).join('/').replace(/%2F/gi, '/');
+  }
+  function flowLinks(url){
+    const m = String(url || '').match(/^https:\/\/[^/]*powerautomate\.com\/(?:[^?#]*\/)?environments\/([^/?#]+)\/flows\/([^/?#]+)/i);
+    return m ? { flowRuns: `https://make.powerautomate.com/environments/${m[1]}/flows/${m[2]}/details`, flowEdit: `https://make.powerautomate.com/environments/${m[1]}/flows/${m[2]}` } : {};
+  }
+  function applyLinks(){
+    const c = SETTINGS.links || {}, sp = normSp(c.folder);
+    const L = Object.assign({}, BUILD_LINKS);
+    if(sp){
+      const base = sp.replace(/\/[^/]*$/, '');
+      Object.assign(L, { folder: sp, upload: base + '/' + encodeURIComponent(c.uploadFolder || '급여원본'), archive: base + '/' + encodeURIComponent(c.archiveFolder || '급여보관') });
+    }
+    Object.assign(L, flowLinks(c.flow));
+    if(normSp(c.guide)) L.guide = normSp(c.guide);
+    V2.links = L; V2.sharepointUrl = sp || BUILD_SP;
+  }
   const folderUrl = name => LINKS.folder ? LINKS.folder + (name ? '/' + name.split('/').map(encodeURIComponent).join('/') : '') : '';
   const linkBtn = (label, url, cls) => url ? `<a class="${cls || 'btn-ghost'} v2-link" href="${h(url)}" target="_blank" rel="noopener">${h(label)} ↗</a>` : '';
   const isAdmin = () => { const a = (SETTINGS.admins || []).filter(Boolean); return !a.length || !!(profile && a.includes(profile.ini)); };
@@ -5331,6 +5361,19 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
         <button type="button" class="btn-ghost btn-sm" id="v2AdminSave">저장</button>
         <span class="hint" id="v2AdminMsg">비워 두면 모든 사용자가 이 메뉴를 봅니다(혼자 쓸 때). 이니셜을 넣으면 그 사람에게만 관리자 메뉴가 보입니다.</span>
       </div>
+      <div class="v2-sp" id="v2Sp">
+        <span class="flabel">SharePoint 주소 <span class="hint" id="v2SpState"></span></span>
+        <p class="hint">한 번 입력하고 [저장]을 누르면 공유 폴더(99_설정)에 저장되어 <b>모든 사용자</b>의 웹 업로드·바로가기에 쓰입니다. 시스템 파일(HTML)을 새 버전으로 바꿔도 다시 넣을 필요가 없습니다.</p>
+        <label>공유 폴더(급여조견표) 주소 <input type="url" id="v2SpFolder" placeholder="https://회사.sharepoint.com/sites/…/Shared Documents/급여조견표"></label>
+        <span class="hint">SharePoint에서 '급여조견표' 폴더를 연 상태의 브라우저 주소창 주소를 그대로 붙여 넣으세요.</span>
+        <div class="v2-sp-row">
+          <label>업로드 폴더 이름 <input type="text" id="v2SpUpload" placeholder="급여원본"></label>
+          <label>보관 폴더 이름 <input type="text" id="v2SpArchive" placeholder="급여보관"></label>
+        </div>
+        <label>Power Automate 흐름 주소 (선택) <input type="url" id="v2SpFlow" placeholder="https://make.powerautomate.com/environments/…/flows/…"></label>
+        <label>M365 설정 가이드 주소 (선택) <input type="url" id="v2SpGuide" placeholder="https://…"></label>
+        <div class="v2-act" style="justify-content:flex-start"><button type="button" class="btn-primary btn-sm" id="v2SpSave">저장하고 모든 사용자에게 적용</button><span class="hint" id="v2SpMsg"></span></div>
+      </div>
     </div>`);
   function renderLinks(){
     const L = [
@@ -5353,7 +5396,24 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     $({ auto:'v2ModeAuto', web:'v2ModeWeb', paste:'v2ModePaste' }[uploadMode()]).checked = true;
     renderDropHint();
     $('v2AutoArchive').checked = SETTINGS.autoArchive === true;
+    const c = SETTINGS.links || {};
+    $('v2SpFolder').value = c.folder || ''; $('v2SpUpload').value = c.uploadFolder || ''; $('v2SpArchive').value = c.archiveFolder || '';
+    $('v2SpFlow').value = c.flow || ''; $('v2SpGuide').value = c.guide || '';
+    $('v2SpState').textContent = normSp(c.folder) ? '· 기준정보에 입력된 주소 사용 중' : BUILD_SP ? '· 시스템 파일에 들어 있는 주소 사용 중' : '· 입력 안 됨 (웹 업로드를 쓸 수 없음)';
   }
+  $('v2SpSave').addEventListener('click', async () => {
+    const msg = $('v2SpMsg'), folder = $('v2SpFolder').value.trim(), flow = $('v2SpFlow').value.trim(), guide = $('v2SpGuide').value.trim();
+    if(folder && !normSp(folder)) return msg.textContent = '공유 폴더 주소는 https:// 로 시작해야 합니다.';
+    if(folder && !/sharepoint\.com/i.test(folder)) msg.textContent = 'SharePoint 주소가 아닌 것 같습니다. 확인해 주세요. ';
+    if(flow && !flowLinks(flow).flowRuns) return msg.textContent = '흐름 주소에서 환경·흐름 ID를 찾지 못했습니다. 흐름 상세 화면의 주소를 붙여 넣어 주세요.';
+    if(guide && !normSp(guide)) return msg.textContent = '가이드 주소는 https:// 로 시작해야 합니다.';
+    SETTINGS.links = { folder, uploadFolder: $('v2SpUpload').value.trim(), archiveFolder: $('v2SpArchive').value.trim(), flow, guide };
+    await saveSettings(); applyLinks();
+    let shared = false;
+    if(shareDir && await perm(shareDir, true)){ await publishSettings(); shared = true; }
+    renderLinks();
+    msg.textContent = (folder ? `저장했습니다 · 업로드 폴더: ${decodeURIComponent(V2.links.upload || '')}` : '주소를 지웠습니다.') + (shared ? ' · 모든 사용자에게 적용했습니다.' : ' · 공유 폴더가 연결되지 않아 이 PC에만 저장했습니다.');
+  });
   function renderDropHint(){
     const up = (V2.links || {}).upload;
     webStart.hidden = !(uploadMode() === 'web' && up);
@@ -6115,6 +6175,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   /* ---------- 시작 ---------- */
   (async () => {
     await loadSystem();
+    applyLinks();
     profile = await kvGet('profile');
     shareDir = await kvGet('shareDir');
     pending = await kvGet('pending');

@@ -220,6 +220,17 @@ const seedFolders = p => p.evaluate(async () => {
   // (시험 환경은 한글 파일명이 인코딩되어 보이므로 상태로 확인)
   ok(await p.textContent('#v2State') === '완료', '시스템에 파일을 올리지 않고도 새 결과를 받아 조견표 화면');
 
+  console.log('8-2. [기준정보 › SharePoint 주소] 저장 → 공유 폴더 99_설정/settings.json에 기록(모든 사용자 적용)');
+  await p.click('.app-tab[data-tab="settings"]');
+  await p.fill('#v2SpFolder', 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여조견표');
+  await p.click('#v2SpSave'); await p.waitForTimeout(800);
+  const shared = await p.evaluate(async () => {
+    const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('급여조견표')).getDirectoryHandle('99_설정');
+    return JSON.parse(await (await (await d.getFileHandle('settings.json')).getFile()).text()).settings.links;
+  });
+  ok(shared && shared.folder === 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여조견표', 'settings.json에 SharePoint 주소 저장: ' + (shared && shared.folder));
+  ok(/모든 사용자에게 적용/.test(await p.textContent('#v2SpMsg')), await p.textContent('#v2SpMsg'));
+
   console.log('6. 다시 열면 안내 없이 바로 연결');
   await p.reload(); await p.waitForTimeout(1500);
   ok(await p.$eval('#v2Wizard', e => e.hidden), '첫 실행 안내 안 뜸');

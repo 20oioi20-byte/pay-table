@@ -173,6 +173,24 @@ for n in sorted(z.namelist()):
   ok(/업로드 대기\(22시간 전\)를 닫았습니다/.test(await p.textContent('#v2Toast')), await p.textContent('#v2Toast'));
   ok(await p.evaluate(async () => (await window.__v2.kvGet('pending')) === null) && !(await p.isVisible('#v2Retry')), '대기 기록 삭제 · 실패 화면 없음');
 
+  console.log('8. [기준정보 › SharePoint 주소] 입력 → 빌드 없이 웹 업로드·바로가기 사용 (가상 주소)');
+  ok(await p.evaluate(() => window.__v2.uploadMode()) === 'paste', '주소가 없으면 붙여넣기 방식');
+  await p.click('.app-tab[data-tab="settings"]');
+  ok(/입력 안 됨/.test(await p.textContent('#v2SpState')), await p.textContent('#v2SpState'));
+  await p.fill('#v2SpFolder', 'javascript:alert(1)'); await p.click('#v2SpSave');
+  ok(/https:\/\//.test(await p.textContent('#v2SpMsg')), 'https가 아닌 주소는 저장 안 함');
+  await p.fill('#v2SpFolder', 'https://dummy.sharepoint.com/sites/paysys/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fpaysys%2FShared%20Documents%2F%EA%B8%89%EC%97%AC%EC%A1%B0%EA%B2%AC%ED%91%9C&viewid=abc');
+  await p.fill('#v2SpFlow', 'https://make.powerautomate.com/environments/Default-123/flows/abc-456/details');
+  await p.click('#v2SpSave');
+  const L = await p.evaluate(() => Object.assign({}, window.V2_CONFIG.links));
+  ok(decodeURIComponent(L.folder) === 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여조견표', '폴더 주소(AllItems 형태 → 폴더 경로): ' + decodeURIComponent(L.folder));
+  ok(decodeURIComponent(L.upload) === 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여원본' && decodeURIComponent(L.archive).endsWith('/급여보관'), '업로드·보관 폴더 주소 자동 계산: ' + decodeURIComponent(L.upload));
+  ok(L.flowRuns === 'https://make.powerautomate.com/environments/Default-123/flows/abc-456/details', '흐름 실행 기록 주소');
+  ok(await p.evaluate(() => window.__v2.uploadMode()) === 'web' && (await p.$$('#v2Links .v2-linkcard')).length >= 8, '웹 업로드 방식으로 전환 · 바로가기 표시');
+  await p.reload(); await p.waitForTimeout(1500);
+  await p.click('.app-tab[data-tab="create"]');
+  ok(await p.isVisible('#v2WebGo') && decodeURIComponent(await p.getAttribute('#v2WebGo', 'href')).endsWith('/급여원본'), '다시 열어도 유지: [SharePoint에 바로 올리기] 버튼이 업로드 폴더로 연결');
+
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');
   await b.close(); srv.close(); process.exit(failed ? 1 : 0);

@@ -107,6 +107,10 @@ V2_CSS = """
   .v2-job .v2-act.v2-col{ flex-direction:column; align-items:stretch; gap:8px; }
   .v2-steps{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.8; }
   .v2-paste{ width:100%; min-height:70px; padding:10px 12px; border:2px dashed var(--pri); border-radius:10px; font:inherit; font-size:13px; background:var(--pri-soft); resize:vertical; }
+  .v2-sp{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
+  .v2-sp p{ margin:0; } .v2-sp label{ display:flex; flex-direction:column; gap:4px; font-weight:600; }
+  .v2-sp input{ padding:7px 9px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:13px; max-width:720px; }
+  .v2-sp-row{ display:flex; gap:12px; flex-wrap:wrap; } .v2-sp-row input{ width:180px; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
