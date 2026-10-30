@@ -222,7 +222,10 @@ for n in sorted(z.namelist()):
   const fv = () => p.evaluate(() => window.__v2flow.view);
   ok(await fv() === 'check', '파일을 읽으면 ② 검사 탭');
   ok(await p.isHidden('#jobPanel') && await p.isVisible('#checkPanel'), '지금 단계 패널만 보임');
-  ok(await p.$eval('#v2Flow [data-flow="get"]', b => b.disabled), '아직 못 하는 단계(받기)는 누를 수 없음');
+  await p.click('#v2Flow [data-flow="get"]');
+  ok(await p.isVisible('#v2FlowLock') && /조견표를 먼저 만들어/.test(await p.textContent('#v2FlowLock')) && await p.isHidden('#v2GetZip'), '아직 못 하는 단계(받기)도 눌러 볼 수 있고, 먼저 할 일을 안내: ' + (await p.textContent('#v2FlowLockM')));
+  await p.click('#v2FlowLockGo'); ok(await fv() === 'make', '[④ 조견표 만들기로 가기] 버튼');
+  await p.click('#v2Flow [data-flow="check"]');
   if(await p.isVisible('#v2Next [data-n="ackall"]')) await p.click('#v2Next [data-n="ackall"]');
   await p.click('#v2Flow [data-flow="quote"]');
   await p.click('[data-settle="정산"]'); await p.waitForTimeout(200);
@@ -235,6 +238,23 @@ for n in sorted(z.namelist()):
   ok(await fv() === 'get' && await p.isVisible('#v2GetZip'), '조견표를 만들면 ⑤ 받기·올리기 탭');
   await p.click('#v2Flow [data-flow="save"]'); await p.click('#snapSaveBtn'); await p.waitForTimeout(600);
   ok(await fv() === 'done' && await p.isVisible('#v2FlowDone'), '통계에 저장하면 ⑦ 완료 탭');
+
+  console.log('11. 파일을 올리기 전에도 모든 단계를 눌러 볼 수 있음 · ① 업로드 [올리기 취소]');
+  await p.reload(); await p.waitForTimeout(1200);
+  await p.click('.app-tab[data-tab="create"]');
+  for(const k of ['check', 'quote', 'make', 'get', 'save', 'done']){
+    await p.click(`#v2Flow [data-flow="${k}"]`);
+    if(!(await p.isVisible('#v2FlowLock') && /급여테이블을 먼저 올려/.test(await p.textContent('#v2FlowLockM')))){ ok(false, `${k} 단계 안내 없음`); break; }
+  }
+  ok(true, '업로드 전: 6개 단계 모두 열리고 "① 급여테이블을 먼저 올려 주세요" 안내');
+  await p.click('#v2Flow [data-flow="up"]');
+  const [pop] = await Promise.all([p.context().waitForEvent('page'), p.click('#v2WebGo')]); await pop.close();
+  await p.waitForFunction(() => document.getElementById('v2State').textContent === '웹 업로드');
+  ok(await p.isVisible('#v2Cancel'), '업로드 대기 중 [올리기 취소] 버튼 표시');
+  p.once('dialog', d => d.accept());
+  await p.click('#v2Cancel'); await p.waitForTimeout(300);
+  ok(await p.isHidden('#v2Job') && await p.evaluate(async () => (await window.__v2.kvGet('pending')) === null), '취소하면 대기 화면이 닫히고 대기 기록 삭제');
+  ok(/취소했습니다/.test(await p.textContent('#v2Toast')), await p.textContent('#v2Toast'));
 
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');

@@ -3,7 +3,7 @@
    ① 업로드·기본정보 → ② 검사 → ③ 견적 검증 → ④ 조견표·동의서 → ⑤ 받기·올리기 → ⑥ 통계 저장 → ⑦ 완료
    - 기존 패널은 그대로 두고 지금 단계의 패널만 보이게 함 (기능 코드는 바꾸지 않음)
    - 위쪽 요약(센터·인식 직무·검사 결과·생성 조견표)과 아래 '다음 할 일' 막대는 그대로
-   - 끝난 단계·지금 단계만 누를 수 있고, 일이 끝나면 다음 단계로 자동으로 넘어감
+   - 모든 단계를 눌러 볼 수 있음(아직 못 하는 단계는 무엇을 먼저 해야 하는지 안내), 일이 끝나면 다음 단계로 자동으로 넘어감
    ============================================================ */
 (() => {
   const $ = id => document.getElementById(id);
@@ -14,6 +14,7 @@
 
   /* ---------- 단계별 새 패널 ---------- */
   $('snapPanel').insertAdjacentHTML('beforebegin', `
+  <div class="panel v2-lockmsg" id="v2FlowLock" hidden><b id="v2FlowLockT"></b><p class="hint" id="v2FlowLockM"></p><button type="button" class="btn-ghost btn-sm" id="v2FlowLockGo"></button></div>
   <div class="panel" id="v2QuoteNone" hidden><div class="ph"><h2>견적 대비 직접인건비</h2></div>
     <p class="hint">이 파일에는 견적서·견적대비 비교 시트가 없어 견적 검증을 건너뜁니다. 다음 단계로 넘어가세요.</p></div>
   <div class="panel" id="v2ConPlan" hidden><div class="ph"><h2>변경동의서 확인</h2><span class="hint" id="v2ConPlanSum"></span></div>
@@ -69,17 +70,16 @@
     s.done = snapSaved ? ['done', '완료'] : ['lock', '대기'];
     return s;
   }
-  function setView(k, force){   // force: 시험·도움말용으로 잠긴 단계도 열기
+  function setView(k, force){   // 아직 못 하는 단계도 열어 볼 수 있음 (안내만 보임)
     const st = status();
-    if(!st[k] || (st[k][0] === 'lock' && !force)) return false;
+    if(!st[k]) return false;
     view = k; forced = !!force; render(st);
     window.scrollTo({ top: Math.max(0, nav.getBoundingClientRect().top + window.scrollY - 70), behavior:'smooth' });
     return true;
   }
   function render(st){
     st = st || status();
-    if(st[view][0] === 'lock' && !forced) view = 'up';
-    nav.innerHTML = STEPS.map((x, i) => `<li><button type="button" data-flow="${x.k}" class="${st[x.k][0]}${x.k === view ? ' on' : ''}"${st[x.k][0] === 'lock' ? ' disabled' : ''}>
+    nav.innerHTML = STEPS.map((x, i) => `<li><button type="button" data-flow="${x.k}" class="${st[x.k][0]}${x.k === view ? ' on' : ''}"${st[x.k][0] === 'lock' ? ' title="아직 진행할 수 없는 단계입니다. 눌러서 무엇을 먼저 해야 하는지 볼 수 있습니다."' : ''}>
       <span class="n">${st[x.k][0] === 'done' ? '✓' : i + 1}</span><span class="t">${x.t}</span><span class="s">${h(st[x.k][1])}</span></button></li>`).join('');
     STEPS.forEach(x => x.el().forEach(e => { if(e) e.classList.toggle('v2-off', x.k !== view); }));
     const R = (window.__v2quote || {}).result;
@@ -87,10 +87,24 @@
     if(view === 'make') drawPlan();
     if(view === 'get') drawGet();
     if(view === 'done') drawDone();
-    $('v2ConPlan').hidden = view !== 'make' || !$('v2ConPlanBody').children.length;
-    $('v2Get').hidden = view !== 'get';
-    $('v2FlowDone').hidden = view !== 'done';
+    /* 아직 못 하는 단계: 그 단계 화면 대신 무엇을 먼저 해야 하는지 안내 */
+    const locked = st[view][0] === 'lock' && !forced;
+    if(locked){
+      const need = !has() ? ['up', '① 급여테이블을 먼저 올려 주세요.', '① 업로드로 가기']
+        : st.check[0] !== 'done' ? ['check', '② 검사에서 차단·확인 항목을 먼저 처리해 주세요.', '② 검사로 가기']
+        : !cards() ? ['make', '④ 조견표·동의서에서 조견표를 먼저 만들어 주세요.', '④ 조견표 만들기로 가기']
+        : ['save', '⑥ 통계 저장을 마치면 완료됩니다.', '⑥ 통계 저장으로 가기'];
+      $('v2FlowLockT').textContent = `${STEPS.findIndex(x => x.k === view) + 1}. ${STEPS.find(x => x.k === view).t} — 아직 진행할 수 없습니다`;
+      $('v2FlowLockM').textContent = need[1]; $('v2FlowLockGo').textContent = need[2]; $('v2FlowLockGo').dataset.go = need[0];
+    }
+    $('v2FlowLock').hidden = !locked;
+    if(locked) STEPS.forEach(x => x.el().forEach(e => { if(e) e.classList.add('v2-off'); }));
+    $('v2QuoteNone').hidden = locked || $('v2QuoteNone').hidden;
+    $('v2ConPlan').hidden = locked || view !== 'make' || !$('v2ConPlanBody').children.length;
+    $('v2Get').hidden = locked || view !== 'get';
+    $('v2FlowDone').hidden = locked || view !== 'done';
   }
+  $('v2FlowLockGo').addEventListener('click', e => setView(e.target.dataset.go));
   nav.addEventListener('click', e => { const b = e.target.closest('[data-flow]'); if(b) setView(b.dataset.flow); });
 
   /* ④ 변경동의서 확인 */
@@ -147,7 +161,7 @@
       else if(now.cards && !last.cards) view = 'get';
       else if(now.zip && !last.zip) view = 'save';
       else if(now.snap && !last.snap) view = 'done';
-      else if(!p) view = 'up';
+      else if(!p && last.parsed) view = 'up';
       if(view !== before) forced = false;
       last = now;
       render();

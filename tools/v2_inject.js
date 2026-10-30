@@ -82,7 +82,7 @@
   qPanel.innerHTML = `
     <div class="v2-job-head">
       <div><span class="v2-state" id="v2State">처리 중</span> <b id="v2JobFile"></b><div class="hint" id="v2JobSub"></div></div>
-      <div class="v2-timer" id="v2Timer">0:00</div>
+      <div class="v2-job-right"><div class="v2-timer" id="v2Timer">0:00</div><button type="button" class="btn-ghost btn-sm" id="v2Cancel" title="올리기·결과 기다리기를 멈추고 처음 화면으로">올리기 취소</button></div>
     </div>
     <div class="v2-track"><div class="v2-fill" id="v2Fill"></div></div>
     <p class="hint" id="v2JobMsg"></p>
@@ -341,6 +341,19 @@
       startPolling();
     }
   };
+
+  /* ① 업로드 화면 [올리기 취소]: 기다리던 요청·붙여넣기 안내·연결 대기 파일을 모두 멈추고 처음 화면으로
+     (SharePoint에 이미 올린 원본은 그대로이며, 결과가 오면 처리 이력에서 열 수 있음) */
+  $('v2Cancel').addEventListener('click', async () => {
+    const waiting = pending && pending.web ? ' SharePoint에 이미 올린 파일은 그대로 있고, 결과가 오면 [처리 이력]에서 열 수 있습니다.' : '';
+    if(!confirm('올리기를 취소할까요?' + waiting)) return;
+    clearInterval(pollTimer); clearInterval(tickTimer);
+    pending = null; heldFile = null; await kvSet('pending', null);
+    qPanel.hidden = true; renderNavBadge('');
+    document.title = document.title.replace(/^● 완료 · /, '');
+    if(!(typeof parsedData !== 'undefined' && parsedData)) fileMeta.textContent = '';
+    toast('올리기를 취소했습니다. 다른 파일을 올릴 수 있습니다.', 5000);
+  });
 
   /* 보안 파일인데 공유 폴더를 쓸 수 없을 때: 오류 대신 안내 + 연결 후 자동으로 이어서 처리 */
   function holdForConnection(file, why){

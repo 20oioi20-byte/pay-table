@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.7.0'
+APP_VERSION = '2.7.1'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -139,6 +139,9 @@ V2_CSS = """
   .v2-settabs{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px; }
   .v2-settabs button{ border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 18px; font:inherit; font-size:14px; font-weight:700; cursor:pointer; color:var(--ink2); }
   .v2-settabs button[aria-selected="true"]{ background:#000; border-color:#000; color:#fff; }
+  .v2-job-right{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .v2-flow button.lock{ opacity:.55; } .v2-flow button.lock:hover{ opacity:.85; }
+  .v2-lockmsg{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; border-style:dashed; } .v2-lockmsg[hidden]{ display:none; } .v2-lockmsg p{ margin:0; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
