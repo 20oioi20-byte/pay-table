@@ -161,19 +161,36 @@
     const inc = R.missing.length > 0;   // 인원·업적수당 입력이 빠지면 합계를 확정하지 않음
     const status = R.rate == null ? null : inc ? ['입력 필요', 'sx'] : R.rate > 5 ? ['초과 주의', 'sr'] : R.rate > 0 ? ['초과', 'so'] : ['여유', 'sx'];
     const dash = v => inc ? '–' : v;
+    /* v2.7 · 받는 금액 → 주는 금액 → 견적 대비 % 를 한 줄 흐름으로, 계산 방법은 펼쳐 보기, 정산 센터는 눈에 띄게 */
+    R.settle = INP.settle || ((V2X().answers || {}).settle) || '';
+    R.settleOk = INP.settleAck != null && INP.settleAck === Math.round(R.paid || 0);
+    const pct = R.received ? R.paid / R.received * 100 : null;
+    const settleSeg = `<div class="v2-qsettle-seg" role="radiogroup" aria-label="인건비 정산 여부"><span>인건비 정산</span>${['정산', '미정산'].map(v => `<button type="button" data-settle="${v}" aria-pressed="${R.settle === v}">${v}</button>`).join('')}</div>`;
     const kpi = R.received == null ? `<div class="v2-qnote">${extra == null
         ? '견적서 시트 정보가 없습니다. 보안 파일은 <b>자동연동 스크립트 v2.6</b>(관리자 1회 교체)부터 견적서·견적대비 비교 시트를 함께 보냅니다. 일반 엑셀은 그대로 읽습니다.'
         : `견적서 시트를 찾지 못했습니다 (받은 시트: ${h(extra.map(s => s.name).join(', ') || '없음')}). '직접인건비 소계' 행이 있는 시트를 견적서로 읽습니다.`}</div>`
-      : `<div class="v2-qkpi">
-        <div><span>받는 직접인건비 (월)</span><b>${won(R.received)}</b><small>연 ${won(R.received * 12)}</small></div>
-        <div><span>급여설계 직접인건비 (월)</span><b>${dash(won(R.paid))}</b><small>${inc ? `입력 필요 ${R.missing.length}개` : `연 ${won(R.paid * 12)}`}</small></div>
-        <div class="${!inc && R.gap > 0 ? 'over' : ''}"><span>${inc ? '차이' : R.gap > 0 ? '초과 설계' : '여유'} (월)</span><b>${dash(`${R.gap > 0 ? '+' : ''}${won(R.gap)}`)}</b><small>${dash(`연 ${R.gap > 0 ? '+' : ''}${won(R.gap * 12)}`)}</small></div>
-        <div><span>가용 범위 대비</span><b>${dash(`${R.rate > 0 ? '+' : ''}${R.rate.toFixed(1)}%`)}</b><small><span class="v2-qst ${status[1]}">${status[0]}</span></small></div>
+      : `${settleSeg}
+      ${R.settle === '정산' ? `<div class="v2-qsettle ${inc ? '' : R.settleOk ? 'ack' : 'need'}">
+        <div class="v2-qsettle-head">정산 센터 <span>견적 직접인건비와 급여설계 직접인건비가 같아야 정산 차액이 생기지 않습니다</span></div>
+        <div class="v2-qsettle-big">${inc ? '입력 필요' : `견적 대비 <b>${pct.toFixed(1)}%</b> · 차이 <b>${R.gap > 0 ? '+' : ''}${won(R.gap)}원</b>/월`}</div>
+        ${inc ? '' : `<label class="v2-check"><input type="checkbox" id="v2QSettleAck"${R.settleOk ? ' checked' : ''}> 이 차이를 확인했습니다 (금액이 바뀌면 다시 확인)</label>`}</div>`
+        : R.settle === '미정산' ? '<p class="hint">미정산 센터: 견적과 급여설계의 차이는 회사의 여유(또는 초과)로 남습니다.</p>' : '<p class="hint">정산 여부를 고르면 정산 센터는 견적과 맞는지 강조해서 보여 줍니다.</p>'}
+      <div class="v2-qflow">
+        <div><span>① 받는 금액 (견적 직접인건비)</span><b>${won(R.received)}</b><small>월 · 연 ${won(R.received * 12)}</small></div>
+        <i aria-hidden="true">→</i>
+        <div><span>② 주는 금액 (급여설계 직접인건비)</span><b>${dash(won(R.paid))}</b><small>${inc ? `입력 필요 ${R.missing.length}개` : `월 · 연 ${won(R.paid * 12)}`}</small></div>
+        <i aria-hidden="true">=</i>
+        <div class="${!inc && R.gap > 0 ? 'over' : ''}"><span>③ 견적 대비 (②÷①)</span><b>${dash(`${pct.toFixed(1)}%`)}</b><small>${dash(`${R.gap > 0 ? '초과' : '여유'} ${R.gap > 0 ? '+' : ''}${won(R.gap)}원/월`)} <span class="v2-qst ${status[1]}">${status[0]}</span></small></div>
       </div>
-      <p class="hint">받는 금액: ${h(R.recvSrc)}${!R.hasCmp && R.hasEst ? ` · 실비 청구 비율 <input type="number" id="v2QRatio" min="0" max="50" step="0.1" value="${R.realRatio}" style="width:64px">%` : ''}
-      ${R.sheetPaid != null ? ` · 엑셀 '견적대비 비교'의 월 보수 합계 ${won(R.sheetPaid)}원과 ${Math.abs(R.sheetPaid - R.paid) < 1000 ? '<b class="v2-qok">일치</b>' : `<b class="v2-qbad">${won(R.paid - R.sheetPaid)}원 차이</b>${diffJobs.length ? ` — 직무 ${diffJobs.length}개(${h(diffJobs.map(x => x.label).join(', '))})가 엑셀과 다릅니다. 표의 '엑셀' 값과 비교해 엑셀 시트의 빈 칸(초과근무수당 등)이나 입력값을 확인해 주세요` : ' (엑셀 시트에 없는 직무의 인원·업적수당 입력을 확인해 주세요)'}`}` : ''}</p>`;
-    const miss = R.missing.length ? `<p class="v2-qwarn">입력이 필요한 직무 ${R.missing.length}개: ${h(R.missing.join(', '))} — 인원 또는 1인 업적수당(B등급이 없거나 0원)을 입력해 주세요. 모두 입력해야 초과·여유가 계산되고 통계에 반영됩니다.</p>` : '';
-    $('v2QBody').innerHTML = kpi + miss + `<div class="tblwrap"><table class="grid v2-qtbl"><thead><tr><th>직무</th><th class="r">인원</th><th class="r">1인 월 보수<br><small>(통상임금+초과근무)</small></th><th class="r">1인 업적수당</th><th>업적수당 산출</th><th class="r">직무 계 (월)</th></tr></thead><tbody>
+      ${inc ? '' : `<div class="v2-qbar" title="100% = 견적과 같음"><div style="width:${Math.min(100, pct / 1.2)}%"></div><em style="left:${100 / 1.2}%">100%</em></div>`}
+      <details class="v2-qhow"><summary>계산 방법 보기</summary><ul>
+        <li><b>① 받는 금액</b>: ${h(R.recvSrc)}${!R.hasCmp && R.hasEst ? ` · 실비 청구 비율 <input type="number" id="v2QRatio" min="0" max="50" step="0.1" value="${R.realRatio}" style="width:64px">%` : ''}</li>
+        <li><b>② 주는 금액</b>: 직무마다 (통상임금 소계 + 초과근무수당) × 인원 + 업적수당(등급별 인원, 없으면 B등급 × 인원)을 더한 값 (통신비·야간수당 제외, 엑셀 '견적대비 비교' 시트와 같은 방식)</li>
+        <li><b>③ 견적 대비</b>: ② ÷ ① × 100. 100%보다 크면 받는 돈보다 많이 주는 설계(초과), 작으면 여유입니다. 5%를 넘게 초과하면 '초과 주의'로 표시합니다.</li>
+        ${R.sheetPaid != null ? `<li>엑셀 '견적대비 비교'의 월 보수 합계 ${won(R.sheetPaid)}원과 ${Math.abs(R.sheetPaid - R.paid) < 1000 ? '<b class="v2-qok">일치</b>' : `<b class="v2-qbad">${won(R.paid - R.sheetPaid)}원 차이</b>${diffJobs.length ? ` — 직무 ${diffJobs.length}개(${h(diffJobs.map(x => x.label).join(', '))})가 엑셀과 다릅니다. 표의 '엑셀' 값과 비교해 엑셀 시트의 빈 칸이나 입력값을 확인해 주세요` : ''}`}</li>` : ''}
+      </ul></details>`;
+    const miss = R.missing.length ? `<p class="v2-qwarn"><b>먼저 입력해 주세요</b> · 직무 ${R.missing.length}개(${h(R.missing.join(', '))})의 인원 또는 1인 업적수당(B등급이 없거나 0원)이 비어 있습니다. 아래 표의 노란 칸을 채우면 ②·③이 계산되고 통계에 반영됩니다.</p>` : '';
+    $('v2QBody').innerHTML = miss + kpi + `<div class="tblwrap"><table class="grid v2-qtbl"><thead><tr><th>직무</th><th class="r">인원</th><th class="r">1인 월 보수<br><small>(통상임금+초과근무)</small></th><th class="r">1인 업적수당</th><th>업적수당 산출</th><th class="r">직무 계 (월)</th></tr></thead><tbody>
       ${R.jobs.map(x => `<tr class="${x.ok ? '' : 'miss'}"><td>${h(x.label)}</td>
         <td class="r"><input type="number" min="0" step="1" data-qh="${h(x.key)}" value="${x.heads ?? ''}" placeholder="입력"></td>
         <td class="r num">${won(x.base1)}</td>
@@ -185,14 +202,23 @@
       <div class="v2-qmemo"><label>사유 메모 (선택 · 통계 저장 때 함께 기록) <select id="v2QCat">${memoCats().map(c => `<option>${h(c)}</option>`).join('')}</select></label>
         <textarea id="v2QMemo" rows="2" placeholder="예) 26년 4월 재계약 단가 인상 전 선반영"></textarea></div>`;
   }
+  $('v2QBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-settle]'); if(!b) return;
+    INP.settle = b.dataset.settle; INP.settleAck = null;
+    if(V2X().setAnswers) V2X().setAnswers({ settle: INP.settle });
+    saveInputs(); const memo = ($('v2QMemo') || {}).value || '', cat = ($('v2QCat') || {}).value; render(); $('v2QMemo').value = memo; if(cat) $('v2QCat').value = cat;
+    if(typeof updateDashboard === 'function') updateDashboard();
+  });
   const memoCats = () => SETTINGS.memoCats || ['최저임금 인상 선반영', '재계약 대비 인상', '인력 유지·채용난', '고객사 요청', '기타'];
   $('v2QBody').addEventListener('change', e => {
     const t = e.target;
     if(t.dataset.qh){ const v = t.value === '' ? undefined : Math.max(0, +t.value); if(v === undefined) delete INP.heads[t.dataset.qh]; else INP.heads[t.dataset.qh] = v; }
     else if(t.dataset.qp){ const v = t.value === '' ? undefined : Math.max(0, +t.value); if(v === undefined) delete INP.perf[t.dataset.qp]; else INP.perf[t.dataset.qp] = v; }
     else if(t.id === 'v2QRatio'){ INP.realRatio = Math.max(0, Math.min(50, +t.value || 0)); }
+    else if(t.id === 'v2QSettleAck'){ INP.settleAck = t.checked ? Math.round(R.paid || 0) : null; }
     else return;
     saveInputs(); const memo = $('v2QMemo').value, cat = $('v2QCat').value; render(); $('v2QMemo').value = memo; $('v2QCat').value = cat;
+    if(typeof updateDashboard === 'function') updateDashboard();   // 단계 탭의 '견적 검증' 상태 갱신
   });
 
   const origShow = showParsed;
@@ -219,7 +245,7 @@
         j.compareMonthly = p.monthly; j.hourly = p.hourly;
       }
     });
-    if(R.received != null) rec.quote = { incomplete: R.missing.length > 0, received: R.received, paid: R.paid, gap: R.gap, rate: R.rate, recvSrc: R.recvSrc, quoteTotal: R.quoteTotal,
+    if(R.received != null) rec.quote = { settle: R.settle || '', settleOk: !!R.settleOk, incomplete: R.missing.length > 0, received: R.received, paid: R.paid, gap: R.gap, rate: R.rate, recvSrc: R.recvSrc, quoteTotal: R.quoteTotal,
       sheetPaid: R.sheetPaid, sheetGap: R.sheetGap, realRatio: R.realRatio, missing: R.missing,
       jobs: R.jobs.map(x => ({ job: x.label, heads: x.heads, base1: x.base1, perfTotal: x.perfTotal, src: x.src, total: x.total })), roles: R.roles };
     const text = ($('v2QMemo') || {}).value;

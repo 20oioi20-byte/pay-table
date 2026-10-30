@@ -114,13 +114,14 @@ const seedFolders = p => p.evaluate(async () => {
   console.log('5. 통계 저장 → 04_스냅샷');
   await p.evaluate(() => { checkState.issues.filter(i => i.level === 'confirm').forEach(i => { checkState.acked.add(i.key); checkState.reasons[i.key] = '시험'; }); renderChecklist(); generateTables(); });
   await p.waitForFunction(() => document.getElementById('snapPanel').style.display === 'block');
+  await p.click('#v2Flow [data-flow="save"]');   // 단계 탭: 통계 저장
   await p.click('#snapSaveBtn'); await p.waitForTimeout(500);
-  ok((await listDir(p, '04_스냅샷')).length === 1, '스냅샷 파일 1건');
+  ok((await listDir(p, '04_스냅샷')).filter(n => /\.json$/i.test(n)).length === 1, '스냅샷 파일 1건 (이력 폴더 제외)');
 
   console.log('5-1. 같은 센터를 다시 올리면 지난 답변으로 자동 채움');
   await p.evaluate(() => sysStore.setKV('lastAnswers', {}));
   await put(p, 'plain_again.xlsx', fs.readFileSync(FIXTURE));
-  await p.waitForSelector('#v2Prefill:not([hidden])');
+  await p.waitForSelector('#v2Prefill:not([hidden])', { state:'attached' });
   ok(await p.inputValue('#v2q_centerType') === '금융', '센터유형 "금융" 자동 채움: ' + await p.textContent('#v2Prefill'));
 
   console.log('5-2. 결과 자동 보관 (ZIP → 03_조견표)');
@@ -143,7 +144,7 @@ const seedFolders = p => p.evaluate(async () => {
   await p.click('#v2HealthClose');
   await p.click('#tabBtnHistory');
   await p.waitForFunction(() => !/읽는 중/.test(document.getElementById('v2HistBody').textContent));
-  const hist = await p.$$eval('#v2HistBody tr', trs => trs.map(t => t.cells[4] ? t.cells[4].textContent : ''));
+  const hist = await p.$$eval('#v2HistBody tr', trs => trs.map(t => t.cells[5] ? t.cells[5].textContent.trim() : ''));   // 열: 시각·사람·센터·산업·파일·상태
   ok(hist.includes('완료') && hist.includes('실패') && hist.includes('처리 중'), '처리 이력 상태: ' + hist.join(', '));
   if(process.env.SHOTS) await p.screenshot({ path: path.join(process.env.SHOTS, 'v2_history.png') });
   await p.click('#v2HistBody [data-open]');
@@ -209,7 +210,7 @@ const seedFolders = p => p.evaluate(async () => {
 
   console.log('8-1. [SharePoint에 바로 올리기] 한 번만: 시스템에 파일을 올리지 않아도 새 결과 자동 수신');
   await p.evaluate(() => { window.V2_CONFIG.links = Object.assign({}, window.V2_CONFIG.links, { upload: 'about:blank' }); window.__v2.renderLinks(); });
-  await p.click('#tabBtnCreate');
+  await p.click('#tabBtnCreate'); await p.click('#v2Flow [data-flow="up"]');
   ok(await p.isVisible('#v2WebGo'), '[SharePoint에 바로 올리기] 버튼 표시');
   const [popup] = await Promise.all([p.context().waitForEvent('page'), p.click('#v2WebGo')]);
   await popup.close();
@@ -228,7 +229,7 @@ const seedFolders = p => p.evaluate(async () => {
   ok(await p.textContent('#v2State') === '완료', '시스템에 파일을 올리지 않고도 새 결과를 받아 조견표 화면');
 
   console.log('8-2. [기준정보 › SharePoint 주소] 저장 → 공유 폴더 99_설정/settings.json에 기록(모든 사용자 적용)');
-  await p.click('.app-tab[data-tab="settings"]');
+  await p.click('.app-tab[data-tab="settings"]'); await p.click('[data-settab-go="system"]');
   await p.fill('#v2SpFolder', 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여조견표');
   await p.click('#v2SpSave'); await p.waitForTimeout(800);
   const shared = await p.evaluate(async () => {
@@ -237,6 +238,27 @@ const seedFolders = p => p.evaluate(async () => {
   });
   ok(shared && shared.folder === 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여조견표', 'settings.json에 SharePoint 주소 저장: ' + (shared && shared.folder));
   ok(/모든 사용자에게 적용/.test(await p.textContent('#v2SpMsg')), await p.textContent('#v2SpMsg'));
+
+  console.log('8-3. 자동 백업(하루 1회, 99_설정/백업) · 기준정보 › 데이터에서 되돌리기');
+  const backups = () => p.evaluate(async () => {
+    const d = await (await (await (await navigator.storage.getDirectory()).getDirectoryHandle('급여조견표')).getDirectoryHandle('99_설정')).getDirectoryHandle('백업');
+    const out = []; for await (const h of d.values()) out.push(h.name); return out.sort();
+  });
+  await p.waitForTimeout(500);
+  let bk = await backups();
+  ok(bk.length === 1 && /^백업_\d{8}\.json$/.test(bk[0]), '연결되면 오늘 백업 1개 자동 생성: ' + bk.join(', '));
+  await p.evaluate(() => window.__v2settings.autoBackup()); await p.waitForTimeout(300);
+  ok((await backups()).length === 1, '같은 날 다시 열어도 자동 백업은 1개');
+  await p.click('.app-tab[data-tab="settings"]'); await p.click('[data-settab-go="data"]');
+  await p.waitForSelector('#v2BackupBody [data-restore]');
+  await p.evaluate(async () => { SETTINGS.centerTypes = SETTINGS.centerTypes.concat(['시험용유형']); await saveSettings(); });
+  p.once('dialog', d => d.accept());
+  await p.click(`#v2BackupBody [data-restore="${bk[0]}"]`);
+  await p.waitForFunction(() => /되돌렸습니다/.test(document.getElementById('v2BackupMsg').textContent), null, { timeout: 10000 });
+  ok(await p.evaluate(() => !SETTINGS.centerTypes.includes('시험용유형')), '되돌리기: 기준정보가 백업 시점으로 · ' + await p.textContent('#v2BackupMsg'));
+  bk = await backups();
+  ok(bk.some(n => /되돌리기전/.test(n)), '되돌리기 직전 상태도 백업: ' + bk.join(', '));
+  ok(await p.evaluate(() => document.querySelector('.app-tab[data-tab="data"]').hidden) && await p.isVisible('#dataBody'), '[급여 데이터] 메뉴는 숨기고 기준정보 › 데이터에서 목록 표시');
 
   console.log('6. 다시 열면 안내 없이 바로 연결');
   await p.reload(); await p.waitForTimeout(1500);

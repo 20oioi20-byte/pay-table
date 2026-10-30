@@ -144,12 +144,12 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
 
   console.log('7. 견적 대비 카드: 엑셀 계산과 일치 · B등급 없음은 직접 입력');
   await p.evaluate(() => switchAppTab('create'));
-  await load(); await waitParsed(); await p.waitForSelector('#v2Quote:not([hidden]) .v2-qkpi');
+  await load(); await waitParsed(); await p.evaluate(() => window.__v2flow.setView('quote', true)); await p.waitForSelector('#v2Quote:not([hidden]) .v2-qflow');
   let R = await p.evaluate(() => window.__v2quote.result);
   ok(Math.round(R.received) === 58122400 && Math.round(R.paid) === 58860090, `받는 ${Math.round(R.received)} · 급여설계 ${Math.round(R.paid)} (엑셀 시트와 같은 값)`);
   ok(Math.abs(R.rate - 1.27) < 0.01 && (await p.textContent('#v2QBody')).includes('일치'), `초과율 +${R.rate.toFixed(2)}% · 엑셀 '견적대비 비교'와 일치`);
   await load(`p.extra = p.extra.filter(s => s.name === '견적서'); p.values[43][4] = 0;`);   /* 비교 시트 없음 + 상담1 B등급 0원 */
-  await waitParsed(); await p.waitForTimeout(200);
+  await waitParsed(); await p.waitForTimeout(200); await p.evaluate(() => window.__v2flow.setView('quote', true));
   R = await p.evaluate(() => window.__v2quote.result);
   ok(Math.round(R.received) === 59920000, `비교 시트 없으면 견적서 직접인건비 소계 × 인원 (${Math.round(R.received)})`);
   ok(await p.isVisible('#v2QBody input[data-qp="상담1"]') && R.missing.length === 7, `B등급 0원 직무는 업적수당 입력칸 · 인원 입력 필요 ${R.missing.length}개`);

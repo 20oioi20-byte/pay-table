@@ -149,6 +149,7 @@
     renderConn();
     reconnect.hidden = true;
     applyRole(); renderLinks(); checkNewErrors();
+    document.dispatchEvent(new Event('v2:connected'));   // 자동 백업 등 (v2_settings.js)
     if(pending) startPolling();
     if(heldFile){ const f = heldFile; heldFile = null; qPanel.querySelector('.v2-qh').hidden = false; handleFile(f); }
   }
@@ -654,7 +655,10 @@
   $('v2SnapSum').addEventListener('click', e => { if(e.target.id !== 'v2SnapToggle') return; snapOpen = !snapOpen; drawSnapSum(); });
   $('snapJobs').addEventListener('change', drawSnapSum);
   const origRenderSnap2 = renderSnapPanel;
-  renderSnapPanel = function(){ origRenderSnap2(); snapOpen = false; drawSnapSum(); };
+  renderSnapPanel = function(){
+    origRenderSnap2(); snapOpen = false; drawSnapSum();
+    if(!snapDir){ const st = $('snapStatus'); if(st) st.textContent = '저장하면 이 PC(브라우저)에 보관됩니다. 공유 폴더를 연결하면 04_스냅샷에도 저장되어 모든 사용자의 통계에 쓰입니다.'; }
+  };
   const origBuild = buildSnapshot;
   buildSnapshot = function(meta){
     return Object.assign(origBuild(meta), { v:2, requestId: requestId || '', savedBy: profile ? profile.name : '', answers: answers ? Object.assign({}, answers) : {} });
@@ -1647,5 +1651,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, folderUrl, makeZip, publishSettings, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
 })();

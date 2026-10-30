@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.6.7'
+APP_VERSION = '2.7.0'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -118,6 +118,27 @@ V2_CSS = """
   .v2-demo[hidden]{ display:none; } .v2-demo div{ display:flex; gap:6px; }
   .v2-demo button{ flex:1; border:1px solid rgba(255,255,255,.2); background:transparent; color:var(--sb-ink); border-radius:7px; padding:4px 0; font:inherit; font-size:11.5px; cursor:pointer; }
   .v2-demo button:hover{ background:rgba(255,255,255,.08); }
+  /* v2.7 · 단계별 탭 */
+  #tabCreate.v2-flowon .v2-off{ display:none !important; }
+  .v2-flow{ list-style:none; margin:0 0 14px; padding:0; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  .v2-flow button{ width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:var(--card); font:inherit; cursor:pointer; text-align:left; color:var(--ink2); }
+  .v2-flow button:disabled{ cursor:not-allowed; opacity:.5; }
+  .v2-flow .n{ font-size:11px; font-weight:800; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--line); color:var(--ink2); }
+  .v2-flow .t{ font-size:13px; font-weight:700; } .v2-flow .s{ font-size:11.5px; color:var(--muted); }
+  .v2-flow button.done .n{ background:var(--ok); color:#fff; } .v2-flow button.warn .s{ color:var(--warn); font-weight:700; }
+  .v2-flow button.stop .s{ color:var(--bad); font-weight:700; } .v2-flow button.skip .s{ color:var(--muted); }
+  .v2-flow button.on{ border-color:var(--pri); box-shadow:0 0 0 2px var(--pri) inset; } .v2-flow button.on .n{ background:var(--pri); color:#fff; }
+  @media (max-width:980px){ .v2-flow{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+  .v2-get{ display:grid; grid-template-columns:1fr 1fr; gap:16px; } .v2-get > div{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .v2-get p{ margin:6px 0 12px; } @media (max-width:860px){ .v2-get{ grid-template-columns:1fr; } }
+  .v2-getprev{ margin-top:12px; } .v2-getprev summary{ cursor:pointer; font-weight:600; font-size:13px; color:var(--muted); }
+  #tabCreate.v2-flowon #resultPanel.v2-collapsed{ position:absolute; left:-10000px; top:0; width:1200px; }
+  #v2ConPlan tr.v2-muted td{ color:var(--muted); }
+  /* v2.7 · 기준정보 하위 탭 */
+  #tabSettings .v2-stoff{ display:none !important; }
+  .v2-settabs{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px; }
+  .v2-settabs button{ border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 18px; font:inherit; font-size:14px; font-weight:700; cursor:pointer; color:var(--ink2); }
+  .v2-settabs button[aria-selected="true"]{ background:#000; border-color:#000; color:#fff; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
@@ -205,7 +226,7 @@ def main():
     s = must_replace(s, '<html lang="ko">', '<html lang="ko" data-skin="kt-light">')
     cfg = {'appVersion': APP_VERSION, 'folderName': '급여조견표', 'teamName': a.team, 'sharepointUrl': a.sharepoint_url,
            'links': links}
-    js = '\n'.join((ROOT / 'tools' / f).read_text(encoding='utf-8') for f in ('v2_inject.js', 'v2_stats.js', 'v2_report.js', 'v2_quote.js', 'v2_consent.js'))
+    js = '\n'.join((ROOT / 'tools' / f).read_text(encoding='utf-8') for f in ('v2_inject.js', 'v2_stats.js', 'v2_report.js', 'v2_quote.js', 'v2_consent.js', 'v2_flow.js', 'v2_settings.js'))
     # 변경동의서 Word 틀(tools/make_consent_template.py로 만든 것)을 base64로 넣음
     tpl = base64.b64encode((ROOT / 'tools' / 'consent_template.docx').read_bytes()).decode()
     i = s.rindex('</body>')

@@ -181,7 +181,7 @@ for n in sorted(z.namelist()):
 
   console.log('8. [기준정보 › SharePoint 주소] 입력 → 빌드 없이 웹 업로드·바로가기 사용 (가상 주소)');
   ok(await p.evaluate(() => window.__v2.uploadMode()) === 'paste', '주소가 없으면 붙여넣기 방식');
-  await p.click('.app-tab[data-tab="settings"]');
+  await p.click('.app-tab[data-tab="settings"]'); await p.click('[data-settab-go="system"]');
   ok(/입력 안 됨/.test(await p.textContent('#v2SpState')), await p.textContent('#v2SpState'));
   await p.fill('#v2SpFolder', 'javascript:alert(1)'); await p.click('#v2SpSave');
   ok(/https:\/\//.test(await p.textContent('#v2SpMsg')), 'https가 아닌 주소는 저장 안 함');
@@ -212,9 +212,29 @@ for n in sorted(z.namelist()):
   ok(await p.evaluate(() => SNAPS.some(x => x.demo)) && /가상 데이터/.test(await p.textContent('#v2Toast')), '불러오기 → ' + await p.textContent('#v2Toast'));
   await p.click('#v2Demo [data-demo="clear"]'); await p.waitForFunction(() => /지웠습니다/.test(document.getElementById('v2Toast').textContent), null, { timeout: 30000 });
   ok(await p.evaluate(() => !SNAPS.some(x => x.demo)), '지우기');
-  await p.click('.app-tab[data-tab="settings"]'); await p.check('#v2HideDemo'); await p.waitForTimeout(200);
+  await p.click('.app-tab[data-tab="settings"]'); await p.click('[data-settab-go="system"]'); await p.check('#v2HideDemo'); await p.waitForTimeout(200);
   ok(await p.isHidden('#v2Demo'), '기준정보에서 숨기기');
   await p.uncheck('#v2HideDemo');
+
+  console.log('10. 단계별 탭: 새 파일 → 검사 → (견적) → 조견표 생성 → 받기 → 통계 저장 → 완료');
+  await p.click('.app-tab[data-tab="create"]');
+  await load(); await waitParsed();
+  const fv = () => p.evaluate(() => window.__v2flow.view);
+  ok(await fv() === 'check', '파일을 읽으면 ② 검사 탭');
+  ok(await p.isHidden('#jobPanel') && await p.isVisible('#checkPanel'), '지금 단계 패널만 보임');
+  ok(await p.$eval('#v2Flow [data-flow="get"]', b => b.disabled), '아직 못 하는 단계(받기)는 누를 수 없음');
+  if(await p.isVisible('#v2Next [data-n="ackall"]')) await p.click('#v2Next [data-n="ackall"]');
+  await p.click('#v2Flow [data-flow="quote"]');
+  await p.click('[data-settle="정산"]'); await p.waitForTimeout(200);
+  ok(await p.isVisible('.v2-qsettle.need') && /정산 확인/.test(await p.textContent('#v2Flow [data-flow="quote"]')), '정산 센터: 강조 상자 + 단계 탭에 "정산 확인"');
+  await p.check('#v2QSettleAck'); await p.waitForTimeout(200);
+  ok(await p.isVisible('.v2-qsettle.ack') && /%/.test(await p.textContent('#v2Flow [data-flow="quote"]')), '차이 확인 체크 → 완료(견적 대비 %)');
+  await p.click('#v2Flow [data-flow="make"]');
+  ok(await p.isVisible('#v2ConPlan') && /만들 동의서 \d+개/.test(await p.textContent('#v2ConPlanSum')), '④ 변경동의서 확인: ' + await p.textContent('#v2ConPlanSum'));
+  await p.click('#v2Next [data-n="gen"]'); await p.waitForFunction(() => cardRegistry.length > 0); await p.waitForTimeout(300);
+  ok(await fv() === 'get' && await p.isVisible('#v2GetZip'), '조견표를 만들면 ⑤ 받기·올리기 탭');
+  await p.click('#v2Flow [data-flow="save"]'); await p.click('#snapSaveBtn'); await p.waitForTimeout(600);
+  ok(await fv() === 'done' && await p.isVisible('#v2FlowDone'), '통계에 저장하면 ⑦ 완료 탭');
 
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');

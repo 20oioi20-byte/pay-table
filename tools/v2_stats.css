@@ -143,3 +143,24 @@
   .v2-memo-list li div{ display:flex; gap:8px; align-items:center; } .v2-memo-list small{ color:#A2A4A3; font-size:11px; }
   .v2-memo-list p{ margin:4px 0 0; font-size:13px; white-space:pre-wrap; }
   .v2-memo-list .s-wt{ display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:4px; background:#F1F1F2; color:#4C4C4E; }
+
+  /* v2.7 · 견적 대비: 흐름 3칸 · 막대 · 정산 강조 */
+  .v2-qsettle-seg{ display:flex; gap:6px; align-items:center; margin:0 0 10px; font-size:13px; font-weight:700; }
+  .v2-qsettle-seg button{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:5px 14px; font:inherit; font-size:13px; cursor:pointer; }
+  .v2-qsettle-seg button[aria-pressed="true"]{ background:#000; border-color:#000; color:#fff; }
+  .v2-qsettle{ border:3px solid #AA50FF; background:#F7EEFF; border-radius:12px; padding:14px 18px; margin:0 0 12px; display:flex; flex-direction:column; gap:6px; }
+  .v2-qsettle.need{ animation:v2pulse 1.6s ease-in-out 3; } .v2-qsettle.ack{ border-color:#00A693; background:#E3F7F4; }
+  .v2-qsettle-head{ font-weight:800; color:#6B1FB5; font-size:14px; } .v2-qsettle.ack .v2-qsettle-head{ color:#00735F; }
+  .v2-qsettle-head span{ font-weight:600; font-size:12.5px; color:var(--muted); margin-left:8px; }
+  .v2-qsettle-big{ font-size:22px; } .v2-qsettle-big b{ font-variant-numeric:tabular-nums; }
+  @keyframes v2pulse{ 50%{ box-shadow:0 0 0 6px rgba(170,80,255,.25); } }
+  @media (prefers-reduced-motion:reduce){ .v2-qsettle.need{ animation:none; } }
+  .v2-qflow{ display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:10px; align-items:stretch; margin-bottom:10px; }
+  .v2-qflow > i{ align-self:center; font-style:normal; font-size:22px; color:var(--muted); }
+  .v2-qflow > div{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:3px; }
+  .v2-qflow span{ font-size:12px; color:var(--muted); } .v2-qflow b{ font-size:22px; font-variant-numeric:tabular-nums; } .v2-qflow small{ font-size:12px; color:var(--muted); }
+  .v2-qflow > div.over{ border-color:#FE2E36; background:#FFF4F4; } .v2-qflow > div.over b{ color:#D9141D; }
+  .v2-qbar{ position:relative; height:10px; background:#F1F1F2; border-radius:5px; margin:4px 0 22px; }
+  .v2-qbar div{ height:100%; background:#4C4C4E; border-radius:5px; } .v2-qbar em{ position:absolute; top:-3px; height:16px; border-left:2px solid #000; font-style:normal; font-size:11px; padding:16px 0 0 0; transform:translateX(-1px); color:var(--muted); }
+  .v2-qhow{ margin:0 0 12px; font-size:13px; } .v2-qhow summary{ cursor:pointer; font-weight:700; color:var(--muted); } .v2-qhow ul{ margin:8px 0 0; padding-left:20px; line-height:1.7; }
+  @media (max-width:900px){ .v2-qflow{ grid-template-columns:1fr; } .v2-qflow > i{ display:none; } }

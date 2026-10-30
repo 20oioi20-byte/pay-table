@@ -829,6 +829,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .v2-demo[hidden]{ display:none; } .v2-demo div{ display:flex; gap:6px; }
   .v2-demo button{ flex:1; border:1px solid rgba(255,255,255,.2); background:transparent; color:var(--sb-ink); border-radius:7px; padding:4px 0; font:inherit; font-size:11.5px; cursor:pointer; }
   .v2-demo button:hover{ background:rgba(255,255,255,.08); }
+  /* v2.7 · 단계별 탭 */
+  #tabCreate.v2-flowon .v2-off{ display:none !important; }
+  .v2-flow{ list-style:none; margin:0 0 14px; padding:0; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  .v2-flow button{ width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:var(--card); font:inherit; cursor:pointer; text-align:left; color:var(--ink2); }
+  .v2-flow button:disabled{ cursor:not-allowed; opacity:.5; }
+  .v2-flow .n{ font-size:11px; font-weight:800; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--line); color:var(--ink2); }
+  .v2-flow .t{ font-size:13px; font-weight:700; } .v2-flow .s{ font-size:11.5px; color:var(--muted); }
+  .v2-flow button.done .n{ background:var(--ok); color:#fff; } .v2-flow button.warn .s{ color:var(--warn); font-weight:700; }
+  .v2-flow button.stop .s{ color:var(--bad); font-weight:700; } .v2-flow button.skip .s{ color:var(--muted); }
+  .v2-flow button.on{ border-color:var(--pri); box-shadow:0 0 0 2px var(--pri) inset; } .v2-flow button.on .n{ background:var(--pri); color:#fff; }
+  @media (max-width:980px){ .v2-flow{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+  .v2-get{ display:grid; grid-template-columns:1fr 1fr; gap:16px; } .v2-get > div{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .v2-get p{ margin:6px 0 12px; } @media (max-width:860px){ .v2-get{ grid-template-columns:1fr; } }
+  .v2-getprev{ margin-top:12px; } .v2-getprev summary{ cursor:pointer; font-weight:600; font-size:13px; color:var(--muted); }
+  #tabCreate.v2-flowon #resultPanel.v2-collapsed{ position:absolute; left:-10000px; top:0; width:1200px; }
+  #v2ConPlan tr.v2-muted td{ color:var(--muted); }
+  /* v2.7 · 기준정보 하위 탭 */
+  #tabSettings .v2-stoff{ display:none !important; }
+  .v2-settabs{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px; }
+  .v2-settabs button{ border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 18px; font:inherit; font-size:14px; font-weight:700; cursor:pointer; color:var(--ink2); }
+  .v2-settabs button[aria-selected="true"]{ background:#000; border-color:#000; color:#fff; }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
@@ -1048,6 +1069,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .v2-memo-list li div{ display:flex; gap:8px; align-items:center; } .v2-memo-list small{ color:#A2A4A3; font-size:11px; }
   .v2-memo-list p{ margin:4px 0 0; font-size:13px; white-space:pre-wrap; }
   .v2-memo-list .s-wt{ display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:4px; background:#F1F1F2; color:#4C4C4E; }
+
+  /* v2.7 · 견적 대비: 흐름 3칸 · 막대 · 정산 강조 */
+  .v2-qsettle-seg{ display:flex; gap:6px; align-items:center; margin:0 0 10px; font-size:13px; font-weight:700; }
+  .v2-qsettle-seg button{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:5px 14px; font:inherit; font-size:13px; cursor:pointer; }
+  .v2-qsettle-seg button[aria-pressed="true"]{ background:#000; border-color:#000; color:#fff; }
+  .v2-qsettle{ border:3px solid #AA50FF; background:#F7EEFF; border-radius:12px; padding:14px 18px; margin:0 0 12px; display:flex; flex-direction:column; gap:6px; }
+  .v2-qsettle.need{ animation:v2pulse 1.6s ease-in-out 3; } .v2-qsettle.ack{ border-color:#00A693; background:#E3F7F4; }
+  .v2-qsettle-head{ font-weight:800; color:#6B1FB5; font-size:14px; } .v2-qsettle.ack .v2-qsettle-head{ color:#00735F; }
+  .v2-qsettle-head span{ font-weight:600; font-size:12.5px; color:var(--muted); margin-left:8px; }
+  .v2-qsettle-big{ font-size:22px; } .v2-qsettle-big b{ font-variant-numeric:tabular-nums; }
+  @keyframes v2pulse{ 50%{ box-shadow:0 0 0 6px rgba(170,80,255,.25); } }
+  @media (prefers-reduced-motion:reduce){ .v2-qsettle.need{ animation:none; } }
+  .v2-qflow{ display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:10px; align-items:stretch; margin-bottom:10px; }
+  .v2-qflow > i{ align-self:center; font-style:normal; font-size:22px; color:var(--muted); }
+  .v2-qflow > div{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:3px; }
+  .v2-qflow span{ font-size:12px; color:var(--muted); } .v2-qflow b{ font-size:22px; font-variant-numeric:tabular-nums; } .v2-qflow small{ font-size:12px; color:var(--muted); }
+  .v2-qflow > div.over{ border-color:#FE2E36; background:#FFF4F4; } .v2-qflow > div.over b{ color:#D9141D; }
+  .v2-qbar{ position:relative; height:10px; background:#F1F1F2; border-radius:5px; margin:4px 0 22px; }
+  .v2-qbar div{ height:100%; background:#4C4C4E; border-radius:5px; } .v2-qbar em{ position:absolute; top:-3px; height:16px; border-left:2px solid #000; font-style:normal; font-size:11px; padding:16px 0 0 0; transform:translateX(-1px); color:var(--muted); }
+  .v2-qhow{ margin:0 0 12px; font-size:13px; } .v2-qhow summary{ cursor:pointer; font-weight:700; color:var(--muted); } .v2-qhow ul{ margin:8px 0 0; padding-left:20px; line-height:1.7; }
+  @media (max-width:900px){ .v2-qflow{ grid-template-columns:1fr; } .v2-qflow > i{ display:none; } }
 /* ===== 인건비 분석 보고서 (2쪽) — 화면·Word 공통 모양. 데이터는 회색, 강조만 KT Red ===== */
 .rep-price{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin:10px 0 4px; font-size:13px; }
 .rep-price label{ display:inline-flex; align-items:center; gap:6px; }
@@ -4694,7 +4736,7 @@ loadSystem().then(()=>{ refreshNavCounts(); });
 </script>
 <script>
 /* 관리자 설정: build_v2.py 인자로 바꿉니다 */
-window.V2_CONFIG = {"appVersion": "2.6.7", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
+window.V2_CONFIG = {"appVersion": "2.7.0", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
 window.V2_CONSENT_TPL = "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";
 /* ============================================================
    급여관리 시스템 v2 전용 스크립트 (급여조견표_관리시스템_v2.html 에만 들어감)
@@ -4847,6 +4889,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     renderConn();
     reconnect.hidden = true;
     applyRole(); renderLinks(); checkNewErrors();
+    document.dispatchEvent(new Event('v2:connected'));   // 자동 백업 등 (v2_settings.js)
     if(pending) startPolling();
     if(heldFile){ const f = heldFile; heldFile = null; qPanel.querySelector('.v2-qh').hidden = false; handleFile(f); }
   }
@@ -5352,7 +5395,10 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   $('v2SnapSum').addEventListener('click', e => { if(e.target.id !== 'v2SnapToggle') return; snapOpen = !snapOpen; drawSnapSum(); });
   $('snapJobs').addEventListener('change', drawSnapSum);
   const origRenderSnap2 = renderSnapPanel;
-  renderSnapPanel = function(){ origRenderSnap2(); snapOpen = false; drawSnapSum(); };
+  renderSnapPanel = function(){
+    origRenderSnap2(); snapOpen = false; drawSnapSum();
+    if(!snapDir){ const st = $('snapStatus'); if(st) st.textContent = '저장하면 이 PC(브라우저)에 보관됩니다. 공유 폴더를 연결하면 04_스냅샷에도 저장되어 모든 사용자의 통계에 쓰입니다.'; }
+  };
   const origBuild = buildSnapshot;
   buildSnapshot = function(meta){
     return Object.assign(origBuild(meta), { v:2, requestId: requestId || '', savedBy: profile ? profile.name : '', answers: answers ? Object.assign({}, answers) : {} });
@@ -6345,7 +6391,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, folderUrl, makeZip, publishSettings, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
 })();
 
 /* ============================================================
@@ -7715,19 +7761,36 @@ ${roleBlock(A)}
     const inc = R.missing.length > 0;   // 인원·업적수당 입력이 빠지면 합계를 확정하지 않음
     const status = R.rate == null ? null : inc ? ['입력 필요', 'sx'] : R.rate > 5 ? ['초과 주의', 'sr'] : R.rate > 0 ? ['초과', 'so'] : ['여유', 'sx'];
     const dash = v => inc ? '–' : v;
+    /* v2.7 · 받는 금액 → 주는 금액 → 견적 대비 % 를 한 줄 흐름으로, 계산 방법은 펼쳐 보기, 정산 센터는 눈에 띄게 */
+    R.settle = INP.settle || ((V2X().answers || {}).settle) || '';
+    R.settleOk = INP.settleAck != null && INP.settleAck === Math.round(R.paid || 0);
+    const pct = R.received ? R.paid / R.received * 100 : null;
+    const settleSeg = `<div class="v2-qsettle-seg" role="radiogroup" aria-label="인건비 정산 여부"><span>인건비 정산</span>${['정산', '미정산'].map(v => `<button type="button" data-settle="${v}" aria-pressed="${R.settle === v}">${v}</button>`).join('')}</div>`;
     const kpi = R.received == null ? `<div class="v2-qnote">${extra == null
         ? '견적서 시트 정보가 없습니다. 보안 파일은 <b>자동연동 스크립트 v2.6</b>(관리자 1회 교체)부터 견적서·견적대비 비교 시트를 함께 보냅니다. 일반 엑셀은 그대로 읽습니다.'
         : `견적서 시트를 찾지 못했습니다 (받은 시트: ${h(extra.map(s => s.name).join(', ') || '없음')}). '직접인건비 소계' 행이 있는 시트를 견적서로 읽습니다.`}</div>`
-      : `<div class="v2-qkpi">
-        <div><span>받는 직접인건비 (월)</span><b>${won(R.received)}</b><small>연 ${won(R.received * 12)}</small></div>
-        <div><span>급여설계 직접인건비 (월)</span><b>${dash(won(R.paid))}</b><small>${inc ? `입력 필요 ${R.missing.length}개` : `연 ${won(R.paid * 12)}`}</small></div>
-        <div class="${!inc && R.gap > 0 ? 'over' : ''}"><span>${inc ? '차이' : R.gap > 0 ? '초과 설계' : '여유'} (월)</span><b>${dash(`${R.gap > 0 ? '+' : ''}${won(R.gap)}`)}</b><small>${dash(`연 ${R.gap > 0 ? '+' : ''}${won(R.gap * 12)}`)}</small></div>
-        <div><span>가용 범위 대비</span><b>${dash(`${R.rate > 0 ? '+' : ''}${R.rate.toFixed(1)}%`)}</b><small><span class="v2-qst ${status[1]}">${status[0]}</span></small></div>
+      : `${settleSeg}
+      ${R.settle === '정산' ? `<div class="v2-qsettle ${inc ? '' : R.settleOk ? 'ack' : 'need'}">
+        <div class="v2-qsettle-head">정산 센터 <span>견적 직접인건비와 급여설계 직접인건비가 같아야 정산 차액이 생기지 않습니다</span></div>
+        <div class="v2-qsettle-big">${inc ? '입력 필요' : `견적 대비 <b>${pct.toFixed(1)}%</b> · 차이 <b>${R.gap > 0 ? '+' : ''}${won(R.gap)}원</b>/월`}</div>
+        ${inc ? '' : `<label class="v2-check"><input type="checkbox" id="v2QSettleAck"${R.settleOk ? ' checked' : ''}> 이 차이를 확인했습니다 (금액이 바뀌면 다시 확인)</label>`}</div>`
+        : R.settle === '미정산' ? '<p class="hint">미정산 센터: 견적과 급여설계의 차이는 회사의 여유(또는 초과)로 남습니다.</p>' : '<p class="hint">정산 여부를 고르면 정산 센터는 견적과 맞는지 강조해서 보여 줍니다.</p>'}
+      <div class="v2-qflow">
+        <div><span>① 받는 금액 (견적 직접인건비)</span><b>${won(R.received)}</b><small>월 · 연 ${won(R.received * 12)}</small></div>
+        <i aria-hidden="true">→</i>
+        <div><span>② 주는 금액 (급여설계 직접인건비)</span><b>${dash(won(R.paid))}</b><small>${inc ? `입력 필요 ${R.missing.length}개` : `월 · 연 ${won(R.paid * 12)}`}</small></div>
+        <i aria-hidden="true">=</i>
+        <div class="${!inc && R.gap > 0 ? 'over' : ''}"><span>③ 견적 대비 (②÷①)</span><b>${dash(`${pct.toFixed(1)}%`)}</b><small>${dash(`${R.gap > 0 ? '초과' : '여유'} ${R.gap > 0 ? '+' : ''}${won(R.gap)}원/월`)} <span class="v2-qst ${status[1]}">${status[0]}</span></small></div>
       </div>
-      <p class="hint">받는 금액: ${h(R.recvSrc)}${!R.hasCmp && R.hasEst ? ` · 실비 청구 비율 <input type="number" id="v2QRatio" min="0" max="50" step="0.1" value="${R.realRatio}" style="width:64px">%` : ''}
-      ${R.sheetPaid != null ? ` · 엑셀 '견적대비 비교'의 월 보수 합계 ${won(R.sheetPaid)}원과 ${Math.abs(R.sheetPaid - R.paid) < 1000 ? '<b class="v2-qok">일치</b>' : `<b class="v2-qbad">${won(R.paid - R.sheetPaid)}원 차이</b>${diffJobs.length ? ` — 직무 ${diffJobs.length}개(${h(diffJobs.map(x => x.label).join(', '))})가 엑셀과 다릅니다. 표의 '엑셀' 값과 비교해 엑셀 시트의 빈 칸(초과근무수당 등)이나 입력값을 확인해 주세요` : ' (엑셀 시트에 없는 직무의 인원·업적수당 입력을 확인해 주세요)'}`}` : ''}</p>`;
-    const miss = R.missing.length ? `<p class="v2-qwarn">입력이 필요한 직무 ${R.missing.length}개: ${h(R.missing.join(', '))} — 인원 또는 1인 업적수당(B등급이 없거나 0원)을 입력해 주세요. 모두 입력해야 초과·여유가 계산되고 통계에 반영됩니다.</p>` : '';
-    $('v2QBody').innerHTML = kpi + miss + `<div class="tblwrap"><table class="grid v2-qtbl"><thead><tr><th>직무</th><th class="r">인원</th><th class="r">1인 월 보수<br><small>(통상임금+초과근무)</small></th><th class="r">1인 업적수당</th><th>업적수당 산출</th><th class="r">직무 계 (월)</th></tr></thead><tbody>
+      ${inc ? '' : `<div class="v2-qbar" title="100% = 견적과 같음"><div style="width:${Math.min(100, pct / 1.2)}%"></div><em style="left:${100 / 1.2}%">100%</em></div>`}
+      <details class="v2-qhow"><summary>계산 방법 보기</summary><ul>
+        <li><b>① 받는 금액</b>: ${h(R.recvSrc)}${!R.hasCmp && R.hasEst ? ` · 실비 청구 비율 <input type="number" id="v2QRatio" min="0" max="50" step="0.1" value="${R.realRatio}" style="width:64px">%` : ''}</li>
+        <li><b>② 주는 금액</b>: 직무마다 (통상임금 소계 + 초과근무수당) × 인원 + 업적수당(등급별 인원, 없으면 B등급 × 인원)을 더한 값 (통신비·야간수당 제외, 엑셀 '견적대비 비교' 시트와 같은 방식)</li>
+        <li><b>③ 견적 대비</b>: ② ÷ ① × 100. 100%보다 크면 받는 돈보다 많이 주는 설계(초과), 작으면 여유입니다. 5%를 넘게 초과하면 '초과 주의'로 표시합니다.</li>
+        ${R.sheetPaid != null ? `<li>엑셀 '견적대비 비교'의 월 보수 합계 ${won(R.sheetPaid)}원과 ${Math.abs(R.sheetPaid - R.paid) < 1000 ? '<b class="v2-qok">일치</b>' : `<b class="v2-qbad">${won(R.paid - R.sheetPaid)}원 차이</b>${diffJobs.length ? ` — 직무 ${diffJobs.length}개(${h(diffJobs.map(x => x.label).join(', '))})가 엑셀과 다릅니다. 표의 '엑셀' 값과 비교해 엑셀 시트의 빈 칸이나 입력값을 확인해 주세요` : ''}`}</li>` : ''}
+      </ul></details>`;
+    const miss = R.missing.length ? `<p class="v2-qwarn"><b>먼저 입력해 주세요</b> · 직무 ${R.missing.length}개(${h(R.missing.join(', '))})의 인원 또는 1인 업적수당(B등급이 없거나 0원)이 비어 있습니다. 아래 표의 노란 칸을 채우면 ②·③이 계산되고 통계에 반영됩니다.</p>` : '';
+    $('v2QBody').innerHTML = miss + kpi + `<div class="tblwrap"><table class="grid v2-qtbl"><thead><tr><th>직무</th><th class="r">인원</th><th class="r">1인 월 보수<br><small>(통상임금+초과근무)</small></th><th class="r">1인 업적수당</th><th>업적수당 산출</th><th class="r">직무 계 (월)</th></tr></thead><tbody>
       ${R.jobs.map(x => `<tr class="${x.ok ? '' : 'miss'}"><td>${h(x.label)}</td>
         <td class="r"><input type="number" min="0" step="1" data-qh="${h(x.key)}" value="${x.heads ?? ''}" placeholder="입력"></td>
         <td class="r num">${won(x.base1)}</td>
@@ -7739,14 +7802,23 @@ ${roleBlock(A)}
       <div class="v2-qmemo"><label>사유 메모 (선택 · 통계 저장 때 함께 기록) <select id="v2QCat">${memoCats().map(c => `<option>${h(c)}</option>`).join('')}</select></label>
         <textarea id="v2QMemo" rows="2" placeholder="예) 26년 4월 재계약 단가 인상 전 선반영"></textarea></div>`;
   }
+  $('v2QBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-settle]'); if(!b) return;
+    INP.settle = b.dataset.settle; INP.settleAck = null;
+    if(V2X().setAnswers) V2X().setAnswers({ settle: INP.settle });
+    saveInputs(); const memo = ($('v2QMemo') || {}).value || '', cat = ($('v2QCat') || {}).value; render(); $('v2QMemo').value = memo; if(cat) $('v2QCat').value = cat;
+    if(typeof updateDashboard === 'function') updateDashboard();
+  });
   const memoCats = () => SETTINGS.memoCats || ['최저임금 인상 선반영', '재계약 대비 인상', '인력 유지·채용난', '고객사 요청', '기타'];
   $('v2QBody').addEventListener('change', e => {
     const t = e.target;
     if(t.dataset.qh){ const v = t.value === '' ? undefined : Math.max(0, +t.value); if(v === undefined) delete INP.heads[t.dataset.qh]; else INP.heads[t.dataset.qh] = v; }
     else if(t.dataset.qp){ const v = t.value === '' ? undefined : Math.max(0, +t.value); if(v === undefined) delete INP.perf[t.dataset.qp]; else INP.perf[t.dataset.qp] = v; }
     else if(t.id === 'v2QRatio'){ INP.realRatio = Math.max(0, Math.min(50, +t.value || 0)); }
+    else if(t.id === 'v2QSettleAck'){ INP.settleAck = t.checked ? Math.round(R.paid || 0) : null; }
     else return;
     saveInputs(); const memo = $('v2QMemo').value, cat = $('v2QCat').value; render(); $('v2QMemo').value = memo; $('v2QCat').value = cat;
+    if(typeof updateDashboard === 'function') updateDashboard();   // 단계 탭의 '견적 검증' 상태 갱신
   });
 
   const origShow = showParsed;
@@ -7773,7 +7845,7 @@ ${roleBlock(A)}
         j.compareMonthly = p.monthly; j.hourly = p.hourly;
       }
     });
-    if(R.received != null) rec.quote = { incomplete: R.missing.length > 0, received: R.received, paid: R.paid, gap: R.gap, rate: R.rate, recvSrc: R.recvSrc, quoteTotal: R.quoteTotal,
+    if(R.received != null) rec.quote = { settle: R.settle || '', settleOk: !!R.settleOk, incomplete: R.missing.length > 0, received: R.received, paid: R.paid, gap: R.gap, rate: R.rate, recvSrc: R.recvSrc, quoteTotal: R.quoteTotal,
       sheetPaid: R.sheetPaid, sheetGap: R.sheetGap, realRatio: R.realRatio, missing: R.missing,
       jobs: R.jobs.map(x => ({ job: x.label, heads: x.heads, base1: x.base1, perfTotal: x.perfTotal, src: x.src, total: x.total })), roles: R.roles };
     const text = ($('v2QMemo') || {}).value;
@@ -8099,7 +8171,340 @@ ${roleBlock(A)}
 
   /* 생성 기록은 처리 이력의 작업 기록(PAYLOG: 조견표 장수·동의서 개수)으로 합침 → v2_inject.js workLog */
 
-  window.__v2consent = { prepare, valuesFor, parseEffective, makeDocx };
+  /* 조견표·동의서 단계 화면용: 호봉별로 동의서를 만들지(생성/신규 제외/동일 제외)와 바뀐 항목 */
+  const ITEM_NAMES = [['WORKT', '근무시간'], ['REST', '휴게시간'], ['BASIC', '기본급'], ['JOB', '직무수당'], ['POS', '직책수당'], ['PERF', '업적수당'], ['MEAL', '급식비'], ['OT', '초과근무'], ['NIGHT', '야간근로수당']];
+  function plan(){
+    const t = targets();
+    if(!t) return null;
+    const rows = t.list.map(pr => {
+      const v = valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes);
+      const changed = ITEM_NAMES.filter(([k]) => { const a = v[k === 'BASIC' ? 'BASIC_A1' : `${k}_A`]; return a !== '상동' && !(a === '' && !v[`${k}_B`]); }).map(([, n]) => n);
+      if(v.WORK !== DEL) changed.unshift('근로조건');
+      return { job: jobLabel(pr.j), make: changed.length > 0, changed, how: pr.how || '' };
+    });
+    return { rows, fresh: t.fresh };
+  }
+  window.__v2consent = { prepare, plan, valuesFor, parseEffective, makeDocx };
+})();
+
+/* ============================================================
+   v2.7 · 조견표 생성 화면을 단계별 탭으로
+   ① 업로드·기본정보 → ② 검사 → ③ 견적 검증 → ④ 조견표·동의서 → ⑤ 받기·올리기 → ⑥ 통계 저장 → ⑦ 완료
+   - 기존 패널은 그대로 두고 지금 단계의 패널만 보이게 함 (기능 코드는 바꾸지 않음)
+   - 위쪽 요약(센터·인식 직무·검사 결과·생성 조견표)과 아래 '다음 할 일' 막대는 그대로
+   - 끝난 단계·지금 단계만 누를 수 있고, 일이 끝나면 다음 단계로 자동으로 넘어감
+   ============================================================ */
+(() => {
+  const $ = id => document.getElementById(id);
+  const h = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const V2X = () => window.__v2 || {};
+  const pane = $('tabCreate');
+  if(!pane) return;
+
+  /* ---------- 단계별 새 패널 ---------- */
+  $('snapPanel').insertAdjacentHTML('beforebegin', `
+  <div class="panel" id="v2QuoteNone" hidden><div class="ph"><h2>견적 대비 직접인건비</h2></div>
+    <p class="hint">이 파일에는 견적서·견적대비 비교 시트가 없어 견적 검증을 건너뜁니다. 다음 단계로 넘어가세요.</p></div>
+  <div class="panel" id="v2ConPlan" hidden><div class="ph"><h2>변경동의서 확인</h2><span class="hint" id="v2ConPlanSum"></span></div>
+    <div class="tblwrap"><table class="grid"><thead><tr><th>호봉</th><th>변경동의서</th><th>기존과 달라진 항목</th></tr></thead><tbody id="v2ConPlanBody"></tbody></table></div>
+    <p class="hint">기존과 완전히 같은 호봉은 동의서를 만들지 않습니다. 동의서는 다음 단계에서 조견표 PNG와 함께 ZIP으로 받습니다.</p></div>
+  <div class="panel" id="v2Get" hidden><div class="ph"><h2>받기 · SharePoint에 올리기</h2></div>
+    <div class="v2-get">
+      <div><b>1. 한 번에 받기</b><p class="hint" id="v2GetWhat"></p><button type="button" class="btn-primary v2-big" id="v2GetZip">전체 일괄 다운로드 (ZIP)</button></div>
+      <div><b>2. SharePoint에 올리기</b><p class="hint">받은 ZIP을 열린 03_조견표 폴더에 끌어다 놓아 주세요. (회사 보안 정책상 조견표·동의서 파일은 자동으로 올릴 수 없고, 브라우저로 직접 올려야 합니다)</p><span id="v2GetUp"></span></div>
+    </div>
+    <details class="v2-getprev"><summary>조견표 미리보기 펼치기</summary><p class="hint">아래 '생성 결과'에서 장별로 확인하거나 따로 받을 수 있습니다.</p></details></div>
+  <div class="panel" id="v2FlowDone" hidden><div class="ph"><h2>완료</h2></div><div id="v2FlowDoneBody"></div>
+    <div class="v2-act" style="justify-content:flex-start">
+      <button type="button" class="btn-ghost" data-done="stats">급여 통계 보기</button>
+      <button type="button" class="btn-ghost" data-done="report">보고서 만들기</button>
+      <button type="button" class="btn-primary" data-done="new">다른 조견표 만들기</button></div></div>`);
+
+  const STEPS = [
+    { k:'up', t:'업로드·기본정보', el: () => [$('dropzone').closest('.panel')] },
+    { k:'check', t:'검사', el: () => [$('v2Compare'), $('checkPanel')] },
+    { k:'quote', t:'견적 검증', el: () => [$('v2Quote'), $('v2QuoteNone')] },
+    { k:'make', t:'조견표·동의서', el: () => [$('jobPanel'), $('workspace'), $('v2ConPlan')] },
+    { k:'get', t:'받기·올리기', el: () => [$('v2Get'), $('resultPanel')] },
+    { k:'save', t:'통계 저장', el: () => [$('snapPanel')] },
+    { k:'done', t:'완료', el: () => [$('v2FlowDone')] }
+  ];
+  const nav = document.createElement('ol');
+  nav.className = 'v2-flow'; nav.id = 'v2Flow'; nav.setAttribute('aria-label', '조견표 만들기 단계');
+  const stepper = $('stepper');
+  pane.insertAdjacentElement('afterbegin', nav);
+  if(stepper) stepper.hidden = true;
+  pane.classList.add('v2-flowon');
+
+  let forced = false, view = 'up', last = { parsed: null, cards: 0, zip: false, snap: false };
+  const has = () => typeof parsedData !== 'undefined' && !!parsedData;
+  const cards = () => typeof cardRegistry !== 'undefined' ? cardRegistry.length : 0;
+
+  /* 단계 상태: done(완료) · cur(진행 가능) · warn(확인 필요, 넘어갈 수 있음) · skip(해당 없음) · stop(막힘) · lock(아직) */
+  function status(){
+    const s = {}, p = has();
+    const iss = p && typeof checkState !== 'undefined' && checkState ? checkState.issues || [] : [];
+    const blocks = iss.filter(i => i.level === 'block').length;
+    const gate = p && typeof checkGateOpen === 'function' && checkGateOpen();
+    const R = (window.__v2quote || {}).result;
+    s.up = p ? ['done', '완료'] : ['cur', '진행 전'];
+    s.check = !p ? ['lock', '대기'] : blocks ? ['stop', `차단 ${blocks}`] : gate ? ['done', '완료'] : ['cur', '확인 필요'];
+    const ok = s.check[0] === 'done';
+    s.quote = !ok ? ['lock', '대기'] : !R || R.received == null ? ['skip', '해당 없음']
+      : R.missing.length ? ['warn', `입력 ${R.missing.length}`] : R.settle === '정산' && !R.settleOk ? ['warn', '정산 확인'] : ['done', `${(R.paid / R.received * 100).toFixed(1)}%`];
+    s.make = !ok ? ['lock', '대기'] : cards() ? ['done', `${cards()}장`] : ['cur', '진행 가능'];
+    s.get = !cards() ? ['lock', '대기'] : zipDone ? ['done', '받음'] : ['cur', '진행 가능'];
+    s.save = !cards() ? ['lock', '대기'] : snapSaved ? ['done', '저장됨'] : ['cur', '진행 가능'];
+    s.done = snapSaved ? ['done', '완료'] : ['lock', '대기'];
+    return s;
+  }
+  function setView(k, force){   // force: 시험·도움말용으로 잠긴 단계도 열기
+    const st = status();
+    if(!st[k] || (st[k][0] === 'lock' && !force)) return false;
+    view = k; forced = !!force; render(st);
+    window.scrollTo({ top: Math.max(0, nav.getBoundingClientRect().top + window.scrollY - 70), behavior:'smooth' });
+    return true;
+  }
+  function render(st){
+    st = st || status();
+    if(st[view][0] === 'lock' && !forced) view = 'up';
+    nav.innerHTML = STEPS.map((x, i) => `<li><button type="button" data-flow="${x.k}" class="${st[x.k][0]}${x.k === view ? ' on' : ''}"${st[x.k][0] === 'lock' ? ' disabled' : ''}>
+      <span class="n">${st[x.k][0] === 'done' ? '✓' : i + 1}</span><span class="t">${x.t}</span><span class="s">${h(st[x.k][1])}</span></button></li>`).join('');
+    STEPS.forEach(x => x.el().forEach(e => { if(e) e.classList.toggle('v2-off', x.k !== view); }));
+    const R = (window.__v2quote || {}).result;
+    $('v2QuoteNone').hidden = !(view === 'quote' && (!R || R.received == null));
+    if(view === 'make') drawPlan();
+    if(view === 'get') drawGet();
+    if(view === 'done') drawDone();
+    $('v2ConPlan').hidden = view !== 'make' || !$('v2ConPlanBody').children.length;
+    $('v2Get').hidden = view !== 'get';
+    $('v2FlowDone').hidden = view !== 'done';
+  }
+  nav.addEventListener('click', e => { const b = e.target.closest('[data-flow]'); if(b) setView(b.dataset.flow); });
+
+  /* ④ 변경동의서 확인 */
+  function drawPlan(){
+    const P = window.__v2consent && has() ? window.__v2consent.plan() : null;
+    if(!P){ $('v2ConPlanBody').innerHTML = ''; return; }
+    const make = P.rows.filter(r => r.make).length, same = P.rows.length - make;
+    $('v2ConPlanSum').textContent = `만들 동의서 ${make}개 · 기존과 같아 제외 ${same}개${P.fresh.length ? ` · 신규 호봉 제외 ${P.fresh.length}개` : ''}`;
+    $('v2ConPlanBody').innerHTML = P.rows.map(r => `<tr class="${r.make ? '' : 'v2-muted'}"><td>${h(r.job)}</td><td>${r.make ? '<b class="v2-qok">생성</b>' : '제외 (기존과 같음)'}</td><td>${h(r.changed.join(', ') || '-')}</td></tr>`).join('')
+      + P.fresh.map(n => `<tr class="v2-muted"><td>${h(n)}</td><td>제외 (신규 호봉)</td><td>기존 값 없음</td></tr>`).join('');
+  }
+  /* ⑤ 받기·올리기 */
+  function drawGet(){
+    const P = window.__v2consent && has() ? window.__v2consent.plan() : null, n = P ? P.rows.filter(r => r.make).length : 0;
+    $('v2GetWhat').textContent = `조견표 PNG ${cards()}장` + (n ? ` + 변경동의서 Word ${n}개` : P === null ? ' (신규 센터 · 변경동의서 없음)' : '') + '를 ZIP 한 개로 받습니다.';
+    const up = V2X().folderUrl ? V2X().folderUrl(V2X().SUB.table) : '';
+    $('v2GetUp').innerHTML = up ? `<a class="btn-ghost v2-big v2-link" href="${h(up)}" target="_blank" rel="noopener">SharePoint 03_조견표 폴더 열기 ↗</a>`
+      : '<span class="hint">SharePoint 주소가 설정되지 않았습니다. [기준정보 관리 › SharePoint 주소]에서 넣으면 폴더 바로가기가 생깁니다.</span>';
+  }
+  $('v2GetZip').addEventListener('click', () => V2X().makeZip && V2X().makeZip());
+  /* 결과 미리보기는 기본 접힘 (PNG 캡처를 위해 화면 밖에서 그려 둠) */
+  const prevBox = document.querySelector('.v2-getprev');
+  $('resultPanel').classList.add('v2-collapsed');
+  prevBox.addEventListener('toggle', () => $('resultPanel').classList.toggle('v2-collapsed', !prevBox.open));
+  /* ⑦ 완료 */
+  function drawDone(){
+    const c = has() ? parsedData.centerName : '';
+    $('v2FlowDoneBody').innerHTML = `<p><b>${h(c)}</b> · 조견표 ${cards()}장 ${zipDone ? '받음' : ''} · 통계 저장 완료. [급여 통계]와 [인건비 분석 보고서]에 반영되었습니다.</p>`;
+  }
+  $('v2FlowDone').addEventListener('click', e => {
+    const b = e.target.closest('[data-done]'); if(!b) return;
+    if(b.dataset.done === 'stats') switchAppTab('stats');
+    else if(b.dataset.done === 'report') switchAppTab('report');
+    else { view = 'up'; render(); $('fileInput').click(); }
+  });
+
+  /* 아래 막대 버튼을 누르면 그 일을 하는 단계를 먼저 펼침 */
+  const N2S = { check:'check', ackall:'check', gen:'make', result:'get', zip:'get', snap:'save', new:'up' };
+  document.addEventListener('click', e => {
+    const b = e.target.closest('#v2Next [data-n]'); if(!b || !N2S[b.dataset.n]) return;
+    view = N2S[b.dataset.n]; render();
+    if(b.dataset.n === 'result'){ prevBox.open = true; setTimeout(() => $('resultPanel').scrollIntoView({ behavior:'smooth' }), 50); }
+  }, true);
+  $('zipBtn').addEventListener('click', () => { if(view !== 'get'){ view = 'get'; render(); } }, true);
+
+  /* 일이 끝나면 다음 단계로: 새 파일 → 검사, 조견표 생성 → 받기, ZIP → 통계 저장, 통계 저장 → 완료 */
+  const origDash = updateDashboard;
+  updateDashboard = function(){
+    origDash.apply(this, arguments);
+    try{
+      const p = has() ? parsedData : null, now = { parsed: p, cards: cards(), zip: zipDone, snap: snapSaved };
+      const before = view;
+      if(p && p !== last.parsed) view = 'check';
+      else if(now.cards && !last.cards) view = 'get';
+      else if(now.zip && !last.zip) view = 'save';
+      else if(now.snap && !last.snap) view = 'done';
+      else if(!p) view = 'up';
+      if(view !== before) forced = false;
+      last = now;
+      render();
+    }catch(err){ console.error(err); }
+  };
+  /* 화면 전환 때 원래 진행 표시줄이 다시 보이지 않게 */
+  const origSwitchF = switchAppTab;
+  switchAppTab = function(tabId){ origSwitchF(tabId); if(stepper) stepper.hidden = true; };
+  window.__v2flow = { setView, get view(){ return view; }, status, render };
+  render();
+})();
+
+/* ============================================================
+   v2.7 · 기준정보 관리: 하위 탭 · 급여 데이터 이동 · 자동 백업
+   - 하위 탭: 분류 · 통계 기준 · 보고서 · 시스템 · 데이터
+   - [급여 데이터] 메뉴는 없애고 기준정보 › 데이터로 옮김 (v2는 공유 폴더 04_스냅샷을 자동으로 읽고 쓰므로
+     'OneDrive 저장 폴더 연결'·'폴더에서 다시 읽기'는 숨김. 가상 데이터는 사이드바 시험 메뉴)
+   - 자동 백업: 공유 폴더에 연결되면 하루 한 번 99_설정/백업/백업_YYYYMMDD.json, 최근 100개만 보관
+     내용 = 기준정보(SETTINGS) + 통계 기록 + 센터 메모·견적 입력값·센터별 답변·작업 기록
+     되돌리기 = 기준정보·입력값을 그 시점으로, 통계 기록은 지우지 않고 백업에만 있던 것을 다시 추가
+   ============================================================ */
+(() => {
+  const $ = id => document.getElementById(id);
+  const h = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const V2X = () => window.__v2 || {};
+  const pane = $('tabSettings');
+  if(!pane) return;
+  const BACKUP_DIR = '백업', KEEP = 100, KV_KEYS = ['centerMemos', 'quoteInputs', 'centerAnswers', 'consentInputs', 'workLog'];
+
+  /* ---------- 급여 데이터 화면 → 기준정보 › 데이터 ---------- */
+  const dataPane = $('tabData');
+  const moved = dataPane ? [...dataPane.children] : [];
+  moved.forEach(e => { e.dataset.settab = 'data'; pane.appendChild(e); });
+  ['snapFolderBtn', 'snapReloadBtn', 'demoLoadBtn', 'demoClearBtn'].forEach(id => { const b = $(id); if(b) b.hidden = true; });
+  const sep = pane.querySelector('[data-settab="data"] .sep'); if(sep) sep.hidden = true;
+  const storeHint = $('dataMsg') && $('dataMsg').closest('.panel').querySelector('p.hint');
+  if(storeHint) storeHint.textContent = "[통계에 저장]을 누르면 센터·시점별 급여가 1건씩 쌓입니다. 공유 폴더(04_스냅샷)에 자동으로 저장되어 모든 사용자의 통계·보고서에 쓰입니다. 잘못 저장한 기록은 아래 목록에서 지울 수 있습니다.";
+  const storeTitle = $('dataMsg') && $('dataMsg').closest('.panel').querySelector('h2');
+  if(storeTitle) storeTitle.textContent = '수동 백업 · 불러오기';
+  const navData = document.querySelector('.app-tab[data-tab="data"]'); if(navData) navData.hidden = true;
+
+  /* ---------- 자동 백업 패널 ---------- */
+  pane.insertAdjacentHTML('beforeend', `<div class="panel" id="v2Backup" data-settab="data">
+    <div class="ph"><h2>자동 백업 · 되돌리기</h2><div class="btn-row"><button type="button" class="btn-ghost btn-sm" id="v2BackupNow">지금 백업</button><span class="hint" id="v2BackupMsg"></span></div></div>
+    <p class="hint">공유 폴더에 연결되면 하루 한 번 99_설정/백업 폴더에 자동으로 백업합니다(최근 ${KEEP}개 보관). 되돌리면 기준정보·센터 메모·견적 입력값이 그 시점으로 바뀌고, 통계 기록은 지우지 않고 백업에만 있던 기록을 다시 추가합니다. 되돌리기 직전 상태도 자동으로 백업합니다.</p>
+    <div class="tblwrap scroll"><table class="grid"><thead><tr><th>백업 시각</th><th>만든 사람</th><th class="r">통계 기록</th><th class="r">크기</th><th></th></tr></thead><tbody id="v2BackupBody"></tbody></table></div></div>`);
+
+  /* ---------- 하위 탭 ---------- */
+  const TABS = [['class', '분류'], ['stat', '통계 기준'], ['report', '보고서'], ['system', '시스템'], ['data', '데이터']];
+  const byTitle = { '산업군 · 세부유형 · 메모 분류':'class', '센터유형':'class', '상담유형과 월소정근로시간':'stat', '직무명 자동 분류 규칙':'stat', '분석 기준값':'stat',
+    '채용시장 임금 표본':'stat', '관리자 바로가기':'system' };
+  pane.querySelectorAll('.panel').forEach(p => {
+    if(p.dataset.settab) return;
+    const t = ((p.querySelector('h2') || {}).textContent || '').replace(/\s*\?\s*$/, '').trim();
+    p.dataset.settab = byTitle[t] || (/업무 특성|보고서/.test(t) ? 'report' : /관리자/.test(t) ? 'system' : 'stat');
+  });
+  const seg = document.createElement('div');
+  seg.className = 'v2-settabs'; seg.setAttribute('role', 'tablist');
+  seg.innerHTML = TABS.map(([k, t]) => `<button type="button" role="tab" data-settab-go="${k}">${t}</button>`).join('');
+  pane.insertAdjacentElement('afterbegin', seg);
+  let cur = 'class';
+  function showTab(k){
+    const adminOff = $('v2Admin') && $('v2Admin').hidden;   // 관리자가 아니면 '시스템' 탭 숨김
+    seg.querySelector('[data-settab-go="system"]').hidden = adminOff;
+    if(k === 'system' && adminOff) k = 'class';
+    cur = k;
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.settabGo === k)));
+    pane.querySelectorAll('[data-settab]').forEach(e => e.classList.toggle('v2-stoff', e.dataset.settab !== k));
+    if(k === 'data'){ if(typeof renderData === 'function') renderData(); renderBackups(); }
+  }
+  seg.addEventListener('click', e => { const b = e.target.closest('[data-settab-go]'); if(b) showTab(b.dataset.settabGo); });
+  /* 예전 [급여 데이터] 화면으로 가는 버튼·링크는 기준정보 › 데이터로 */
+  const origSwitch = switchAppTab;
+  switchAppTab = function(tabId){
+    if(tabId === 'data'){ origSwitch('settings'); showTab('data'); return; }
+    origSwitch(tabId);
+    if(tabId === 'settings') showTab(cur);
+  };
+  showTab('class');
+  /* 데이터 탭 요약 카드의 v1 문구(OneDrive 폴더) → 공유 폴더 04_스냅샷 */
+  if(typeof renderData === 'function'){
+    const origRenderData = renderData;
+    renderData = function(){
+      origRenderData.apply(this, arguments);
+      document.querySelectorAll('#dataKpis *').forEach(e => { if(e.children.length) return;
+        e.textContent = e.textContent.replace('OneDrive 폴더를 연결하면 파일로도 저장', '공유 폴더를 연결하면 04_스냅샷에 저장').replace(/^저장 폴더$/, '공유 폴더'); });
+    };
+  }
+
+  /* ---------- 백업 만들기 · 목록 · 되돌리기 ---------- */
+  const day = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  async function dir(){
+    const v = V2X();
+    if(!v.shareDir || !(await v.perm(v.shareDir, false))) return null;
+    return (await v.sub(v.SUB.cfg, true)).getDirectoryHandle(BACKUP_DIR, { create:true });
+  }
+  async function snapshotAll(){
+    const v = V2X(), kv = {};
+    for(const k of KV_KEYS) kv[k] = await v.kvGet(k);
+    return { kind:'PAYBACKUP', v:2, exportedAt: new Date().toISOString(), by: v.profile ? v.profile.name : '', app: (window.V2_CONFIG || {}).appVersion || '',
+      settings: SETTINGS, snapshots: (typeof SNAPS !== 'undefined' ? SNAPS : []).filter(s => !s.demo), kv };
+  }
+  async function backup(name, force){
+    const d = await dir(); if(!d) return { ok:false, why:'공유 폴더가 연결되어 있지 않습니다.' };
+    if(!force){ try{ await d.getFileHandle(name); return { ok:false, why:'오늘 백업이 이미 있습니다.' }; }catch(e){} }
+    await V2X().writeFile(d, name, JSON.stringify(await snapshotAll()));
+    await prune(d);
+    return { ok:true };
+  }
+  async function list(d){
+    const out = [];
+    for await (const e of d.values()) if(e.kind === 'file' && /^백업_\d{8}.*\.json$/.test(e.name)) out.push(e);
+    return out.sort((a, b) => b.name.localeCompare(a.name));
+  }
+  async function prune(d){
+    const all = await list(d);
+    for(const e of all.slice(KEEP)) try{ await d.removeEntry(e.name); }catch(err){ console.error(err); }
+  }
+  async function autoBackup(){
+    try{ const r = await backup(`백업_${day(new Date())}.json`, false); if(r.ok) renderBackups(); }catch(e){ console.error(e); }
+  }
+  async function renderBackups(){
+    const body = $('v2BackupBody');
+    const d = await dir().catch(() => null);
+    if(!d){ body.innerHTML = '<tr><td colspan="5" class="empty">공유 폴더가 연결되어 있어야 자동 백업을 볼 수 있습니다.</td></tr>'; return; }
+    const rows = [];
+    for(const e of (await list(d)).slice(0, KEEP)){
+      const f = await e.getFile();
+      let meta = {};
+      try{ const j = JSON.parse(await f.text()); meta = { by: j.by, n: (j.snapshots || []).length, at: j.exportedAt }; }catch(err){}
+      rows.push(`<tr><td class="num">${h(meta.at ? new Date(meta.at).toLocaleString('ko-KR') : e.name)}</td><td>${h(meta.by || '-')}</td><td class="r num">${meta.n ?? '-'}건</td>
+        <td class="r num">${Math.max(1, Math.round(f.size / 1024))}KB</td><td><button type="button" class="btn-ghost btn-sm" data-restore="${h(e.name)}">이 시점으로 되돌리기</button></td></tr>`);
+    }
+    body.innerHTML = rows.join('') || '<tr><td colspan="5" class="empty">아직 백업이 없습니다. [지금 백업]을 눌러 보세요.</td></tr>';
+  }
+  async function restore(name){
+    const v = V2X(), d = await dir(); if(!d) return;
+    const data = JSON.parse(await (await (await d.getFileHandle(name)).getFile()).text());
+    if(data.kind !== 'PAYBACKUP') throw new Error('백업 파일 형식이 아닙니다.');
+    const now = new Date();
+    await backup(`백업_${day(now)}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}_되돌리기전.json`, true);
+    let added = 0;
+    for(const rec of data.snapshots || []){ if(!SNAPS.some(s => s.id === rec.id)){ await sysStore.put(rec); SNAPS.push(rec); added++; } }
+    if(data.settings){ SETTINGS = Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), data.settings); await saveSettings(); }
+    for(const k of KV_KEYS) if(data.kv && data.kv[k] != null) await v.kvSet(k, data.kv[k]);
+    if(v.publishSettings) await v.publishSettings();   // 공유 설정도 되돌려야 다음 접속 때 다시 덮어쓰이지 않음
+    if(typeof renderSettings === 'function') renderSettings();
+    if(typeof renderData === 'function') renderData();
+    if(typeof refreshNavCounts === 'function') refreshNavCounts();
+    if(v.renderLinks) v.renderLinks();
+    return added;
+  }
+  $('v2BackupNow').addEventListener('click', async () => {
+    const now = new Date();
+    const r = await backup(`백업_${day(now)}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.json`, true).catch(e => ({ ok:false, why:e.message }));
+    $('v2BackupMsg').textContent = r.ok ? '백업했습니다.' : r.why;
+    renderBackups();
+  });
+  $('v2BackupBody').addEventListener('click', async e => {
+    const b = e.target.closest('[data-restore]'); if(!b) return;
+    if(!confirm(`'${b.dataset.restore}' 시점으로 되돌릴까요?\n기준정보·센터 메모·견적 입력값이 그 시점으로 바뀌고 모든 사용자에게 적용됩니다. (지금 상태는 먼저 백업합니다)`)) return;
+    try{ const n = await restore(b.dataset.restore); $('v2BackupMsg').textContent = `되돌렸습니다 · 백업에만 있던 통계 기록 ${n}건 추가`; }
+    catch(err){ $('v2BackupMsg').textContent = '되돌리지 못했습니다: ' + err.message; }
+    renderBackups();
+  });
+  document.addEventListener('v2:connected', autoBackup);
+  if(V2X().shareDir) autoBackup();
+  window.__v2settings = { showTab, backup, autoBackup, restore, renderBackups };
 })();
 
 </script>

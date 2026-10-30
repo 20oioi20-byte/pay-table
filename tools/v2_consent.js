@@ -314,5 +314,18 @@
 
   /* 생성 기록은 처리 이력의 작업 기록(PAYLOG: 조견표 장수·동의서 개수)으로 합침 → v2_inject.js workLog */
 
-  window.__v2consent = { prepare, valuesFor, parseEffective, makeDocx };
+  /* 조견표·동의서 단계 화면용: 호봉별로 동의서를 만들지(생성/신규 제외/동일 제외)와 바뀐 항목 */
+  const ITEM_NAMES = [['WORKT', '근무시간'], ['REST', '휴게시간'], ['BASIC', '기본급'], ['JOB', '직무수당'], ['POS', '직책수당'], ['PERF', '업적수당'], ['MEAL', '급식비'], ['OT', '초과근무'], ['NIGHT', '야간근로수당']];
+  function plan(){
+    const t = targets();
+    if(!t) return null;
+    const rows = t.list.map(pr => {
+      const v = valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes);
+      const changed = ITEM_NAMES.filter(([k]) => { const a = v[k === 'BASIC' ? 'BASIC_A1' : `${k}_A`]; return a !== '상동' && !(a === '' && !v[`${k}_B`]); }).map(([, n]) => n);
+      if(v.WORK !== DEL) changed.unshift('근로조건');
+      return { job: jobLabel(pr.j), make: changed.length > 0, changed, how: pr.how || '' };
+    });
+    return { rows, fresh: t.fresh };
+  }
+  window.__v2consent = { prepare, plan, valuesFor, parseEffective, makeDocx };
 })();
