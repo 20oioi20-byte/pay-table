@@ -216,6 +216,13 @@ const seedFolders = p => p.evaluate(async () => {
   await p.waitForFunction(() => document.getElementById('v2State').textContent === '웹 업로드');
   await p.waitForTimeout(6000);
   await fakeFlow(p, '센터B_급여테이블');
+  await fakeFlow(p, '다른사람_급여테이블');
+  // 바로 올리기는 누구 파일인지 몰라 바로 열지 않고 도착한 결과 이름을 보여 주고 고르게 함
+  await p.waitForFunction(() => document.getElementById('v2State').textContent === '결과 확인', null, { timeout: 25000 });
+  const picks = await p.$$eval('#v2JobAct [data-pick]', bs => bs.map(b => b.textContent));
+  ok(picks.length === 3 && picks.some(t => /센터B/.test(decodeURIComponent(t.replace(/_u([0-9a-f]{4})/g, (m, c) => String.fromCharCode(parseInt(c, 16)))))), '결과 2건 도착 → 파일 이름으로 고르기 + 계속 기다리기: ' + picks.length + '개 버튼');
+  const idx = await p.$$eval('#v2JobAct [data-pick]', bs => bs.findIndex(b => /센터B|_uc13c_ud130B/i.test(b.textContent)));
+  await p.click(`#v2JobAct [data-pick="${Math.max(0, idx)}"]`);
   await p.waitForFunction(() => document.getElementById('fileMeta').textContent.includes('자동연동'), null, { timeout: 25000 });
   // (시험 환경은 한글 파일명이 인코딩되어 보이므로 상태로 확인)
   ok(await p.textContent('#v2State') === '완료', '시스템에 파일을 올리지 않고도 새 결과를 받아 조견표 화면');

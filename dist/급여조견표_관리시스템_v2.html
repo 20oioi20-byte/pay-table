@@ -822,6 +822,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .v2-sp p{ margin:0; } .v2-sp label{ display:flex; flex-direction:column; gap:4px; font-weight:600; }
   .v2-sp input{ padding:7px 9px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:13px; max-width:720px; }
   .v2-sp-row{ display:flex; gap:12px; flex-wrap:wrap; } .v2-sp-row input{ width:180px; }
+  .v2-q label.v2-q-wide{ grid-column:span 2; } .v2-pick.bad{ color:var(--bad); font-weight:700; font-size:13px; align-self:center; }
+  .v2-snapsum{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; font-size:13.5px; }
+  .tblwrap.v2-collapsed tr.v2-auto{ display:none; } #snapJobs tr.v2-odd td{ background:var(--warn-soft); }
+  .v2-demo{ margin:auto 12px 8px; padding:8px 10px; border:1px dashed rgba(255,255,255,.25); border-radius:10px; font-size:11.5px; color:var(--sb-quiet); display:flex; flex-direction:column; gap:6px; }
+  .v2-demo[hidden]{ display:none; } .v2-demo div{ display:flex; gap:6px; }
+  .v2-demo button{ flex:1; border:1px solid rgba(255,255,255,.2); background:transparent; color:var(--sb-ink); border-radius:7px; padding:4px 0; font:inherit; font-size:11.5px; cursor:pointer; }
+  .v2-demo button:hover{ background:rgba(255,255,255,.08); }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */
@@ -4687,7 +4694,7 @@ loadSystem().then(()=>{ refreshNavCounts(); });
 </script>
 <script>
 /* 관리자 설정: build_v2.py 인자로 바꿉니다 */
-window.V2_CONFIG = {"appVersion": "2.6.6", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
+window.V2_CONFIG = {"appVersion": "2.6.7", "folderName": "급여조견표", "teamName": "급여조견표 관리", "sharepointUrl": "", "links": {}};
 window.V2_CONSENT_TPL = "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";
 /* ============================================================
    급여관리 시스템 v2 전용 스크립트 (급여조견표_관리시스템_v2.html 에만 들어감)
@@ -4991,6 +4998,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   const origHandleFile = handleFile;
   handleFile = async function(file){
     if(/\.json$/i.test(file.name)) return origHandleFile(file);
+    srcName = file.name.replace(/\.[^.]+$/, '');
     const plain = (await isZip(file)) || (await readsLocally(file));
     if(plain){ const g = await gridsFromXlsx(file); beforeData = g.before; curGrid = g.cur; extraSheets = g.extra; }
     else { beforeData = null; curGrid = null; extraSheets = null; }
@@ -5143,14 +5151,20 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
       try{ return { file: await (await dir.getFileHandle(`${p.base}.json`)).getFile() }; }catch(e){ return null; }
     }
     let best = null;
+    const found = [];
     for await (const e of dir.values()){
       if(e.kind !== 'file' || !e.name.startsWith(p.base)) continue;
       const rest = e.name.slice(p.base.length);
       if(p.any ? !/\.json$/i.test(e.name) : !/^( \(\d+\))?(\.error)?\.json$/i.test(rest)) continue;
+      if(p.any && (p.skip || []).includes(e.name)) continue;
       const f = await e.getFile();
       if(f.lastModified < p.startedAt - (p.any ? 5000 : 60000)) continue;
-      if(!best || f.lastModified > best.file.lastModified) best = { file: f, error: /\.error\.json$/i.test(e.name) };
+      const item = { file: f, error: /\.error\.json$/i.test(e.name) };
+      found.push(item);
+      if(!best || f.lastModified > best.file.lastModified) best = item;
     }
+    /* 파일을 정하지 않고 기다린 경우(바로 올리기): 다른 사람이 같은 때 올린 결과일 수 있어 이름을 보여 주고 고르게 함 */
+    if(p.any && found.length) return { choices: found.sort((a, b) => b.file.lastModified - a.file.lastModified) };
     return best;
   }
 
@@ -5180,7 +5194,10 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     { k:'period', l:'적용 시점', type:'month' },
     { k:'reason', l:'변경 사유', o:['최저임금 반영','변경계약','재계약','기타'] },
     { k:'contract1y', l:'계약기간 1년 이상', o:['예','아니오','모름'] },
-    { k:'region', l:'지역(시·도)', o:['서울','경기','인천','부산','대구','광주','대전','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주'] }
+    { k:'region', l:'지역(시·도)', o:['서울','경기','인천','부산','대구','광주','대전','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주'] },
+    { k:'settle', l:'인건비 정산', o:['정산','미정산'] },
+    { k:'briefDate', l:'변경 설명회 일자', type:'date' },
+    { k:'changeNote', l:'주요 변경사항(동의서)', type:'text', ph:'예: 2026년 최저임금 인상 반영' }
   ];
   function renderJob(){
     qPanel.hidden = false;
@@ -5193,10 +5210,11 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     renderQuestions();
   }
   function renderQuestions(){
-    $('v2Q').innerHTML = QUESTIONS().map(q => `<label><span>${h(q.l)} ${helpBtn(q.k)}</span>${q.type === 'month'
-      ? `<input type="month" id="v2q_${q.k}" data-q="${q.k}" value="${h(answers[q.k] || '')}">`
+    $('v2Q').innerHTML = QUESTIONS().map(q => `<label${q.type === 'text' ? ' class="v2-q-wide"' : ''}><span>${h(q.l)} ${helpBtn(q.k)}</span>${q.type === 'month' || q.type === 'date' || q.type === 'text'
+      ? `<input type="${q.type}" id="v2q_${q.k}" data-q="${q.k}" value="${h(answers[q.k] || '')}"${q.ph ? ` placeholder="${h(q.ph)}"` : ''}>`
       : `<select id="v2q_${q.k}" data-q="${q.k}"><option value="">선택</option>${q.o.map(o => `<option${answers[q.k] === o ? ' selected' : ''}>${h(o)}</option>`).join('')}</select>`}</label>`).join('');
   }
+  $('v2Q').addEventListener('input', e => { if(e.target.type === 'text') e.target.dispatchEvent(new Event('change', { bubbles:true })); });
   $('v2Q').addEventListener('change', e => {
     const k = e.target.dataset.q; if(!k) return;
     answers[k] = e.target.value; kvSet('lastAnswers', answers);
@@ -5205,7 +5223,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   function setJob(state, msg, actions){
     const st = $('v2State');
     st.dataset.state = state;
-    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요', paste:'붙여넣기', upload:'웹 업로드' }[state];
+    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요', paste:'붙여넣기', upload:'웹 업로드', pick:'결과 확인' }[state];
     $('v2JobMsg').textContent = msg;
     $('v2JobAct').innerHTML = actions || '';
     if(state !== 'wait' && state !== 'slow' && state !== 'upload'){ clearInterval(tickTimer); $('v2Fill').style.width = state === 'need' || state === 'paste' ? '0' : '100%'; }
@@ -5221,7 +5239,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     if(!nav) return;
     let b = nav.querySelector('.v2-badge');
     if(!b){ b = document.createElement('span'); b.className = 'v2-badge'; nav.appendChild(b); }
-    b.textContent = state === 'wait' || state === 'slow' || state === 'upload' ? '처리 중' : state === 'fail' ? '실패' : state === 'done' ? '완료' : '';
+    b.textContent = state === 'wait' || state === 'slow' || state === 'upload' ? '처리 중' : state === 'fail' ? '실패' : state === 'done' ? '완료' : state === 'pick' ? '확인' : '';
     b.hidden = !b.textContent;
     b.dataset.state = state;
   }
@@ -5250,10 +5268,28 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
       try{
         const r = await findResult(await sub(SUB.link, true), pending);
         if(r && r.error) return fail('회사 M365에서 이 파일을 열지 못했습니다. 급여테이블(변경후) 시트가 있는지, 파일이 열리는지 확인해 주세요.');
+        if(r && r.choices) return chooseResult(r.choices);
         if(r && r.file) return arrive(r.file);
       }catch(e){ console.error(e); }
     };
     poll(); pollTimer = setInterval(poll, POLL_MS);
+  }
+  function chooseResult(list){
+    clearInterval(pollTimer);
+    const name = f => f.name.replace(/(\.error)?\.json$/i, '');
+    const when = f => new Date(f.lastModified).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+    setJob('pick', `새 결과 ${list.length}건이 도착했습니다. 내가 올린 파일이 맞는지 확인하고 열어 주세요. (같은 시간에 다른 사람이 올린 파일일 수 있습니다)`,
+      list.map((x, i) => x.error ? `<span class="v2-pick bad">${h(name(x.file))} · 처리 실패 ${when(x.file)}</span>`
+        : `<button type="button" class="${i ? 'btn-ghost' : 'btn-primary'}" data-pick="${i}">${h(name(x.file))} 열기 · ${when(x.file)}</button>`).join('')
+      + '<button type="button" class="btn-ghost" data-pick="wait">내 파일이 없음 · 계속 기다리기</button>');
+    notify('급여테이블 결과 도착', `${list.length}건 · 눌러서 확인`, () => switchAppTab('create'));
+    $('v2JobAct').querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+      if(b.dataset.pick === 'wait'){
+        pending.skip = (pending.skip || []).concat(list.map(x => x.file.name)); kvSet('pending', pending);
+        setJob('upload', '다시 기다리는 중입니다.', webSteps(pending.file, (V2.links || {}).upload)); startPolling(true); return;
+      }
+      arrive(list[+b.dataset.pick].file);
+    }));
   }
   async function arrive(file){
     clearInterval(pollTimer);
@@ -5291,6 +5327,32 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     if(answers.centerType && SETTINGS.centerTypes.includes(answers.centerType)) $('snapType').value = answers.centerType;
     if(answers.period) $('snapPeriod').value = answers.period;
   };
+  /* 통계 저장: 호봉별 상담사/관리자 분류는 요약 한 줄로 · 블록 기준과 다르게 분류된 호봉(확인 필요)만 펼쳐 보임 */
+  const snapWrap = $('snapJobs').closest('.tblwrap');
+  snapWrap.insertAdjacentHTML('beforebegin', '<div class="v2-snapsum" id="v2SnapSum"></div>');
+  let snapOpen = false;
+  function drawSnapSum(){
+    const rows = [...$('snapJobs').querySelectorAll('tr')];
+    if(!rows.length || !parsedData) return;
+    const cnt = {}; let check = 0;
+    rows.forEach(tr => {
+      const sel = tr.querySelector('select[data-snapjob]'); if(!sel) return;
+      const job = parsedData.jobs[+sel.dataset.snapjob], base = job && job.block === '리더그룹' ? '관리자' : '상담사';
+      const odd = sel.value !== base;
+      tr.classList.toggle('v2-odd', odd); tr.classList.toggle('v2-auto', !odd);
+      cnt[sel.value] = (cnt[sel.value] || 0) + 1; if(odd) check++;
+    });
+    $('v2SnapSum').innerHTML = `<b>직무 분류(자동)</b> ${Object.entries(cnt).map(([k, v]) => `${h(k)} ${v}`).join(' · ')}`
+      + (check ? ` · <span class="v2-red">확인 필요 ${check}</span> <span class="hint">(블록과 다르게 분류된 호봉만 아래에 보입니다)</span>` : ' <span class="hint">· 모두 블록 기준대로 분류됨</span>')
+      + ` <button type="button" class="btn-ghost btn-sm" id="v2SnapToggle">${snapOpen ? '접기' : '전체 보기·수정'}</button>`;
+    $('v2SnapSum').classList.toggle('open', snapOpen);
+    snapWrap.hidden = !snapOpen && !check;
+    snapWrap.classList.toggle('v2-collapsed', !snapOpen);
+  }
+  $('v2SnapSum').addEventListener('click', e => { if(e.target.id !== 'v2SnapToggle') return; snapOpen = !snapOpen; drawSnapSum(); });
+  $('snapJobs').addEventListener('change', drawSnapSum);
+  const origRenderSnap2 = renderSnapPanel;
+  renderSnapPanel = function(){ origRenderSnap2(); snapOpen = false; drawSnapSum(); };
   const origBuild = buildSnapshot;
   buildSnapshot = function(meta){
     return Object.assign(origBuild(meta), { v:2, requestId: requestId || '', savedBy: profile ? profile.name : '', answers: answers ? Object.assign({}, answers) : {} });
@@ -5337,6 +5399,20 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   const linkBtn = (label, url, cls) => url ? `<a class="${cls || 'btn-ghost'} v2-link" href="${h(url)}" target="_blank" rel="noopener">${h(label)} ↗</a>` : '';
   const isAdmin = () => { const a = (SETTINGS.admins || []).filter(Boolean); return !a.length || !!(profile && a.includes(profile.ini)); };
 
+  /* 시험용 가상 데이터: 사이드바에서 바로 불러오기·지우기 (최종본에서는 기준정보 체크로 숨기거나 제거) */
+  document.querySelector('.side-foot').insertAdjacentHTML('beforebegin', `<div class="v2-demo" id="v2Demo">
+    <span>🧪 시험용 가상 데이터</span><div><button type="button" data-demo="load">불러오기</button><button type="button" data-demo="clear">지우기</button></div></div>`);
+  $('v2Demo').addEventListener('click', e => {
+    const b = e.target.closest('[data-demo]'); if(!b) return;
+    const msg = $('dataMsg'); msg.textContent = '';
+    toast(b.dataset.demo === 'load' ? '가상 데이터를 불러오는 중…' : '가상 데이터를 지우는 중…', 20000);
+    $(b.dataset.demo === 'load' ? 'demoLoadBtn' : 'demoClearBtn').click();
+    const t0 = Date.now(), wait = setInterval(() => {            // 저장이 끝나 결과 문구가 나오면 알림
+      if(msg.textContent || Date.now() - t0 > 20000){ clearInterval(wait); toast(msg.textContent || '처리했습니다.', 6000); }
+    }, 200);
+  });
+  const renderDemo = () => { $('v2Demo').hidden = SETTINGS.hideDemo === true; };
+
   /* 관리자 바로가기 (기준정보 화면 맨 위) */
   const setPane = $('tabSettings');
   setPane.insertAdjacentHTML('afterbegin', `
@@ -5355,6 +5431,10 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
         <label><input type="checkbox" id="v2AutoArchive"> 조견표 ZIP·PNG·보고서를 다운로드할 때 공유 폴더(03_조견표·05_보고서)에도 저장
           <span class="hint">(회사 DLP가 OneDrive 업로드를 차단하면 끄세요 · 기본 꺼짐)</span></label>
         <span class="hint" id="v2ArchiveMsg"></span>
+      </div>
+      <div class="v2-mode">
+        <span class="flabel">시험 메뉴</span>
+        <label><input type="checkbox" id="v2HideDemo"> 사이드바의 '🧪 시험용 가상 데이터' 메뉴 숨기기 <span class="hint">(실사용 전환 시 체크 · 모든 사용자에게 적용)</span></label>
       </div>
       <div class="v2-admins">
         <label>관리자 이니셜 <input type="text" id="v2AdminIni" placeholder="예: HGD, ABC"></label>
@@ -5396,11 +5476,16 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     $({ auto:'v2ModeAuto', web:'v2ModeWeb', paste:'v2ModePaste' }[uploadMode()]).checked = true;
     renderDropHint();
     $('v2AutoArchive').checked = SETTINGS.autoArchive === true;
+    $('v2HideDemo').checked = SETTINGS.hideDemo === true; renderDemo();
     const c = SETTINGS.links || {};
     $('v2SpFolder').value = c.folder || ''; $('v2SpUpload').value = c.uploadFolder || ''; $('v2SpArchive').value = c.archiveFolder || '';
     $('v2SpFlow').value = c.flow || ''; $('v2SpGuide').value = c.guide || '';
     $('v2SpState').textContent = normSp(c.folder) ? '· 기준정보에 입력된 주소 사용 중' : BUILD_SP ? '· 시스템 파일에 들어 있는 주소 사용 중' : '· 입력 안 됨 (웹 업로드를 쓸 수 없음)';
   }
+  $('v2HideDemo').addEventListener('change', async e => {
+    SETTINGS.hideDemo = e.target.checked; await saveSettings(); renderDemo();
+    if(shareDir && await perm(shareDir, false)) await publishSettings();
+  });
   $('v2SpSave').addEventListener('click', async () => {
     const msg = $('v2SpMsg'), folder = $('v2SpFolder').value.trim(), flow = $('v2SpFlow').value.trim(), guide = $('v2SpGuide').value.trim();
     if(folder && !normSp(folder)) return msg.textContent = '공유 폴더 주소는 https:// 로 시작해야 합니다.';
@@ -5542,7 +5627,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   }
 
   /* 센터별 자동 채움: 같은 센터의 지난 답변으로 빈 질문을 채움 */
-  const CARRY = ['centerType', 'consultType', 'workPattern', 'contract1y', 'region'];
+  const CARRY = ['centerType', 'consultType', 'workPattern', 'contract1y', 'region', 'settle'];
   async function prefillForCenter(center){
     if(!center) return;
     const map = (await kvGet('centerAnswers')) || {};
@@ -5597,13 +5682,16 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     <div class="filterbar">
       <span class="flabel">보기</span><div class="seg" id="v2HistMine"><button type="button" data-mine="0" aria-pressed="true">전체</button><button type="button" data-mine="1" aria-pressed="false">내 요청</button></div>
       <label>상태 <select id="v2HistState"><option value="">전체</option><option>완료</option><option>처리 중</option><option>지연</option><option>실패</option></select></label>
-      <input type="search" id="v2HistSearch" placeholder="요청번호·파일명 검색">
+      <label>요청 월 <input type="month" id="v2HistMonth"></label>
+      <label>산업 <select id="v2HistInd"><option value="">전체</option></select></label>
+      <input type="search" id="v2HistWho" placeholder="올린 사람 이름">
+      <input type="search" id="v2HistSearch" placeholder="센터·파일·요청번호 검색">
       <button type="button" class="btn-ghost btn-sm" id="v2HistReload">새로 고침</button>
       <span class="hint" id="v2HistCount"></span>
     </div>
     <div class="panel">
-      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>요청번호</th><th>파일</th><th>올린 사람</th><th>올린 시각</th><th>상태</th><th class="r">소요</th><th></th></tr></thead><tbody id="v2HistBody"></tbody></table></div>
-      <p class="hint">결과가 남아 있는 요청은 [열기]로 다시 올리지 않고 조견표를 다시 만들 수 있습니다.</p>
+      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>요청 시각</th><th>올린 사람</th><th>센터</th><th>산업</th><th>파일 · 요청번호</th><th>상태</th><th>만든 결과</th><th></th></tr></thead><tbody id="v2HistBody"></tbody></table></div>
+      <p class="hint">만든 결과 = 받은 조견표 장수 · 변경동의서 개수 · 통계 저장 여부. 결과가 남아 있는 요청은 [열기]로 다시 올리지 않고 조견표를 다시 만들 수 있습니다.</p>
     </div>
   </div>`);
   const origSwitch = switchAppTab;
@@ -5646,28 +5734,77 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
       return r;
     }).sort((a, b) => b.req.localeCompare(a.req));
   }
+  /* ---------- 작업 기록(PAYLOG): 조견표를 받거나 통계에 저장할 때 누가·언제·센터·산업·조견표/동의서 수를 남김
+     이 PC(kv workLog) + 공유 폴더 04_스냅샷/이력/<id>.json (JSON이라 DLP 대상 아님) → 처리 이력에 요청과 합쳐 보여 줌 ---------- */
+  const LOG_DIR = '이력';
+  let curLog = null, srcName = '';
+  async function workLog(patch){
+    if(typeof parsedData === 'undefined' || !parsedData) return;
+    const center = parsedData.centerName || '';
+    if(!curLog) curLog = { kind:'PAYLOG', v:1, id:`log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: new Date().toISOString(),
+      by: profile ? profile.name : '', ini: profile ? profile.ini : '', src: srcName, req: requestId || '', cards: 0, consents: 0, snap: false };
+    Object.assign(curLog, { center, industry: (answers && answers.centerType) || (SETTINGS.centers || {})[center] || curLog.industry || '',
+      period: (answers && answers.period) || curLog.period || '' }, patch, { updatedAt: new Date().toISOString() });
+    const list = ((await kvGet('workLog')) || []).filter(x => x.id !== curLog.id);
+    list.unshift(Object.assign({}, curLog)); kvSet('workLog', list.slice(0, 1000));
+    try{
+      if(shareDir && await perm(shareDir, false)){
+        const dir = await (await sub(SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
+        await writeFile(dir, `${curLog.id}.json`, JSON.stringify(curLog, null, 1));
+      }
+    }catch(e){ console.error(e); }
+  }
+  async function loadWorkLogs(){
+    const map = new Map();
+    ((await kvGet('workLog')) || []).forEach(r => map.set(r.id, r));
+    try{
+      if(shareDir && await perm(shareDir, false)){
+        const dir = await (await sub(SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
+        for await (const e of dir.values()){
+          if(e.kind !== 'file' || !/\.json$/i.test(e.name)) continue;
+          try{ const r = JSON.parse((await (await e.getFile()).text()).replace(/^﻿/, '')); if(r.kind === 'PAYLOG' && r.id) map.set(r.id, r); }catch(err){}
+        }
+      }
+    }catch(e){ console.error(e); }
+    return [...map.values()];
+  }
   async function renderHistory(){
     const body = $('v2HistBody');
-    if(!shareDir || !(await perm(shareDir, false))){
-      body.innerHTML = '<tr><td colspan="7" class="empty">공유 폴더가 연결되어 있어야 처리 이력을 볼 수 있습니다.</td></tr>'; $('v2HistCount').textContent = ''; return;
-    }
-    body.innerHTML = '<tr><td colspan="7" class="empty">읽는 중…</td></tr>';
-    try{ histRows = await scanHistory(); }catch(e){ body.innerHTML = `<tr><td colspan="7" class="empty">이력을 읽지 못했습니다: ${h(e.message)}</td></tr>`; return; }
+    $('v2HistInd').innerHTML = '<option value="">전체</option>' + (SETTINGS.centerTypes || []).map(t => `<option${$('v2HistInd').value === t ? ' selected' : ''}>${h(t)}</option>`).join('');
+    const linked = shareDir && (await perm(shareDir, false));
+    body.innerHTML = '<tr><td colspan="8" class="empty">읽는 중…</td></tr>';
+    let reqs = [];
+    if(linked){ try{ reqs = await scanHistory(); }catch(e){ body.innerHTML = `<tr><td colspan="8" class="empty">이력을 읽지 못했습니다: ${h(e.message)}</td></tr>`; return; } }
+    const logs = await loadWorkLogs(), used = new Set();
+    histRows = reqs.map(r => {
+      const mine = logs.filter(l => (l.req && l.req === r.req) || (l.src && l.src === r.base)).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      mine.forEach(l => used.add(l.id));
+      return Object.assign(r, { log: mine[0] || null, t: r.uploaded || r.json || r.error || 0 });
+    });
+    logs.filter(l => !used.has(l.id)).forEach(l => histRows.push({ base:'', req: l.req || '', ini: l.ini || '', file: l.src || '(직접 올림)', state:'완료', log: l, t: Date.parse(l.at) || 0 }));
+    histRows.sort((a, b) => b.t - a.t);
+    if(!linked && !histRows.length){ body.innerHTML = '<tr><td colspan="8" class="empty">공유 폴더가 연결되어 있어야 처리 이력을 볼 수 있습니다.</td></tr>'; $('v2HistCount').textContent = ''; return; }
     drawHistory();
   }
   function drawHistory(){
-    const q = $('v2HistSearch').value.trim(), st = $('v2HistState').value;
-    const rows = histRows.filter(r => (!histMine || (profile && r.ini === profile.ini)) && (!st || r.state === st) && (!q || r.req.includes(q) || r.file.includes(q)));
-    const fmt = t => t ? new Date(t).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
-    const dur = ms => ms == null ? '-' : ms < 60000 ? `${Math.max(1, Math.round(ms / 1000))}초` : `${Math.round(ms / 60000)}분`;
-    $('v2HistBody').innerHTML = rows.slice(0, 300).map((r, i) => `<tr>
-      <td class="num">${h(r.req)}</td><td>${h(r.file)}</td><td>${h(r.ini)}</td><td class="num">${fmt(r.uploaded)}</td>
+    const q = $('v2HistSearch').value.trim(), st = $('v2HistState').value, mon = $('v2HistMonth').value, ind = $('v2HistInd').value, who = $('v2HistWho').value.trim();
+    const ym = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+    const name = r => (r.log && r.log.by) || r.ini || '';
+    const rows = histRows.filter(r => (!histMine || (profile && (r.ini === profile.ini || (r.log && r.log.ini === profile.ini))))
+      && (!st || r.state === st) && (!mon || (r.t && ym(r.t) === mon)) && (!ind || (r.log && r.log.industry === ind))
+      && (!who || name(r).includes(who) || r.ini.includes(who.toUpperCase()))
+      && (!q || [r.req, r.file, r.log && r.log.center].some(x => x && x.includes(q))));
+    const fmt = t => t ? new Date(t).toLocaleString('ko-KR', { year:'2-digit', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
+    const made = l => !l ? '-' : [`조견표 ${l.cards || 0}장`, `동의서 ${l.consents || 0}개`, l.snap ? '통계 저장' : ''].filter(Boolean).join(' · ');
+    $('v2HistBody').innerHTML = rows.slice(0, 300).map(r => `<tr>
+      <td class="num">${fmt(r.t)}</td><td>${h(name(r) || '-')}</td><td>${h((r.log && r.log.center) || '-')}</td><td>${h((r.log && r.log.industry) || '-')}</td>
+      <td>${h(r.file)}${r.req ? `<br><span class="hint">${h(r.req)}</span>` : ''}</td>
       <td><span class="v2-state" data-state="${{ '완료':'done', '실패':'fail', '지연':'slow', '처리 중':'wait' }[r.state]}">${r.state}</span></td>
-      <td class="r num">${dur(r.took)}</td>
+      <td class="v2-made">${h(made(r.log))}</td>
       <td>${r.handle ? `<button type="button" class="btn-ghost btn-sm" data-open="${h(r.base)}">열기</button>` : r.state === '실패' && isAdmin() ? linkBtn('실행 기록', LINKS.flowRuns, 'btn-ghost btn-sm') : ''}</td></tr>`).join('')
-      || '<tr><td colspan="7" class="empty">조건에 맞는 요청이 없습니다.</td></tr>';
+      || '<tr><td colspan="8" class="empty">조건에 맞는 요청이 없습니다.</td></tr>';
     const c = s => histRows.filter(r => r.state === s).length;
-    $('v2HistCount').textContent = `전체 ${histRows.length}건 · 완료 ${c('완료')} · 처리 중 ${c('처리 중')} · 지연 ${c('지연')} · 실패 ${c('실패')}`;
+    $('v2HistCount').textContent = `전체 ${histRows.length}건 · 완료 ${c('완료')} · 처리 중 ${c('처리 중')} · 지연 ${c('지연')} · 실패 ${c('실패')}` + (rows.length !== histRows.length ? ` · 검색 결과 ${rows.length}건` : '');
   }
   $('v2HistBody').addEventListener('click', async e => {
     const b = e.target.closest('[data-open]'); if(!b) return;
@@ -5678,7 +5815,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     handleLinkedJsonFile(await r.handle.getFile());
   });
   $('v2HistMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if(!b) return; histMine = b.dataset.mine === '1'; $('v2HistMine').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawHistory(); });
-  ['v2HistState', 'v2HistSearch'].forEach(id => $(id).addEventListener('input', drawHistory));
+  ['v2HistState', 'v2HistSearch', 'v2HistMonth', 'v2HistInd', 'v2HistWho'].forEach(id => $(id).addEventListener('input', drawHistory));
   $('v2HistReload').addEventListener('click', renderHistory);
 
   /* 변경전 대비 비교: JSON의 before(또는 엑셀의 변경전 시트)를 같은 파서로 읽어 직무별 월 합계 비교 */
@@ -5698,6 +5835,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   }
   const origLinked = handleLinkedJsonFile;
   handleLinkedJsonFile = function(file){
+    srcName = file.name.replace(/\.json$/i, '');
     file.text().then(t => {
       try{ const p = JSON.parse(t.replace(/^﻿/, '')); beforeData = Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
         curGrid = Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
@@ -5709,6 +5847,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   const origPasted = handlePastedText;
   handlePastedText = function(text){
     const p = pastedPayload(text);
+    if(p) srcName = (p.file || '붙여넣기').replace(/\.[^.]+$/, '');
     beforeData = p && Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
     curGrid = p && Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
     extraSheets = p && Array.isArray(p.extra) ? p.extra : null;
@@ -5774,6 +5913,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   /* 파싱 직후: 센터별 자동 채움 + 변경전 비교 */
   const origShowParsed = showParsed;
   showParsed = function(parsed, label){
+    curLog = null;                  // 새 파일 = 새 작업 기록
     analyzeGrid(parsed);            // 검사(runChecks)보다 먼저: 직무별 열·초과근무 시간
     origShowParsed(parsed, label);
     buildCompare(parsed); drawCompare();
@@ -5783,6 +5923,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
   buildSnapshot = function(meta){
     const rec = origBuild2(meta);
     if(compareRows.length) rec.before = compareRows.map(r => ({ job: r.label, before: r.before, after: r.after }));
+    workLog({ snap: true, industry: meta.centerType || '', period: meta.period || '' });
     if(answers && meta.center){
       kvGet('centerAnswers').then(map => { map = map || {}; map[meta.center] = Object.assign({}, answers); kvSet('centerAnswers', map); });
     }
@@ -5815,6 +5956,9 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     reason: '급여가 바뀐 이유입니다. 보고서와 이력에 남습니다.',
     contract1y: '수습기간 최저임금 90% 적용은 1년 이상 계약일 때만 가능해 검사에 씁니다.',
     region: '채용시장 임금과 비교할 때 지역을 맞추는 데 씁니다.',
+    settle: '정산 센터는 견적 직접인건비와 실제 급여가 거의 같아야 합니다. 견적 대비 화면에서 차이를 눈에 띄게 보여 줍니다.',
+    briefDate: '변경동의서의 설명회 일자입니다. 미리 넣으면 ZIP을 받을 때 입력 창 없이 바로 동의서를 만듭니다. 비워 두면 그때 묻습니다.',
+    changeNote: "변경동의서의 '급여테이블 변경 : …' 문구입니다. 비우면 급여테이블의 요청사유를 씁니다.",
     check: '차단 항목은 원본을 고쳐야 진행됩니다. 확인 항목은 내용을 보고 체크(사유 입력)하면 진행됩니다. 문제가 없으면 체크리스트 없이 바로 진행됩니다.',
     snap: '조견표를 만든 뒤 저장하면 센터·적용 시점별로 1건씩 쌓여 통계와 보고서에 쓰입니다. 공유 폴더 04_스냅샷에 저장됩니다.',
     compare: '같은 파일의 급여테이블(변경전) 시트와 직무별 월 합계(B등급 기준)를 비교합니다. 감소는 빨간색, 기준을 넘는 인상은 노란색으로 표시합니다.',
@@ -6104,7 +6248,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
       a.download = safeName(consent ? `급여조견표_${parsedData.centerName}_${ok}개_변경동의서_${consent.files.length}개` : `급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
-      if(consent) window.__v2consent.log(consent, a.download);
+      workLog({ cards: ok, consents: consent ? consent.files.length : 0, zip: a.download, consent: consent ? consent.meta : null });
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 15000);
       zipDone = true;
@@ -6201,7 +6345,7 @@ window.V2_CONSENT_TPL = "UEsDBBQAAAAIAOIqXl1KvAJxZgEAACgGAAATAAAAW0NvbnRlbnRfVHl
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
 })();
 
 /* ============================================================
@@ -7647,7 +7791,8 @@ ${roleBlock(A)}
    - 기존과 같으면 '상동', 업적수당은 S등급 ~ E등급 금액
    - 시행일 = 급여테이블(변경후) 관리번호 오른쪽 '센터명/날짜'의 날짜 (없거나 애매하면 빈칸)
    - 설명회 일자·주요 변경사항은 지금 입력하거나, 원본 문구 그대로 두고 나중에 직접 작성
-   - 조견표 ZIP에 '변경동의서/' 폴더로 함께 넣고, 생성 기록은 처리 이력 화면에 남김
+   - 조견표 ZIP에 '변경동의서/' 폴더로 함께 넣고, 몇 개 만들었는지는 처리 이력(작업 기록)에 남김
+   - 기존과 완전히 같은 호봉은 만들지 않음, 대기 중에 설명회 일자를 넣었으면 입력 창 없이 바로 만듦
    ============================================================ */
 (() => {
   const $ = id => document.getElementById(id);
@@ -7658,7 +7803,6 @@ ${roleBlock(A)}
   const amt = v => typeof v === 'number' && isFinite(v) ? `${won(v)}원` : '-';
   const pad = n => String(n).padStart(2, '0');
   const DEL = '\u0000DEL';
-  const LOG_DIR = '동의서이력';
   const CHANGE_HINT = '주요 변경사항 기재';
 
   /* ---------- 급여테이블(변경후) 머리글: 관리번호 → 시행일, 요청사유 → 주요 변경사항 기본값 ---------- */
@@ -7896,11 +8040,17 @@ ${roleBlock(A)}
     if(!t) return null;
     if(!t.list.length){ V2X().toast && V2X().toast(`변경전과 짝이 맞는 호봉이 없어 변경동의서는 만들지 않습니다 (신규 호봉 ${t.fresh.length}개).`, 8000); return null; }
     if(waiting) return false;
+    /* 기존과 완전히 같은 호봉(모든 칸 '상동' · 근로조건 변경 없음)은 동의서를 만들지 않음 */
+    const valsOf = new Map(t.list.map(pr => [pr, valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes)]));
+    const same = t.list.filter(pr => { const v = valsOf.get(pr); return v.WORK === DEL && Object.keys(v).filter(k => /_A1?$/.test(k)).every(k => v[k] === '상동' || (v[k] === '' && !v[k.replace(/_A$/, '_B')])); }).map(pr => jobLabel(pr.j));
+    t.list = t.list.filter(pr => !same.includes(jobLabel(pr.j)));
+    if(!t.list.length){ V2X().toast && V2X().toast(`모든 호봉이 기존과 같아 변경동의서를 만들지 않습니다 (${same.length}개).`, 8000); return null; }
     const center = parsedData.centerName, grid = V2X().curGrid;
     const mgmt = labelValue(grid, '관리번호'), eff = parseEffective(mgmt);
     const saved = ((await V2X().kvGet('consentInputs')) || {})[center] || {};
     $('v2ConInfo').innerHTML = `기존 센터입니다(변경전 시트 있음). 호봉별 변경동의서 <b>${t.list.length}개</b>(Word)를 조견표 PNG와 함께 ZIP의 '변경동의서' 폴더에 넣습니다.`
-      + (t.fresh.length ? `<br><span class="hint">신규 호봉 ${t.fresh.length}개(${h(t.fresh.join(', '))})는 기존 값이 없어 제외합니다.</span>` : '');
+      + (t.fresh.length ? `<br><span class="hint">신규 호봉 ${t.fresh.length}개(${h(t.fresh.join(', '))})는 기존 값이 없어 제외합니다.</span>` : '')
+      + (same.length ? `<br><span class="hint">기존과 완전히 같은 호봉 ${same.length}개(${h(same.join(', '))})는 변경 사항이 없어 제외합니다.</span>` : '');
     $('v2ConEff').value = effText(eff);
     $('v2ConEffHint').textContent = eff ? `급여테이블(변경후) 관리번호 '${mgmt}'에서 읽었습니다.` : mgmt ? `관리번호 '${mgmt}'에서 날짜를 읽지 못해 빈칸으로 둡니다.` : '관리번호를 찾지 못해 빈칸으로 둡니다.';
     modal.querySelector(`input[name="v2ConMode"][value="${saved.mode === 'later' ? 'later' : 'now'}"]`).checked = true;
@@ -7908,8 +8058,16 @@ ${roleBlock(A)}
     $('v2ConChange').value = saved.change || labelValue(grid, '요청사유');
     $('v2ConErr').textContent = '';
     syncMode();
-    modal.hidden = false;
-    const ans = await new Promise(res => { waiting = res; });
+    /* 결과를 기다리는 동안 '변경 설명회 일자'를 미리 넣었으면 창 없이 바로 만듦 */
+    const pre = V2X().answers || {};
+    let ans;
+    if(pre.briefDate){
+      ans = { mode:'now', eff: effText(eff), brief: pre.briefDate, change: (pre.changeNote || '').trim() || labelValue(grid, '요청사유') };
+      V2X().toast && V2X().toast(`미리 입력한 설명회 일자(${pre.briefDate})로 변경동의서 ${t.list.length}개를 만듭니다.`, 6000);
+    } else {
+      modal.hidden = false;
+      ans = await new Promise(res => { waiting = res; });
+    }
     if(ans === 'cancel') return false;
     if(ans === 'skip') return null;
     const map = (await V2X().kvGet('consentInputs')) || {};
@@ -7926,7 +8084,7 @@ ${roleBlock(A)}
     };
     const files = [], used = new Set();
     for(const pr of t.list){
-      const vals = Object.assign({}, common, valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes));
+      const vals = Object.assign({}, common, valsOf.get(pr));
       /* 조견표 PNG와 같은 이름 체계(급여조견표_센터_01_… → 변경동의서_센터_01_…)로 짝을 맞춤 */
       const card = typeof cardRegistry !== 'undefined' ? cardRegistry.find(c => parsedData.jobs[c.idx] === pr.j) : null;
       const base = card && /^급여조견표_/.test(safeName(card.filename)) ? safeName(card.filename).replace(/^급여조견표_/, '변경동의서_') : safeName(`변경동의서_${center}_${jobLabel(pr.j)}`);
@@ -7935,65 +8093,13 @@ ${roleBlock(A)}
       used.add(name);
       files.push({ name, blob: await makeDocx(vals), job: jobLabel(pr.j) });
     }
-    return { files, meta: { center, count: files.length, jobs: files.map(f => f.job), fresh: t.fresh, eff: ans.eff, mode: ans.mode,
+    return { files, meta: { center, count: files.length, jobs: files.map(f => f.job), fresh: t.fresh, same, eff: ans.eff, mode: ans.mode,
       brief: ans.mode === 'now' ? common.BRIEF : '', change: ans.mode === 'now' ? common.CHANGE : '' } };
   }
 
-  /* ---------- 생성 기록 (이 PC + 공유 폴더 04_스냅샷/동의서이력) ---------- */
-  async function log(consent, zipName){
-    const prof = V2X().profile;
-    const rec = Object.assign({ kind:'PAYCONSENT', v:1, id:`consent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      at: new Date().toISOString(), by: prof ? prof.name : '', zip: zipName }, consent.meta);
-    const list = (await V2X().kvGet('consentLog')) || [];
-    list.unshift(rec); V2X().kvSet('consentLog', list.slice(0, 500));
-    try{
-      const v = V2X();
-      if(v.shareDir && await v.perm(v.shareDir, false)){
-        const dir = await (await v.sub(v.SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
-        await v.writeFile(dir, `${rec.id}.json`, JSON.stringify(rec, null, 1));
-      }
-    }catch(e){ console.error(e); }
-  }
-  async function loadLog(){
-    const map = new Map();
-    ((await V2X().kvGet('consentLog')) || []).forEach(r => map.set(r.id, r));
-    try{
-      const v = V2X();
-      if(v.shareDir && await v.perm(v.shareDir, false)){
-        const dir = await (await v.sub(v.SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
-        for await (const e of dir.values()){
-          if(e.kind !== 'file' || !/\.json$/i.test(e.name)) continue;
-          try{ const r = JSON.parse((await (await e.getFile()).text()).replace(/^﻿/, '')); if(r.kind === 'PAYCONSENT' && r.id) map.set(r.id, r); }catch(err){}
-        }
-      }
-    }catch(e){ console.error(e); }
-    return [...map.values()].sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  }
+  /* 생성 기록은 처리 이력의 작업 기록(PAYLOG: 조견표 장수·동의서 개수)으로 합침 → v2_inject.js workLog */
 
-  /* 처리 이력 화면 아래에 '변경동의서 생성 기록' */
-  const histPanel = document.querySelector('#tabHistory .panel');
-  if(histPanel){
-    histPanel.insertAdjacentHTML('afterend', `<div class="panel" id="v2ConLog">
-      <div class="ph"><h2>변경동의서 생성 기록</h2><span class="hint" id="v2ConLogCount"></span></div>
-      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>생성 시각</th><th>센터</th><th class="r">동의서</th><th>시행일</th><th>설명회 일자</th><th>주요 변경사항</th><th>만든 사람</th></tr></thead><tbody id="v2ConLogBody"></tbody></table></div>
-      <p class="hint">조견표 ZIP을 받을 때 함께 만든 변경동의서입니다. 설명회 일자가 비어 있으면 '나중에 직접 작성'을 고른 경우입니다.</p>
-    </div>`);
-  }
-  async function renderLog(){
-    const body = $('v2ConLogBody'); if(!body) return;
-    const rows = await loadLog();
-    const fmt = t => new Date(t).toLocaleString('ko-KR', { year:'numeric', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    body.innerHTML = rows.slice(0, 300).map(r => `<tr><td class="num">${h(fmt(r.at))}</td><td>${h(r.center)}</td>
-      <td class="r num" title="${h((r.jobs || []).join(', '))}">${h(r.count)}개${r.fresh && r.fresh.length ? ` <span class="hint">(신규 ${r.fresh.length} 제외)</span>` : ''}</td>
-      <td class="num">${h(r.eff || '-')}</td><td class="num">${h(r.brief || '나중에 작성')}</td><td>${h(r.change || '-')}</td><td>${h(r.by || '-')}</td></tr>`).join('')
-      || '<tr><td colspan="7" class="empty">아직 만든 변경동의서가 없습니다.</td></tr>';
-    $('v2ConLogCount').textContent = rows.length ? `전체 ${rows.length}건` : '';
-  }
-  const origSwitch = switchAppTab;
-  switchAppTab = function(tabId){ origSwitch(tabId); if(tabId === 'history') renderLog(); };
-  const reload = $('v2HistReload'); if(reload) reload.addEventListener('click', renderLog);
-
-  window.__v2consent = { prepare, log, loadLog, valuesFor, parseEffective, makeDocx };
+  window.__v2consent = { prepare, valuesFor, parseEffective, makeDocx };
 })();
 
 </script>

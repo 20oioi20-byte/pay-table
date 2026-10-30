@@ -6,7 +6,8 @@
    - 기존과 같으면 '상동', 업적수당은 S등급 ~ E등급 금액
    - 시행일 = 급여테이블(변경후) 관리번호 오른쪽 '센터명/날짜'의 날짜 (없거나 애매하면 빈칸)
    - 설명회 일자·주요 변경사항은 지금 입력하거나, 원본 문구 그대로 두고 나중에 직접 작성
-   - 조견표 ZIP에 '변경동의서/' 폴더로 함께 넣고, 생성 기록은 처리 이력 화면에 남김
+   - 조견표 ZIP에 '변경동의서/' 폴더로 함께 넣고, 몇 개 만들었는지는 처리 이력(작업 기록)에 남김
+   - 기존과 완전히 같은 호봉은 만들지 않음, 대기 중에 설명회 일자를 넣었으면 입력 창 없이 바로 만듦
    ============================================================ */
 (() => {
   const $ = id => document.getElementById(id);
@@ -17,7 +18,6 @@
   const amt = v => typeof v === 'number' && isFinite(v) ? `${won(v)}원` : '-';
   const pad = n => String(n).padStart(2, '0');
   const DEL = '\u0000DEL';
-  const LOG_DIR = '동의서이력';
   const CHANGE_HINT = '주요 변경사항 기재';
 
   /* ---------- 급여테이블(변경후) 머리글: 관리번호 → 시행일, 요청사유 → 주요 변경사항 기본값 ---------- */
@@ -255,11 +255,17 @@
     if(!t) return null;
     if(!t.list.length){ V2X().toast && V2X().toast(`변경전과 짝이 맞는 호봉이 없어 변경동의서는 만들지 않습니다 (신규 호봉 ${t.fresh.length}개).`, 8000); return null; }
     if(waiting) return false;
+    /* 기존과 완전히 같은 호봉(모든 칸 '상동' · 근로조건 변경 없음)은 동의서를 만들지 않음 */
+    const valsOf = new Map(t.list.map(pr => [pr, valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes)]));
+    const same = t.list.filter(pr => { const v = valsOf.get(pr); return v.WORK === DEL && Object.keys(v).filter(k => /_A1?$/.test(k)).every(k => v[k] === '상동' || (v[k] === '' && !v[k.replace(/_A$/, '_B')])); }).map(pr => jobLabel(pr.j));
+    t.list = t.list.filter(pr => !same.includes(jobLabel(pr.j)));
+    if(!t.list.length){ V2X().toast && V2X().toast(`모든 호봉이 기존과 같아 변경동의서를 만들지 않습니다 (${same.length}개).`, 8000); return null; }
     const center = parsedData.centerName, grid = V2X().curGrid;
     const mgmt = labelValue(grid, '관리번호'), eff = parseEffective(mgmt);
     const saved = ((await V2X().kvGet('consentInputs')) || {})[center] || {};
     $('v2ConInfo').innerHTML = `기존 센터입니다(변경전 시트 있음). 호봉별 변경동의서 <b>${t.list.length}개</b>(Word)를 조견표 PNG와 함께 ZIP의 '변경동의서' 폴더에 넣습니다.`
-      + (t.fresh.length ? `<br><span class="hint">신규 호봉 ${t.fresh.length}개(${h(t.fresh.join(', '))})는 기존 값이 없어 제외합니다.</span>` : '');
+      + (t.fresh.length ? `<br><span class="hint">신규 호봉 ${t.fresh.length}개(${h(t.fresh.join(', '))})는 기존 값이 없어 제외합니다.</span>` : '')
+      + (same.length ? `<br><span class="hint">기존과 완전히 같은 호봉 ${same.length}개(${h(same.join(', '))})는 변경 사항이 없어 제외합니다.</span>` : '');
     $('v2ConEff').value = effText(eff);
     $('v2ConEffHint').textContent = eff ? `급여테이블(변경후) 관리번호 '${mgmt}'에서 읽었습니다.` : mgmt ? `관리번호 '${mgmt}'에서 날짜를 읽지 못해 빈칸으로 둡니다.` : '관리번호를 찾지 못해 빈칸으로 둡니다.';
     modal.querySelector(`input[name="v2ConMode"][value="${saved.mode === 'later' ? 'later' : 'now'}"]`).checked = true;
@@ -267,8 +273,16 @@
     $('v2ConChange').value = saved.change || labelValue(grid, '요청사유');
     $('v2ConErr').textContent = '';
     syncMode();
-    modal.hidden = false;
-    const ans = await new Promise(res => { waiting = res; });
+    /* 결과를 기다리는 동안 '변경 설명회 일자'를 미리 넣었으면 창 없이 바로 만듦 */
+    const pre = V2X().answers || {};
+    let ans;
+    if(pre.briefDate){
+      ans = { mode:'now', eff: effText(eff), brief: pre.briefDate, change: (pre.changeNote || '').trim() || labelValue(grid, '요청사유') };
+      V2X().toast && V2X().toast(`미리 입력한 설명회 일자(${pre.briefDate})로 변경동의서 ${t.list.length}개를 만듭니다.`, 6000);
+    } else {
+      modal.hidden = false;
+      ans = await new Promise(res => { waiting = res; });
+    }
     if(ans === 'cancel') return false;
     if(ans === 'skip') return null;
     const map = (await V2X().kvGet('consentInputs')) || {};
@@ -285,7 +299,7 @@
     };
     const files = [], used = new Set();
     for(const pr of t.list){
-      const vals = Object.assign({}, common, valuesFor(pr.p, pr.j, t.prev.notes, parsedData.notes));
+      const vals = Object.assign({}, common, valsOf.get(pr));
       /* 조견표 PNG와 같은 이름 체계(급여조견표_센터_01_… → 변경동의서_센터_01_…)로 짝을 맞춤 */
       const card = typeof cardRegistry !== 'undefined' ? cardRegistry.find(c => parsedData.jobs[c.idx] === pr.j) : null;
       const base = card && /^급여조견표_/.test(safeName(card.filename)) ? safeName(card.filename).replace(/^급여조견표_/, '변경동의서_') : safeName(`변경동의서_${center}_${jobLabel(pr.j)}`);
@@ -294,63 +308,11 @@
       used.add(name);
       files.push({ name, blob: await makeDocx(vals), job: jobLabel(pr.j) });
     }
-    return { files, meta: { center, count: files.length, jobs: files.map(f => f.job), fresh: t.fresh, eff: ans.eff, mode: ans.mode,
+    return { files, meta: { center, count: files.length, jobs: files.map(f => f.job), fresh: t.fresh, same, eff: ans.eff, mode: ans.mode,
       brief: ans.mode === 'now' ? common.BRIEF : '', change: ans.mode === 'now' ? common.CHANGE : '' } };
   }
 
-  /* ---------- 생성 기록 (이 PC + 공유 폴더 04_스냅샷/동의서이력) ---------- */
-  async function log(consent, zipName){
-    const prof = V2X().profile;
-    const rec = Object.assign({ kind:'PAYCONSENT', v:1, id:`consent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      at: new Date().toISOString(), by: prof ? prof.name : '', zip: zipName }, consent.meta);
-    const list = (await V2X().kvGet('consentLog')) || [];
-    list.unshift(rec); V2X().kvSet('consentLog', list.slice(0, 500));
-    try{
-      const v = V2X();
-      if(v.shareDir && await v.perm(v.shareDir, false)){
-        const dir = await (await v.sub(v.SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
-        await v.writeFile(dir, `${rec.id}.json`, JSON.stringify(rec, null, 1));
-      }
-    }catch(e){ console.error(e); }
-  }
-  async function loadLog(){
-    const map = new Map();
-    ((await V2X().kvGet('consentLog')) || []).forEach(r => map.set(r.id, r));
-    try{
-      const v = V2X();
-      if(v.shareDir && await v.perm(v.shareDir, false)){
-        const dir = await (await v.sub(v.SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
-        for await (const e of dir.values()){
-          if(e.kind !== 'file' || !/\.json$/i.test(e.name)) continue;
-          try{ const r = JSON.parse((await (await e.getFile()).text()).replace(/^﻿/, '')); if(r.kind === 'PAYCONSENT' && r.id) map.set(r.id, r); }catch(err){}
-        }
-      }
-    }catch(e){ console.error(e); }
-    return [...map.values()].sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  }
+  /* 생성 기록은 처리 이력의 작업 기록(PAYLOG: 조견표 장수·동의서 개수)으로 합침 → v2_inject.js workLog */
 
-  /* 처리 이력 화면 아래에 '변경동의서 생성 기록' */
-  const histPanel = document.querySelector('#tabHistory .panel');
-  if(histPanel){
-    histPanel.insertAdjacentHTML('afterend', `<div class="panel" id="v2ConLog">
-      <div class="ph"><h2>변경동의서 생성 기록</h2><span class="hint" id="v2ConLogCount"></span></div>
-      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>생성 시각</th><th>센터</th><th class="r">동의서</th><th>시행일</th><th>설명회 일자</th><th>주요 변경사항</th><th>만든 사람</th></tr></thead><tbody id="v2ConLogBody"></tbody></table></div>
-      <p class="hint">조견표 ZIP을 받을 때 함께 만든 변경동의서입니다. 설명회 일자가 비어 있으면 '나중에 직접 작성'을 고른 경우입니다.</p>
-    </div>`);
-  }
-  async function renderLog(){
-    const body = $('v2ConLogBody'); if(!body) return;
-    const rows = await loadLog();
-    const fmt = t => new Date(t).toLocaleString('ko-KR', { year:'numeric', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    body.innerHTML = rows.slice(0, 300).map(r => `<tr><td class="num">${h(fmt(r.at))}</td><td>${h(r.center)}</td>
-      <td class="r num" title="${h((r.jobs || []).join(', '))}">${h(r.count)}개${r.fresh && r.fresh.length ? ` <span class="hint">(신규 ${r.fresh.length} 제외)</span>` : ''}</td>
-      <td class="num">${h(r.eff || '-')}</td><td class="num">${h(r.brief || '나중에 작성')}</td><td>${h(r.change || '-')}</td><td>${h(r.by || '-')}</td></tr>`).join('')
-      || '<tr><td colspan="7" class="empty">아직 만든 변경동의서가 없습니다.</td></tr>';
-    $('v2ConLogCount').textContent = rows.length ? `전체 ${rows.length}건` : '';
-  }
-  const origSwitch = switchAppTab;
-  switchAppTab = function(tabId){ origSwitch(tabId); if(tabId === 'history') renderLog(); };
-  const reload = $('v2HistReload'); if(reload) reload.addEventListener('click', renderLog);
-
-  window.__v2consent = { prepare, log, loadLog, valuesFor, parseEffective, makeDocx };
+  window.__v2consent = { prepare, valuesFor, parseEffective, makeDocx };
 })();

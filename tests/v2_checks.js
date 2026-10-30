@@ -104,7 +104,8 @@ const ok = (c, m) => { console.log((c ? '  통과 ' : '  실패 ') + m); if(!c) 
   ok(pngs.length > 0 && docs.length === pairs, `ZIP 안: 조견표 PNG ${pngs.length}장 + 변경동의서 Word ${docs.length}개(변경전 짝이 있는 호봉 ${pairs}개)`);
   if(process.env.CONSENT_OUT) fs.copyFileSync(zipPath, process.env.CONSENT_OUT);
   await p.click('#tabBtnHistory'); await p.waitForTimeout(500);
-  ok(/변경동의서/.test(await p.textContent('#v2ConLogBody')) || /2025년 12월 15일/.test(await p.textContent('#v2ConLogBody')), '처리 이력에 변경동의서 생성 기록');
+  const hist = await p.textContent('#v2HistBody');
+  ok(/가상시 민원상담콜센터/.test(hist) && new RegExp(`조견표 ${pngs.length}장 · 동의서 ${docs.length}개`).test(hist) && /홍길동/.test(hist), '처리 이력: 올린 사람 · 센터 · 조견표/동의서 개수 · ' + hist.replace(/\s+/g, ' ').trim().slice(0, 120));
   await p.click('.app-tab[data-tab="create"]');
   await p.waitForSelector('#v2Next [data-n="snap"]');
   ok(true, '다음 단계: 통계에 저장 안내');

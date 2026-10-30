@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.6.6'
+APP_VERSION = '2.6.7'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -111,6 +111,13 @@ V2_CSS = """
   .v2-sp p{ margin:0; } .v2-sp label{ display:flex; flex-direction:column; gap:4px; font-weight:600; }
   .v2-sp input{ padding:7px 9px; border:1px solid #d5dbe4; border-radius:8px; font:inherit; font-size:13px; max-width:720px; }
   .v2-sp-row{ display:flex; gap:12px; flex-wrap:wrap; } .v2-sp-row input{ width:180px; }
+  .v2-q label.v2-q-wide{ grid-column:span 2; } .v2-pick.bad{ color:var(--bad); font-weight:700; font-size:13px; align-self:center; }
+  .v2-snapsum{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; font-size:13.5px; }
+  .tblwrap.v2-collapsed tr.v2-auto{ display:none; } #snapJobs tr.v2-odd td{ background:var(--warn-soft); }
+  .v2-demo{ margin:auto 12px 8px; padding:8px 10px; border:1px dashed rgba(255,255,255,.25); border-radius:10px; font-size:11.5px; color:var(--sb-quiet); display:flex; flex-direction:column; gap:6px; }
+  .v2-demo[hidden]{ display:none; } .v2-demo div{ display:flex; gap:6px; }
+  .v2-demo button{ flex:1; border:1px solid rgba(255,255,255,.2); background:transparent; color:var(--sb-ink); border-radius:7px; padding:4px 0; font:inherit; font-size:11.5px; cursor:pointer; }
+  .v2-demo button:hover{ background:rgba(255,255,255,.08); }
   .v2-mode{ display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
   .v2-mode label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
   /* v2.4 · 변경전 비교 접기 · 일괄 확인 · 다음 단계 막대 */

@@ -300,6 +300,7 @@
   const origHandleFile = handleFile;
   handleFile = async function(file){
     if(/\.json$/i.test(file.name)) return origHandleFile(file);
+    srcName = file.name.replace(/\.[^.]+$/, '');
     const plain = (await isZip(file)) || (await readsLocally(file));
     if(plain){ const g = await gridsFromXlsx(file); beforeData = g.before; curGrid = g.cur; extraSheets = g.extra; }
     else { beforeData = null; curGrid = null; extraSheets = null; }
@@ -452,14 +453,20 @@
       try{ return { file: await (await dir.getFileHandle(`${p.base}.json`)).getFile() }; }catch(e){ return null; }
     }
     let best = null;
+    const found = [];
     for await (const e of dir.values()){
       if(e.kind !== 'file' || !e.name.startsWith(p.base)) continue;
       const rest = e.name.slice(p.base.length);
       if(p.any ? !/\.json$/i.test(e.name) : !/^( \(\d+\))?(\.error)?\.json$/i.test(rest)) continue;
+      if(p.any && (p.skip || []).includes(e.name)) continue;
       const f = await e.getFile();
       if(f.lastModified < p.startedAt - (p.any ? 5000 : 60000)) continue;
-      if(!best || f.lastModified > best.file.lastModified) best = { file: f, error: /\.error\.json$/i.test(e.name) };
+      const item = { file: f, error: /\.error\.json$/i.test(e.name) };
+      found.push(item);
+      if(!best || f.lastModified > best.file.lastModified) best = item;
     }
+    /* 파일을 정하지 않고 기다린 경우(바로 올리기): 다른 사람이 같은 때 올린 결과일 수 있어 이름을 보여 주고 고르게 함 */
+    if(p.any && found.length) return { choices: found.sort((a, b) => b.file.lastModified - a.file.lastModified) };
     return best;
   }
 
@@ -489,7 +496,10 @@
     { k:'period', l:'적용 시점', type:'month' },
     { k:'reason', l:'변경 사유', o:['최저임금 반영','변경계약','재계약','기타'] },
     { k:'contract1y', l:'계약기간 1년 이상', o:['예','아니오','모름'] },
-    { k:'region', l:'지역(시·도)', o:['서울','경기','인천','부산','대구','광주','대전','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주'] }
+    { k:'region', l:'지역(시·도)', o:['서울','경기','인천','부산','대구','광주','대전','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주'] },
+    { k:'settle', l:'인건비 정산', o:['정산','미정산'] },
+    { k:'briefDate', l:'변경 설명회 일자', type:'date' },
+    { k:'changeNote', l:'주요 변경사항(동의서)', type:'text', ph:'예: 2026년 최저임금 인상 반영' }
   ];
   function renderJob(){
     qPanel.hidden = false;
@@ -502,10 +512,11 @@
     renderQuestions();
   }
   function renderQuestions(){
-    $('v2Q').innerHTML = QUESTIONS().map(q => `<label><span>${h(q.l)} ${helpBtn(q.k)}</span>${q.type === 'month'
-      ? `<input type="month" id="v2q_${q.k}" data-q="${q.k}" value="${h(answers[q.k] || '')}">`
+    $('v2Q').innerHTML = QUESTIONS().map(q => `<label${q.type === 'text' ? ' class="v2-q-wide"' : ''}><span>${h(q.l)} ${helpBtn(q.k)}</span>${q.type === 'month' || q.type === 'date' || q.type === 'text'
+      ? `<input type="${q.type}" id="v2q_${q.k}" data-q="${q.k}" value="${h(answers[q.k] || '')}"${q.ph ? ` placeholder="${h(q.ph)}"` : ''}>`
       : `<select id="v2q_${q.k}" data-q="${q.k}"><option value="">선택</option>${q.o.map(o => `<option${answers[q.k] === o ? ' selected' : ''}>${h(o)}</option>`).join('')}</select>`}</label>`).join('');
   }
+  $('v2Q').addEventListener('input', e => { if(e.target.type === 'text') e.target.dispatchEvent(new Event('change', { bubbles:true })); });
   $('v2Q').addEventListener('change', e => {
     const k = e.target.dataset.q; if(!k) return;
     answers[k] = e.target.value; kvSet('lastAnswers', answers);
@@ -514,7 +525,7 @@
   function setJob(state, msg, actions){
     const st = $('v2State');
     st.dataset.state = state;
-    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요', paste:'붙여넣기', upload:'웹 업로드' }[state];
+    st.textContent = { wait:'처리 중', slow:'지연', done:'완료', fail:'실패', need:'연결 필요', paste:'붙여넣기', upload:'웹 업로드', pick:'결과 확인' }[state];
     $('v2JobMsg').textContent = msg;
     $('v2JobAct').innerHTML = actions || '';
     if(state !== 'wait' && state !== 'slow' && state !== 'upload'){ clearInterval(tickTimer); $('v2Fill').style.width = state === 'need' || state === 'paste' ? '0' : '100%'; }
@@ -530,7 +541,7 @@
     if(!nav) return;
     let b = nav.querySelector('.v2-badge');
     if(!b){ b = document.createElement('span'); b.className = 'v2-badge'; nav.appendChild(b); }
-    b.textContent = state === 'wait' || state === 'slow' || state === 'upload' ? '처리 중' : state === 'fail' ? '실패' : state === 'done' ? '완료' : '';
+    b.textContent = state === 'wait' || state === 'slow' || state === 'upload' ? '처리 중' : state === 'fail' ? '실패' : state === 'done' ? '완료' : state === 'pick' ? '확인' : '';
     b.hidden = !b.textContent;
     b.dataset.state = state;
   }
@@ -559,10 +570,28 @@
       try{
         const r = await findResult(await sub(SUB.link, true), pending);
         if(r && r.error) return fail('회사 M365에서 이 파일을 열지 못했습니다. 급여테이블(변경후) 시트가 있는지, 파일이 열리는지 확인해 주세요.');
+        if(r && r.choices) return chooseResult(r.choices);
         if(r && r.file) return arrive(r.file);
       }catch(e){ console.error(e); }
     };
     poll(); pollTimer = setInterval(poll, POLL_MS);
+  }
+  function chooseResult(list){
+    clearInterval(pollTimer);
+    const name = f => f.name.replace(/(\.error)?\.json$/i, '');
+    const when = f => new Date(f.lastModified).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+    setJob('pick', `새 결과 ${list.length}건이 도착했습니다. 내가 올린 파일이 맞는지 확인하고 열어 주세요. (같은 시간에 다른 사람이 올린 파일일 수 있습니다)`,
+      list.map((x, i) => x.error ? `<span class="v2-pick bad">${h(name(x.file))} · 처리 실패 ${when(x.file)}</span>`
+        : `<button type="button" class="${i ? 'btn-ghost' : 'btn-primary'}" data-pick="${i}">${h(name(x.file))} 열기 · ${when(x.file)}</button>`).join('')
+      + '<button type="button" class="btn-ghost" data-pick="wait">내 파일이 없음 · 계속 기다리기</button>');
+    notify('급여테이블 결과 도착', `${list.length}건 · 눌러서 확인`, () => switchAppTab('create'));
+    $('v2JobAct').querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+      if(b.dataset.pick === 'wait'){
+        pending.skip = (pending.skip || []).concat(list.map(x => x.file.name)); kvSet('pending', pending);
+        setJob('upload', '다시 기다리는 중입니다.', webSteps(pending.file, (V2.links || {}).upload)); startPolling(true); return;
+      }
+      arrive(list[+b.dataset.pick].file);
+    }));
   }
   async function arrive(file){
     clearInterval(pollTimer);
@@ -600,6 +629,32 @@
     if(answers.centerType && SETTINGS.centerTypes.includes(answers.centerType)) $('snapType').value = answers.centerType;
     if(answers.period) $('snapPeriod').value = answers.period;
   };
+  /* 통계 저장: 호봉별 상담사/관리자 분류는 요약 한 줄로 · 블록 기준과 다르게 분류된 호봉(확인 필요)만 펼쳐 보임 */
+  const snapWrap = $('snapJobs').closest('.tblwrap');
+  snapWrap.insertAdjacentHTML('beforebegin', '<div class="v2-snapsum" id="v2SnapSum"></div>');
+  let snapOpen = false;
+  function drawSnapSum(){
+    const rows = [...$('snapJobs').querySelectorAll('tr')];
+    if(!rows.length || !parsedData) return;
+    const cnt = {}; let check = 0;
+    rows.forEach(tr => {
+      const sel = tr.querySelector('select[data-snapjob]'); if(!sel) return;
+      const job = parsedData.jobs[+sel.dataset.snapjob], base = job && job.block === '리더그룹' ? '관리자' : '상담사';
+      const odd = sel.value !== base;
+      tr.classList.toggle('v2-odd', odd); tr.classList.toggle('v2-auto', !odd);
+      cnt[sel.value] = (cnt[sel.value] || 0) + 1; if(odd) check++;
+    });
+    $('v2SnapSum').innerHTML = `<b>직무 분류(자동)</b> ${Object.entries(cnt).map(([k, v]) => `${h(k)} ${v}`).join(' · ')}`
+      + (check ? ` · <span class="v2-red">확인 필요 ${check}</span> <span class="hint">(블록과 다르게 분류된 호봉만 아래에 보입니다)</span>` : ' <span class="hint">· 모두 블록 기준대로 분류됨</span>')
+      + ` <button type="button" class="btn-ghost btn-sm" id="v2SnapToggle">${snapOpen ? '접기' : '전체 보기·수정'}</button>`;
+    $('v2SnapSum').classList.toggle('open', snapOpen);
+    snapWrap.hidden = !snapOpen && !check;
+    snapWrap.classList.toggle('v2-collapsed', !snapOpen);
+  }
+  $('v2SnapSum').addEventListener('click', e => { if(e.target.id !== 'v2SnapToggle') return; snapOpen = !snapOpen; drawSnapSum(); });
+  $('snapJobs').addEventListener('change', drawSnapSum);
+  const origRenderSnap2 = renderSnapPanel;
+  renderSnapPanel = function(){ origRenderSnap2(); snapOpen = false; drawSnapSum(); };
   const origBuild = buildSnapshot;
   buildSnapshot = function(meta){
     return Object.assign(origBuild(meta), { v:2, requestId: requestId || '', savedBy: profile ? profile.name : '', answers: answers ? Object.assign({}, answers) : {} });
@@ -646,6 +701,20 @@
   const linkBtn = (label, url, cls) => url ? `<a class="${cls || 'btn-ghost'} v2-link" href="${h(url)}" target="_blank" rel="noopener">${h(label)} ↗</a>` : '';
   const isAdmin = () => { const a = (SETTINGS.admins || []).filter(Boolean); return !a.length || !!(profile && a.includes(profile.ini)); };
 
+  /* 시험용 가상 데이터: 사이드바에서 바로 불러오기·지우기 (최종본에서는 기준정보 체크로 숨기거나 제거) */
+  document.querySelector('.side-foot').insertAdjacentHTML('beforebegin', `<div class="v2-demo" id="v2Demo">
+    <span>🧪 시험용 가상 데이터</span><div><button type="button" data-demo="load">불러오기</button><button type="button" data-demo="clear">지우기</button></div></div>`);
+  $('v2Demo').addEventListener('click', e => {
+    const b = e.target.closest('[data-demo]'); if(!b) return;
+    const msg = $('dataMsg'); msg.textContent = '';
+    toast(b.dataset.demo === 'load' ? '가상 데이터를 불러오는 중…' : '가상 데이터를 지우는 중…', 20000);
+    $(b.dataset.demo === 'load' ? 'demoLoadBtn' : 'demoClearBtn').click();
+    const t0 = Date.now(), wait = setInterval(() => {            // 저장이 끝나 결과 문구가 나오면 알림
+      if(msg.textContent || Date.now() - t0 > 20000){ clearInterval(wait); toast(msg.textContent || '처리했습니다.', 6000); }
+    }, 200);
+  });
+  const renderDemo = () => { $('v2Demo').hidden = SETTINGS.hideDemo === true; };
+
   /* 관리자 바로가기 (기준정보 화면 맨 위) */
   const setPane = $('tabSettings');
   setPane.insertAdjacentHTML('afterbegin', `
@@ -664,6 +733,10 @@
         <label><input type="checkbox" id="v2AutoArchive"> 조견표 ZIP·PNG·보고서를 다운로드할 때 공유 폴더(03_조견표·05_보고서)에도 저장
           <span class="hint">(회사 DLP가 OneDrive 업로드를 차단하면 끄세요 · 기본 꺼짐)</span></label>
         <span class="hint" id="v2ArchiveMsg"></span>
+      </div>
+      <div class="v2-mode">
+        <span class="flabel">시험 메뉴</span>
+        <label><input type="checkbox" id="v2HideDemo"> 사이드바의 '🧪 시험용 가상 데이터' 메뉴 숨기기 <span class="hint">(실사용 전환 시 체크 · 모든 사용자에게 적용)</span></label>
       </div>
       <div class="v2-admins">
         <label>관리자 이니셜 <input type="text" id="v2AdminIni" placeholder="예: HGD, ABC"></label>
@@ -705,11 +778,16 @@
     $({ auto:'v2ModeAuto', web:'v2ModeWeb', paste:'v2ModePaste' }[uploadMode()]).checked = true;
     renderDropHint();
     $('v2AutoArchive').checked = SETTINGS.autoArchive === true;
+    $('v2HideDemo').checked = SETTINGS.hideDemo === true; renderDemo();
     const c = SETTINGS.links || {};
     $('v2SpFolder').value = c.folder || ''; $('v2SpUpload').value = c.uploadFolder || ''; $('v2SpArchive').value = c.archiveFolder || '';
     $('v2SpFlow').value = c.flow || ''; $('v2SpGuide').value = c.guide || '';
     $('v2SpState').textContent = normSp(c.folder) ? '· 기준정보에 입력된 주소 사용 중' : BUILD_SP ? '· 시스템 파일에 들어 있는 주소 사용 중' : '· 입력 안 됨 (웹 업로드를 쓸 수 없음)';
   }
+  $('v2HideDemo').addEventListener('change', async e => {
+    SETTINGS.hideDemo = e.target.checked; await saveSettings(); renderDemo();
+    if(shareDir && await perm(shareDir, false)) await publishSettings();
+  });
   $('v2SpSave').addEventListener('click', async () => {
     const msg = $('v2SpMsg'), folder = $('v2SpFolder').value.trim(), flow = $('v2SpFlow').value.trim(), guide = $('v2SpGuide').value.trim();
     if(folder && !normSp(folder)) return msg.textContent = '공유 폴더 주소는 https:// 로 시작해야 합니다.';
@@ -851,7 +929,7 @@
   }
 
   /* 센터별 자동 채움: 같은 센터의 지난 답변으로 빈 질문을 채움 */
-  const CARRY = ['centerType', 'consultType', 'workPattern', 'contract1y', 'region'];
+  const CARRY = ['centerType', 'consultType', 'workPattern', 'contract1y', 'region', 'settle'];
   async function prefillForCenter(center){
     if(!center) return;
     const map = (await kvGet('centerAnswers')) || {};
@@ -906,13 +984,16 @@
     <div class="filterbar">
       <span class="flabel">보기</span><div class="seg" id="v2HistMine"><button type="button" data-mine="0" aria-pressed="true">전체</button><button type="button" data-mine="1" aria-pressed="false">내 요청</button></div>
       <label>상태 <select id="v2HistState"><option value="">전체</option><option>완료</option><option>처리 중</option><option>지연</option><option>실패</option></select></label>
-      <input type="search" id="v2HistSearch" placeholder="요청번호·파일명 검색">
+      <label>요청 월 <input type="month" id="v2HistMonth"></label>
+      <label>산업 <select id="v2HistInd"><option value="">전체</option></select></label>
+      <input type="search" id="v2HistWho" placeholder="올린 사람 이름">
+      <input type="search" id="v2HistSearch" placeholder="센터·파일·요청번호 검색">
       <button type="button" class="btn-ghost btn-sm" id="v2HistReload">새로 고침</button>
       <span class="hint" id="v2HistCount"></span>
     </div>
     <div class="panel">
-      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>요청번호</th><th>파일</th><th>올린 사람</th><th>올린 시각</th><th>상태</th><th class="r">소요</th><th></th></tr></thead><tbody id="v2HistBody"></tbody></table></div>
-      <p class="hint">결과가 남아 있는 요청은 [열기]로 다시 올리지 않고 조견표를 다시 만들 수 있습니다.</p>
+      <div class="tblwrap scroll"><table class="grid"><thead><tr><th>요청 시각</th><th>올린 사람</th><th>센터</th><th>산업</th><th>파일 · 요청번호</th><th>상태</th><th>만든 결과</th><th></th></tr></thead><tbody id="v2HistBody"></tbody></table></div>
+      <p class="hint">만든 결과 = 받은 조견표 장수 · 변경동의서 개수 · 통계 저장 여부. 결과가 남아 있는 요청은 [열기]로 다시 올리지 않고 조견표를 다시 만들 수 있습니다.</p>
     </div>
   </div>`);
   const origSwitch = switchAppTab;
@@ -955,28 +1036,77 @@
       return r;
     }).sort((a, b) => b.req.localeCompare(a.req));
   }
+  /* ---------- 작업 기록(PAYLOG): 조견표를 받거나 통계에 저장할 때 누가·언제·센터·산업·조견표/동의서 수를 남김
+     이 PC(kv workLog) + 공유 폴더 04_스냅샷/이력/<id>.json (JSON이라 DLP 대상 아님) → 처리 이력에 요청과 합쳐 보여 줌 ---------- */
+  const LOG_DIR = '이력';
+  let curLog = null, srcName = '';
+  async function workLog(patch){
+    if(typeof parsedData === 'undefined' || !parsedData) return;
+    const center = parsedData.centerName || '';
+    if(!curLog) curLog = { kind:'PAYLOG', v:1, id:`log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: new Date().toISOString(),
+      by: profile ? profile.name : '', ini: profile ? profile.ini : '', src: srcName, req: requestId || '', cards: 0, consents: 0, snap: false };
+    Object.assign(curLog, { center, industry: (answers && answers.centerType) || (SETTINGS.centers || {})[center] || curLog.industry || '',
+      period: (answers && answers.period) || curLog.period || '' }, patch, { updatedAt: new Date().toISOString() });
+    const list = ((await kvGet('workLog')) || []).filter(x => x.id !== curLog.id);
+    list.unshift(Object.assign({}, curLog)); kvSet('workLog', list.slice(0, 1000));
+    try{
+      if(shareDir && await perm(shareDir, false)){
+        const dir = await (await sub(SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
+        await writeFile(dir, `${curLog.id}.json`, JSON.stringify(curLog, null, 1));
+      }
+    }catch(e){ console.error(e); }
+  }
+  async function loadWorkLogs(){
+    const map = new Map();
+    ((await kvGet('workLog')) || []).forEach(r => map.set(r.id, r));
+    try{
+      if(shareDir && await perm(shareDir, false)){
+        const dir = await (await sub(SUB.snap, true)).getDirectoryHandle(LOG_DIR, { create:true });
+        for await (const e of dir.values()){
+          if(e.kind !== 'file' || !/\.json$/i.test(e.name)) continue;
+          try{ const r = JSON.parse((await (await e.getFile()).text()).replace(/^﻿/, '')); if(r.kind === 'PAYLOG' && r.id) map.set(r.id, r); }catch(err){}
+        }
+      }
+    }catch(e){ console.error(e); }
+    return [...map.values()];
+  }
   async function renderHistory(){
     const body = $('v2HistBody');
-    if(!shareDir || !(await perm(shareDir, false))){
-      body.innerHTML = '<tr><td colspan="7" class="empty">공유 폴더가 연결되어 있어야 처리 이력을 볼 수 있습니다.</td></tr>'; $('v2HistCount').textContent = ''; return;
-    }
-    body.innerHTML = '<tr><td colspan="7" class="empty">읽는 중…</td></tr>';
-    try{ histRows = await scanHistory(); }catch(e){ body.innerHTML = `<tr><td colspan="7" class="empty">이력을 읽지 못했습니다: ${h(e.message)}</td></tr>`; return; }
+    $('v2HistInd').innerHTML = '<option value="">전체</option>' + (SETTINGS.centerTypes || []).map(t => `<option${$('v2HistInd').value === t ? ' selected' : ''}>${h(t)}</option>`).join('');
+    const linked = shareDir && (await perm(shareDir, false));
+    body.innerHTML = '<tr><td colspan="8" class="empty">읽는 중…</td></tr>';
+    let reqs = [];
+    if(linked){ try{ reqs = await scanHistory(); }catch(e){ body.innerHTML = `<tr><td colspan="8" class="empty">이력을 읽지 못했습니다: ${h(e.message)}</td></tr>`; return; } }
+    const logs = await loadWorkLogs(), used = new Set();
+    histRows = reqs.map(r => {
+      const mine = logs.filter(l => (l.req && l.req === r.req) || (l.src && l.src === r.base)).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      mine.forEach(l => used.add(l.id));
+      return Object.assign(r, { log: mine[0] || null, t: r.uploaded || r.json || r.error || 0 });
+    });
+    logs.filter(l => !used.has(l.id)).forEach(l => histRows.push({ base:'', req: l.req || '', ini: l.ini || '', file: l.src || '(직접 올림)', state:'완료', log: l, t: Date.parse(l.at) || 0 }));
+    histRows.sort((a, b) => b.t - a.t);
+    if(!linked && !histRows.length){ body.innerHTML = '<tr><td colspan="8" class="empty">공유 폴더가 연결되어 있어야 처리 이력을 볼 수 있습니다.</td></tr>'; $('v2HistCount').textContent = ''; return; }
     drawHistory();
   }
   function drawHistory(){
-    const q = $('v2HistSearch').value.trim(), st = $('v2HistState').value;
-    const rows = histRows.filter(r => (!histMine || (profile && r.ini === profile.ini)) && (!st || r.state === st) && (!q || r.req.includes(q) || r.file.includes(q)));
-    const fmt = t => t ? new Date(t).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
-    const dur = ms => ms == null ? '-' : ms < 60000 ? `${Math.max(1, Math.round(ms / 1000))}초` : `${Math.round(ms / 60000)}분`;
-    $('v2HistBody').innerHTML = rows.slice(0, 300).map((r, i) => `<tr>
-      <td class="num">${h(r.req)}</td><td>${h(r.file)}</td><td>${h(r.ini)}</td><td class="num">${fmt(r.uploaded)}</td>
+    const q = $('v2HistSearch').value.trim(), st = $('v2HistState').value, mon = $('v2HistMonth').value, ind = $('v2HistInd').value, who = $('v2HistWho').value.trim();
+    const ym = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+    const name = r => (r.log && r.log.by) || r.ini || '';
+    const rows = histRows.filter(r => (!histMine || (profile && (r.ini === profile.ini || (r.log && r.log.ini === profile.ini))))
+      && (!st || r.state === st) && (!mon || (r.t && ym(r.t) === mon)) && (!ind || (r.log && r.log.industry === ind))
+      && (!who || name(r).includes(who) || r.ini.includes(who.toUpperCase()))
+      && (!q || [r.req, r.file, r.log && r.log.center].some(x => x && x.includes(q))));
+    const fmt = t => t ? new Date(t).toLocaleString('ko-KR', { year:'2-digit', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
+    const made = l => !l ? '-' : [`조견표 ${l.cards || 0}장`, `동의서 ${l.consents || 0}개`, l.snap ? '통계 저장' : ''].filter(Boolean).join(' · ');
+    $('v2HistBody').innerHTML = rows.slice(0, 300).map(r => `<tr>
+      <td class="num">${fmt(r.t)}</td><td>${h(name(r) || '-')}</td><td>${h((r.log && r.log.center) || '-')}</td><td>${h((r.log && r.log.industry) || '-')}</td>
+      <td>${h(r.file)}${r.req ? `<br><span class="hint">${h(r.req)}</span>` : ''}</td>
       <td><span class="v2-state" data-state="${{ '완료':'done', '실패':'fail', '지연':'slow', '처리 중':'wait' }[r.state]}">${r.state}</span></td>
-      <td class="r num">${dur(r.took)}</td>
+      <td class="v2-made">${h(made(r.log))}</td>
       <td>${r.handle ? `<button type="button" class="btn-ghost btn-sm" data-open="${h(r.base)}">열기</button>` : r.state === '실패' && isAdmin() ? linkBtn('실행 기록', LINKS.flowRuns, 'btn-ghost btn-sm') : ''}</td></tr>`).join('')
-      || '<tr><td colspan="7" class="empty">조건에 맞는 요청이 없습니다.</td></tr>';
+      || '<tr><td colspan="8" class="empty">조건에 맞는 요청이 없습니다.</td></tr>';
     const c = s => histRows.filter(r => r.state === s).length;
-    $('v2HistCount').textContent = `전체 ${histRows.length}건 · 완료 ${c('완료')} · 처리 중 ${c('처리 중')} · 지연 ${c('지연')} · 실패 ${c('실패')}`;
+    $('v2HistCount').textContent = `전체 ${histRows.length}건 · 완료 ${c('완료')} · 처리 중 ${c('처리 중')} · 지연 ${c('지연')} · 실패 ${c('실패')}` + (rows.length !== histRows.length ? ` · 검색 결과 ${rows.length}건` : '');
   }
   $('v2HistBody').addEventListener('click', async e => {
     const b = e.target.closest('[data-open]'); if(!b) return;
@@ -987,7 +1117,7 @@
     handleLinkedJsonFile(await r.handle.getFile());
   });
   $('v2HistMine').addEventListener('click', e => { const b = e.target.closest('[data-mine]'); if(!b) return; histMine = b.dataset.mine === '1'; $('v2HistMine').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawHistory(); });
-  ['v2HistState', 'v2HistSearch'].forEach(id => $(id).addEventListener('input', drawHistory));
+  ['v2HistState', 'v2HistSearch', 'v2HistMonth', 'v2HistInd', 'v2HistWho'].forEach(id => $(id).addEventListener('input', drawHistory));
   $('v2HistReload').addEventListener('click', renderHistory);
 
   /* 변경전 대비 비교: JSON의 before(또는 엑셀의 변경전 시트)를 같은 파서로 읽어 직무별 월 합계 비교 */
@@ -1007,6 +1137,7 @@
   }
   const origLinked = handleLinkedJsonFile;
   handleLinkedJsonFile = function(file){
+    srcName = file.name.replace(/\.json$/i, '');
     file.text().then(t => {
       try{ const p = JSON.parse(t.replace(/^﻿/, '')); beforeData = Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
         curGrid = Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
@@ -1018,6 +1149,7 @@
   const origPasted = handlePastedText;
   handlePastedText = function(text){
     const p = pastedPayload(text);
+    if(p) srcName = (p.file || '붙여넣기').replace(/\.[^.]+$/, '');
     beforeData = p && Array.isArray(p.before) ? { values: p.before, start: p.start || 'A1' } : null;
     curGrid = p && Array.isArray(p.values) ? { values: p.values, formulas: Array.isArray(p.formulas) ? p.formulas : null, start: p.start || 'A1' } : null;
     extraSheets = p && Array.isArray(p.extra) ? p.extra : null;
@@ -1083,6 +1215,7 @@
   /* 파싱 직후: 센터별 자동 채움 + 변경전 비교 */
   const origShowParsed = showParsed;
   showParsed = function(parsed, label){
+    curLog = null;                  // 새 파일 = 새 작업 기록
     analyzeGrid(parsed);            // 검사(runChecks)보다 먼저: 직무별 열·초과근무 시간
     origShowParsed(parsed, label);
     buildCompare(parsed); drawCompare();
@@ -1092,6 +1225,7 @@
   buildSnapshot = function(meta){
     const rec = origBuild2(meta);
     if(compareRows.length) rec.before = compareRows.map(r => ({ job: r.label, before: r.before, after: r.after }));
+    workLog({ snap: true, industry: meta.centerType || '', period: meta.period || '' });
     if(answers && meta.center){
       kvGet('centerAnswers').then(map => { map = map || {}; map[meta.center] = Object.assign({}, answers); kvSet('centerAnswers', map); });
     }
@@ -1124,6 +1258,9 @@
     reason: '급여가 바뀐 이유입니다. 보고서와 이력에 남습니다.',
     contract1y: '수습기간 최저임금 90% 적용은 1년 이상 계약일 때만 가능해 검사에 씁니다.',
     region: '채용시장 임금과 비교할 때 지역을 맞추는 데 씁니다.',
+    settle: '정산 센터는 견적 직접인건비와 실제 급여가 거의 같아야 합니다. 견적 대비 화면에서 차이를 눈에 띄게 보여 줍니다.',
+    briefDate: '변경동의서의 설명회 일자입니다. 미리 넣으면 ZIP을 받을 때 입력 창 없이 바로 동의서를 만듭니다. 비워 두면 그때 묻습니다.',
+    changeNote: "변경동의서의 '급여테이블 변경 : …' 문구입니다. 비우면 급여테이블의 요청사유를 씁니다.",
     check: '차단 항목은 원본을 고쳐야 진행됩니다. 확인 항목은 내용을 보고 체크(사유 입력)하면 진행됩니다. 문제가 없으면 체크리스트 없이 바로 진행됩니다.',
     snap: '조견표를 만든 뒤 저장하면 센터·적용 시점별로 1건씩 쌓여 통계와 보고서에 쓰입니다. 공유 폴더 04_스냅샷에 저장됩니다.',
     compare: '같은 파일의 급여테이블(변경전) 시트와 직무별 월 합계(B등급 기준)를 비교합니다. 감소는 빨간색, 기준을 넘는 인상은 노란색으로 표시합니다.',
@@ -1413,7 +1550,7 @@
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
       a.download = safeName(consent ? `급여조견표_${parsedData.centerName}_${ok}개_변경동의서_${consent.files.length}개` : `급여조견표_${parsedData.centerName}_${ok}개`) + '.zip';
-      if(consent) window.__v2consent.log(consent, a.download);
+      workLog({ cards: ok, consents: consent ? consent.files.length : 0, zip: a.download, consent: consent ? consent.meta : null });
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 15000);
       zipDone = true;
@@ -1510,5 +1647,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
 })();

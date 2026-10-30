@@ -125,9 +125,15 @@ print(zipfile.ZipFile(io.BytesIO(base64.b64decode(sys.stdin.read()))).read('word
   const r = await pr;
   ok(r && r.n === 6 && r.fresh.length === 1 && r.mode === 'later' && r.brief === '', `동의서 ${r && r.n}개 · 제외 ${r && r.fresh.join(',')} · ${r && r.mode}`);
   ok(r && new Set(r.names).size === r.n && r.names.every(n => /^변경동의서_가상시_민원상담콜센터_.+\.docx$/.test(n)), r && r.names.join(' '));
-  await p.evaluate(() => window.__v2consent.log({ meta:{ center:'가상시 민원상담콜센터', count:6, jobs:[], fresh:['상담 · 상담3'], eff:'2026. 01. 01.', mode:'later', brief:'', change:'' } }, 'x.zip'));
+  await p.evaluate(() => window.__v2.workLog({ cards: 7, consents: 6 }));
   await p.click('#tabBtnHistory'); await p.waitForTimeout(400);
-  ok(/가상시 민원상담콜센터/.test(await p.textContent('#v2ConLogBody')) && /나중에 작성/.test(await p.textContent('#v2ConLogBody')), '처리 이력 › 변경동의서 생성 기록');
+  ok(/가상시 민원상담콜센터/.test(await p.textContent('#v2HistBody')) && /조견표 7장 · 동의서 6개/.test(await p.textContent('#v2HistBody')), '처리 이력(작업 기록): 조견표·동의서 개수');
+  await p.fill('#v2HistWho', '없는사람'); ok(/조건에 맞는 요청이 없습니다/.test(await p.textContent('#v2HistBody')), '올린 사람 이름 검색');
+  await p.fill('#v2HistWho', '홍길'); ok(/가상시 민원상담콜센터/.test(await p.textContent('#v2HistBody')), '이름 일부로 검색');
+  const ymNow = await p.evaluate(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; });
+  await p.fill('#v2HistMonth', '2020-01'); ok(/조건에 맞는/.test(await p.textContent('#v2HistBody')), '요청 월 검색(다른 달)');
+  await p.fill('#v2HistMonth', ymNow); ok(/가상시/.test(await p.textContent('#v2HistBody')), '요청 월 검색(이번 달)');
+  await p.fill('#v2HistMonth', ''); await p.fill('#v2HistWho', '');
 
   console.log('6. 실제와 비슷한 더미(평택, 호봉 17개) 엑셀을 화면에서 올려 조견표 + 변경동의서 ZIP');
   const PT_XLSX = fs.readFileSync(path.join(ROOT, 'samples', '더미_평택_급여테이블.xlsx')).toString('base64');
@@ -182,6 +188,7 @@ for n in sorted(z.namelist()):
   await p.fill('#v2SpFolder', 'https://dummy.sharepoint.com/sites/paysys/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Fpaysys%2FShared%20Documents%2F%EA%B8%89%EC%97%AC%EC%A1%B0%EA%B2%AC%ED%91%9C&viewid=abc');
   await p.fill('#v2SpFlow', 'https://make.powerautomate.com/environments/Default-123/flows/abc-456/details');
   await p.click('#v2SpSave');
+  await p.waitForFunction(() => window.V2_CONFIG.links && window.V2_CONFIG.links.folder, null, { timeout: 5000 }).catch(() => {});
   const L = await p.evaluate(() => Object.assign({}, window.V2_CONFIG.links));
   ok(decodeURIComponent(L.folder) === 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여조견표', '폴더 주소(AllItems 형태 → 폴더 경로): ' + decodeURIComponent(L.folder));
   ok(decodeURIComponent(L.upload) === 'https://dummy.sharepoint.com/sites/paysys/Shared Documents/급여원본' && decodeURIComponent(L.archive).endsWith('/급여보관'), '업로드·보관 폴더 주소 자동 계산: ' + decodeURIComponent(L.upload));
@@ -190,6 +197,24 @@ for n in sorted(z.namelist()):
   await p.reload(); await p.waitForTimeout(1500);
   await p.click('.app-tab[data-tab="create"]');
   ok(await p.isVisible('#v2WebGo') && decodeURIComponent(await p.getAttribute('#v2WebGo', 'href')).endsWith('/급여원본'), '다시 열어도 유지: [SharePoint에 바로 올리기] 버튼이 업로드 폴더로 연결');
+
+  console.log('9. 1단계: 설명회 일자 미리 입력 → 입력 창 없이 생성 · 기존과 같은 호봉 제외 · 가상 데이터 빠른 메뉴');
+  await p.click('.app-tab[data-tab="create"]');
+  await load(`p.before = JSON.parse(JSON.stringify(p.values)); p.before[33][4] = '상담'; p.before[38][5] = 80000;`); await waitParsed();
+  await p.evaluate(() => { selectedJobs = new Set(parsedData.jobs.map((j, i) => i)); window.__v2.setAnswers({ briefDate:'2025-12-20', changeNote:'최저임금 반영' }); });
+  const r9 = await p.evaluate(() => window.__v2consent.prepare().then(r => r && { n: r.files.length, same: r.meta.same.length, brief: r.meta.brief, change: r.meta.change }));
+  ok(await p.isHidden('#v2Consent'), '설명회 일자를 미리 넣으면 입력 창이 뜨지 않음');
+  ok(r9 && r9.n === 1 && r9.same === 6 && r9.brief === '2025년 12월 20일' && r9.change === '최저임금 반영', `바뀐 호봉만 동의서 ${r9 && r9.n}개 · 같은 호봉 ${r9 && r9.same}개 제외 · ${r9 && r9.brief}`);
+  await load(`p.before = JSON.parse(JSON.stringify(p.values));`); await waitParsed();
+  ok(await p.evaluate(() => window.__v2consent.prepare()) === null, '모든 호봉이 같으면 동의서를 만들지 않음');
+  ok(await p.isVisible('#v2Demo'), "사이드바 '🧪 시험용 가상 데이터' 메뉴");
+  await p.click('#v2Demo [data-demo="load"]'); await p.waitForFunction(() => /불러왔습니다|이미 있습니다/.test(document.getElementById('v2Toast').textContent), null, { timeout: 30000 });
+  ok(await p.evaluate(() => SNAPS.some(x => x.demo)) && /가상 데이터/.test(await p.textContent('#v2Toast')), '불러오기 → ' + await p.textContent('#v2Toast'));
+  await p.click('#v2Demo [data-demo="clear"]'); await p.waitForFunction(() => /지웠습니다/.test(document.getElementById('v2Toast').textContent), null, { timeout: 30000 });
+  ok(await p.evaluate(() => !SNAPS.some(x => x.demo)), '지우기');
+  await p.click('.app-tab[data-tab="settings"]'); await p.check('#v2HideDemo'); await p.waitForTimeout(200);
+  ok(await p.isHidden('#v2Demo'), '기준정보에서 숨기기');
+  await p.uncheck('#v2HideDemo');
 
   ok(errs.length === 0, `스크립트 오류 ${errs.length}건 ${errs.join(' / ')}`);
   console.log(failed ? `\n실패 ${failed}건` : '\n모두 통과');
