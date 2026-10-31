@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'dist' / '급여조견표_관리시스템.html'
 OUT = ROOT / 'dist' / '급여조견표_관리시스템_v2.html'
-APP_VERSION = '2.7.1'
+APP_VERSION = '2.7.2'
 
 V2_CSS = """
   /* ===== v2: 첫 실행 안내 · 공유 폴더 · 업로드 대기 ===== */
@@ -184,10 +184,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--sharepoint-url', default='')
     ap.add_argument('--team', default='급여조견표 관리')
+    ap.add_argument('--demo', action='store_true', help='시연용: 회사 주소 없이, 별도 저장소·가상 데이터·시연 안내 포함')
     a = ap.parse_args()
     local = ROOT / 'tools' / 'v2.local.json'
     links = {}
-    if local.exists():
+    if a.demo:
+        pass   # 시연본에는 회사 주소를 넣지 않음
+    elif local.exists():
         cfg_local = json.loads(local.read_text(encoding='utf-8'))
         a.sharepoint_url = a.sharepoint_url or cfg_local.get('sharepointUrl', '')
         a.team = cfg_local.get('team', a.team)
@@ -201,7 +204,7 @@ def main():
     elif a.sharepoint_url:
         links = {'folder': a.sharepoint_url}
     s = SRC.read_text(encoding='utf-8')
-    s = must_replace(s, '<title>급여조견표 관리시스템</title>', '<title>급여조견표 관리시스템 v2</title>')
+    s = must_replace(s, '<title>급여조견표 관리시스템</title>', '<title>급여조견표 관리시스템 v2 시연</title>' if a.demo else '<title>급여조견표 관리시스템 v2</title>')
     s = must_replace(s, "indexedDB.open('paytable-system', 1)", "indexedDB.open('paytable-system-v2', 1)")
     s = must_replace(s, "indexedDB.open('paytable-link', 1)", "indexedDB.open('paytable-link-v2', 1)")
     s = must_replace(s, '<strong>급여관리 시스템</strong>', '<strong>급여관리 시스템 v2</strong>')
@@ -235,6 +238,18 @@ def main():
     i = s.rindex('</body>')
     s = (s[:i] + '<script>\n/* 관리자 설정: build_v2.py 인자로 바꿉니다 */\nwindow.V2_CONFIG = '
          + json.dumps(cfg, ensure_ascii=False) + ';\nwindow.V2_CONSENT_TPL = "' + tpl + '";\n' + js + '\n</script>\n' + s[i:])
+    if a.demo:
+        # 실제 시스템과 섞이지 않게 저장소 이름을 바꾸고, 가상 엑셀·시연 안내를 붙임 (version.json은 바꾸지 않음)
+        s = s.replace("indexedDB.open('paytable-system-v2', 1)", "indexedDB.open('paytable-system-v2-demo', 1)")
+        s = s.replace("indexedDB.open('paytable-link-v2', 1)", "indexedDB.open('paytable-link-v2-demo', 1)")
+        xlsx = base64.b64encode((ROOT / 'samples' / '가상_실양식_급여테이블.xlsx').read_bytes()).decode()
+        demo = (ROOT / 'tools' / 'demo_v2.js').read_text(encoding='utf-8')
+        i = s.rindex('</body>')
+        s = s[:i] + f'<script>\nwindow.DEMO_XLSX = "{xlsx}";\n{demo}\n</script>\n' + s[i:]
+        out = ROOT / 'dist' / '급여조견표_관리시스템_v2_시연.html'
+        out.write_text(s, encoding='utf-8')
+        print(f'{out.name}: {len(s.encode()) // 1024} KB')
+        return
     OUT.write_text(s, encoding='utf-8')
     (ROOT / 'dist' / 'version.json').write_text(json.dumps(
         {'version': APP_VERSION, 'file': OUT.name, 'date': date.today().isoformat()}, ensure_ascii=False), encoding='utf-8')

@@ -1664,5 +1664,5 @@
     }
   })();
 
-  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, folderUrl, makeZip, publishSettings, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
+  window.__v2 = { validateAndConnect, applyRole, runHealth, uploadMode, renderLinks, baseHours, jobAnnual, kvGet, kvSet, sub, SUB, readJson, writeFile, perm, toast, get profile(){ return profile; }, get extraSheets(){ return extraSheets; }, get pending(){ return pending; }, get shareDir(){ return shareDir; }, get answers(){ return answers; }, get curGrid(){ return curGrid; }, get beforeData(){ return beforeData; }, get comparePrev(){ return comparePrev; }, get comparePairs(){ return comparePairs; }, workLog, loadWorkLogs, renderHistory, folderUrl, makeZip, publishSettings, setProfile(pf){ profile = pf; renderConn(); applyRole(); }, setAnswers(o){ answers = Object.assign(answers || {}, o); } };
 })();

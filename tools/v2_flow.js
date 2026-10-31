@@ -158,7 +158,7 @@
       const p = has() ? parsedData : null, now = { parsed: p, cards: cards(), zip: zipDone, snap: snapSaved };
       const before = view;
       if(p && p !== last.parsed) view = 'check';
-      else if(now.cards && !last.cards) view = 'get';
+      else if(now.cards && !last.cards){ view = 'get'; if(V2X().workLog) V2X().workLog({ cards: now.cards }); }   // 처리 이력: 만든 조견표 장수
       else if(now.zip && !last.zip) view = 'save';
       else if(now.snap && !last.snap) view = 'done';
       else if(!p && last.parsed) view = 'up';
